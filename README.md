@@ -1,199 +1,237 @@
 # EasyMed Clinic Management System
 
-A comprehensive web-based clinic management system built with PHP, SQLite, and modern web technologies.
+A comprehensive web-based clinic management system built with PHP, providing complete functionality for patient management, doctor scheduling, appointment booking, and payment processing.
 
 ## 🏥 Features
 
-### Patient Management
-- Patient registration and profile management
-- Appointment booking system
-- Medical history tracking
-- Payment processing with GCash integration
+- **Patient Management**: Complete patient registration, profiles, and medical history
+- **Doctor Management**: Doctor profiles, specialties, schedules, and laboratory offers
+- **Appointment System**: Online booking, status tracking, and calendar management
+- **Payment Gateway**: GCash integration with QR code generation and receipt verification
+- **Laboratory Services**: Dynamic laboratory offers per doctor
+- **Admin Dashboard**: Complete administrative control and reporting
+- **Responsive Design**: Mobile-friendly interface across all devices
 
-### Doctor Management
-- Doctor profiles and specializations
-- Schedule management (days and hours)
-- Laboratory offers management
-- Consultation fee setting
+## 📋 Prerequisites
 
-### Admin Dashboard
-- Complete appointment management
-- Patient and doctor administration
-- Payment verification system
-- Reports and analytics
-- Settings management
+### System Requirements
 
-### Laboratory Services
-- Dynamic laboratory offers
-- Doctor-specific service assignments
-- Integration with appointment booking
+#### Required Software
+- **Web Server**: Apache 2.4+ (XAMPP, WAMP, or LAMP)
+- **PHP**: Version 7.4 or higher (8.0+ recommended)
+- **Database**: SQLite 3.0+ (included with PHP)
+- **Web Browser**: Modern browser (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
 
-### Payment System
-- GCash QR code integration
-- Payment proof upload
-- Admin verification workflow
-- Consultation fee management
+#### PHP Extensions (Required)
+```
+- PDO (PHP Data Objects)
+- PDO SQLite driver
+- GD Library (for image processing)
+- JSON support
+- Session support
+- File upload support
+- OpenSSL (for secure operations)
+```
 
-## 🛠️ Technology Stack
+#### Development Tools (Optional)
+- **Git**: For version control
+- **Composer**: For dependency management (if extended)
+- **Node.js**: For asset compilation (if customizing)
 
-- **Backend**: PHP 8.x
-- **Database**: SQLite
-- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
-- **Styling**: CSS Grid, Flexbox, CSS Variables
-- **Icons**: Font Awesome
-- **Payment**: GCash QR Code Integration
+### Hardware Requirements
+
+#### Minimum Requirements
+- **RAM**: 512 MB
+- **Storage**: 1 GB free space
+- **Processor**: 1 GHz single-core
+
+#### Recommended Requirements
+- **RAM**: 2 GB or more
+- **Storage**: 5 GB free space
+- **Processor**: 2 GHz dual-core or better
 
 ## 🚀 Installation
 
-### Prerequisites
-- PHP 8.0 or higher
-- Web server (Apache/Nginx)
-- SQLite extension enabled
+### Step 1: Download and Install XAMPP
 
-### Setup Steps
+1. Download XAMPP from [https://www.apachefriends.org/](https://www.apachefriends.org/)
+2. Install XAMPP with Apache and PHP enabled
+3. Start Apache from the XAMPP Control Panel
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/easymed-clinic.git
-   cd easymed-clinic
+### Step 2: Clone the Repository
+
+```bash
+cd C:\xampp\htdocs
+git clone https://github.com/Crimsoin/EasyMed.git
+cd EasyMed
+```
+
+### Step 3: Configure the Application
+
+1. **Database Setup**:
+   - The SQLite database is included in the `database/` folder
+   - No additional database server setup required
+
+2. **Configuration**:
+   - Open `includes/config.php`
+   - Update the `SITE_URL` if needed:
+   ```php
+   define('SITE_URL', 'http://localhost/EasyMed');
    ```
 
-2. **Configure the application**
-   - Copy `includes/config.sample.php` to `includes/config.php`
-   - Update database path and site URL in config.php
-   - Set up your clinic information
+3. **File Permissions**:
+   - Ensure the `assets/uploads/` directory is writable
+   - Ensure the `database/` directory is writable
 
-3. **Set up the database**
-   - Create SQLite database file
-   - Run database migrations (if available)
-   - Set proper file permissions
+### Step 4: Verify PHP Configuration
 
-4. **Configure web server**
-   - Point document root to project directory
-   - Ensure mod_rewrite is enabled (for Apache)
-   - Set proper directory permissions
+Check if required PHP extensions are enabled:
 
-## 📁 Project Structure
-
-```
-EasyMed/
-├── admin/                  # Admin dashboard and management
-│   ├── Dashboard/
-│   ├── Patient Management/
-│   ├── Doctor Management/
-│   ├── Appointment/
-│   └── Settings/
-├── patient/               # Patient portal
-├── doctor/                # Doctor dashboard
-├── includes/              # Core PHP files
-├── assets/                # Static assets
-│   ├── css/
-│   ├── js/
-│   ├── images/
-│   └── uploads/
-├── database/              # Database files
-└── docs/                  # Documentation
+```bash
+php -m | findstr -i "pdo sqlite gd json"
 ```
 
-## 🎨 Key Features Implemented
+Required output should include:
+```
+gd
+json
+PDO
+pdo_sqlite
+```
 
-### Responsive Design
-- Mobile-first approach
-- Adaptive layouts for all screen sizes
-- Modern CSS Grid and Flexbox
+### Step 5: Access the Application
 
-### User Authentication
-- Role-based access control (Admin, Doctor, Patient)
-- Secure session management
-- Password hashing and validation
-
-### Appointment System
-- Real-time availability checking
-- Multiple status tracking (pending, confirmed, completed)
-- Email/SMS notifications (configurable)
-
-### Payment Integration
-- GCash QR code generation
-- Receipt upload and verification
-- Payment status tracking
+1. Open your web browser
+2. Navigate to: `http://localhost/EasyMed`
+3. The application should load successfully
 
 ## 🔧 Configuration
 
-### Database Configuration
-Update `includes/config.php` with your database settings:
+### Environment Setup
 
-```php
-define('DB_PATH', '/path/to/your/database.sqlite');
+1. **Development Environment**:
+   ```
+   SITE_URL = http://localhost/EasyMed
+   DEBUG_MODE = true
+   ```
+
+2. **Production Environment**:
+   ```
+   SITE_URL = https://yourdomain.com
+   DEBUG_MODE = false
+   ```
+
+### Default Admin Account
+
+```
+Username: admin@easymed.com
+Password: admin123
+Role: Administrator
 ```
 
-### Site Configuration
-```php
-define('SITE_URL', 'https://your-domain.com');
-define('SITE_NAME', 'Your Clinic Name');
+**⚠️ Important**: Change the default admin password after first login!
+
+### Database Location
+
+```
+Database File: database/easymed.sqlite
+Backup Files: database/*.bak
 ```
 
-### Payment Configuration
-- Set up GCash merchant details
-- Configure QR code generation settings
+## 📱 Browser Compatibility
 
-## 🚦 Usage
+| Browser | Minimum Version | Recommended |
+|---------|----------------|-------------|
+| Chrome  | 90+            | Latest      |
+| Firefox | 88+            | Latest      |
+| Safari  | 14+            | Latest      |
+| Edge    | 90+            | Latest      |
 
-### For Administrators
-1. Access admin panel at `/admin/`
-2. Manage doctors, patients, and appointments
-3. Configure clinic settings and services
-4. Verify payments and generate reports
+## 🔒 Security Requirements
 
-### For Doctors
-1. Log in to doctor portal
-2. Manage schedule and availability
-3. View assigned appointments
-4. Update profile and services
+### PHP Security Settings
 
-### For Patients
-1. Register for an account
-2. Book appointments with preferred doctors
-3. Upload payment proofs
-4. View appointment history
+Ensure these settings in `php.ini`:
 
-## 🔒 Security Features
+```ini
+; File Upload Security
+file_uploads = On
+upload_max_filesize = 5M
+max_file_uploads = 10
 
-- SQL injection protection via prepared statements
-- XSS prevention with input sanitization
-- CSRF protection for forms
-- Secure file upload handling
-- Role-based access control
+; Session Security
+session.cookie_httponly = 1
+session.use_strict_mode = 1
+session.cookie_secure = 1  ; For HTTPS only
 
-## 📱 Browser Support
+; General Security
+expose_php = Off
+allow_url_fopen = Off
+allow_url_include = Off
+```
 
-- Chrome 80+
-- Firefox 75+
-- Safari 13+
-- Edge 80+
+### File Permissions
 
-## 🤝 Contributing
+```bash
+# For Windows (XAMPP)
+attrib +R database\easymed.sqlite
+icacls assets\uploads /grant Users:F
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+# For Linux/Mac
+chmod 644 database/easymed.sqlite
+chmod 755 assets/uploads
+```
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+1. **"PDO SQLite driver not found"**:
+   - Enable `pdo_sqlite` extension in `php.ini`
+   - Restart Apache
+
+2. **"Permission denied" errors**:
+   - Check file permissions on uploads directory
+   - Ensure database file is writable
+
+3. **"Site URL not found"**:
+   - Verify XAMPP Apache is running
+   - Check `SITE_URL` in `includes/config.php`
+
+4. **Images not displaying**:
+   - Check if GD extension is enabled
+   - Verify uploads directory permissions
+
+### Debug Mode
+
+Enable debug mode in `includes/config.php`:
+
+```php
+define('DEBUG_MODE', true);
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+```
+
+## 📞 Support
+
+If you encounter issues during setup:
+
+1. Check the troubleshooting section above
+2. Verify all prerequisites are met
+3. Ensure file permissions are correct
+4. Check PHP error logs in XAMPP
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👥 Support
+## 🤝 Contributing
 
-For support and questions:
-- Create an issue on GitHub
-- Email: your-email@example.com
-
-## 🙏 Acknowledgments
-
-- Font Awesome for icons
-- Modern CSS techniques and best practices
-- PHP community for excellent documentation
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ---
 
