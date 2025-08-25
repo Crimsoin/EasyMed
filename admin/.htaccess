@@ -1,0 +1,30 @@
+# Admin folder redirects for reorganized structure
+RewriteEngine On
+
+# Redirect old admin dashboard to new location
+RewriteRule ^dashboard\.php$ Dashboard/dashboard.php [R=301,L]
+
+# Redirect old patient management files
+RewriteRule ^patients\.php$ Patient\ Management/patients.php [R=301,L]
+RewriteRule ^add-patient\.php$ Patient\ Management/add-patient.php [R=301,L]
+RewriteRule ^edit-patient\.php$ Patient\ Management/edit-patient.php [R=301,L]
+RewriteRule ^view-patient\.php$ Patient\ Management/view-patient.php [R=301,L]
+
+# Redirect old doctor management files
+RewriteRule ^doctors\.php$ Doctor\ Management/doctors.php [R=301,L]
+RewriteRule ^add-doctor\.php$ Doctor\ Management/add-doctor.php [R=301,L]
+RewriteRule ^edit-doctor\.php$ Doctor\ Management/edit-doctor.php [R=301,L]
+RewriteRule ^view-doctor\.php$ Doctor\ Management/view-doctor.php [R=301,L]
+
+# Redirect old appointment files
+RewriteRule ^appointments\.php$ Appointment/appointments.php [R=301,L]
+
+# Redirect old reports files
+RewriteRule ^reports\.php$ Report\ and\ Analytics/reports.php [R=301,L]
+RewriteRule ^reports_new\.php$ Report\ and\ Analytics/reports_new.php [R=301,L]
+RewriteRule ^export-report\.php$ Report\ and\ Analytics/export-report.php [R=301,L]
+
+# Redirect old settings files
+RewriteRule ^settings\.php$ Settings/settings.php [R=301,L]
+RewriteRule ^activation-fix\.php$ Settings/activation-fix.php [R=301,L]
+RewriteRule ^users_new\.php$ Settings/users_new.php [R=301,L]

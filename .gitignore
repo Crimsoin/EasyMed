@@ -1,0 +1,76 @@
+# Sensitive Configuration Files
+includes/config.php
+config.php
+
+# Database Files
+*.sqlite
+*.sqlite-journal
+*.db
+*.bak
+database/*.sqlite*
+database/*.bak
+
+# Upload Directories (with user data)
+assets/uploads/*
+!assets/uploads/.gitkeep
+
+# Logs
+*.log
+logs/
+error.log
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+
+# Environment Files
+.env
+.env.local
+.env.production
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# PHP Cache
+*.cache
+
+# Composer (if using)
+vendor/
+composer.lock
+
+# Node Modules (if using)
+node_modules/
+
+# Build Files
+dist/
+build/
+
+# Backup Files
+backup/
+backups/
+*_backup
+*.backup
+
+# Test Files
+test_*.php
+debug_*.php
+check_*.php
+
+# XAMPP/Server Specific
+.htaccess.backup
+php_errors.log
+
+# Archive/Cleanup Directories
+_cleanup_archive/
+dev/cleardata/
+dev/tmp*/
