@@ -245,7 +245,7 @@ require_once '../../includes/header.php';
             <a href="../Report and Analytics/reports.php" class="nav-item">
                 <i class="fas fa-chart-bar"></i> Reports & Analytics
             </a>
-            <a href="/Settings/settings.php" class="nav-item active">
+            <a href="../Settings/settings.php" class="nav-item active">
                 <i class="fas fa-cog"></i> Settings
             </a>
         </nav>
