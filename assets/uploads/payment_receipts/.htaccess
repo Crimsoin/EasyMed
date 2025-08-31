@@ -1,0 +1,6 @@
+# Deny direct access to uploaded files
+Options -Indexes
+<Files ~ "\.(php|phtml|php3|php4|php5|pl|py)$">
+    Order allow,deny
+    Deny from all
+</Files>
