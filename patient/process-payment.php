@@ -119,9 +119,8 @@ try {
     $payment_id = $db->insert('payments', $payment_data);
 
     if ($payment_id) {
-        // Update appointment status to include payment submission
+        // Update appointment updated_at timestamp
         $db->update('appointments', [
-            'payment_status' => 'submitted',
             'updated_at' => date('Y-m-d H:i:s')
         ], ['id' => $appointment_id]);
 

@@ -94,12 +94,11 @@ try {
         appointment_date DATE NOT NULL,
         appointment_time TIME NOT NULL,
         service_type VARCHAR(100) DEFAULT 'consultation',
-        status ENUM('pending', 'confirmed', 'completed', 'cancelled', 'no_show') DEFAULT 'pending',
+        status ENUM('pending', 'scheduled', 'completed', 'cancelled', 'no_show', 'rescheduled') DEFAULT 'pending',
         notes TEXT,
         diagnosis TEXT,
         prescription TEXT,
         lab_tests TEXT,
-        payment_status ENUM('pending', 'confirmed', 'rejected') DEFAULT 'pending',
         payment_amount DECIMAL(10,2) DEFAULT 0.00,
         payment_proof VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -410,8 +409,8 @@ try {
         ];
         
         foreach ($appointments as $appointment) {
-            $sql = "INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, service_type, status, notes, diagnosis, prescription, lab_tests, payment_status, payment_amount) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 1500.00)";
+            $sql = "INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, service_type, status, notes, diagnosis, prescription, lab_tests, payment_amount) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1500.00)";
             $stmt = $pdo->prepare($sql);
             $stmt->execute($appointment);
         }

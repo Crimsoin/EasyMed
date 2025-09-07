@@ -1,8 +1,7 @@
 /* Doctor Dashboard Styles */
 
 /* Import base styles */
-@import url('../base.css');
-@import url('sidebar-doctor.css');
+
 
 /* Doctor Container Layout */
 .doctor-container {

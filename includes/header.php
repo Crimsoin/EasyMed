@@ -28,10 +28,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <link rel="stylesheet" href="<?php echo SITE_URL; ?>/assets/css/components/header.css">
     <link rel="stylesheet" href="<?php echo SITE_URL; ?>/assets/css/components/footer.css">
     
-    <!-- Additional CSS for specific pages -->
+    <!-- Additional CSS for specific pages (cache-busted by file modification time) -->
     <?php if (isset($additional_css)): ?>
         <?php foreach ($additional_css as $css): ?>
-            <link rel="stylesheet" href="<?php echo SITE_URL; ?>/assets/css/<?php echo $css; ?>">
+            <?php
+                // Build absolute path on disk to read file modification time for cache-busting
+                $css_disk_path = __DIR__ . '/../assets/css/' . $css;
+                $ver = file_exists($css_disk_path) ? filemtime($css_disk_path) : time();
+            ?>
+            <link rel="stylesheet" href="<?php echo SITE_URL; ?>/assets/css/<?php echo htmlspecialchars($css); ?>?v=<?php echo $ver; ?>">
         <?php endforeach; ?>
     <?php endif; ?>
 </head>

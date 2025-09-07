@@ -25,7 +25,7 @@
                 
                 <!-- Quick Links -->
                 <div class="footer-section">
-                    <h4>Quick Links</h4>
+                    <h5>Quick Links</h4>
                     <div class="footer-links">
                         <a href="<?php echo SITE_URL; ?>/index.php">
                             <i class="fas fa-home"></i> Home

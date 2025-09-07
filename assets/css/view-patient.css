@@ -171,48 +171,8 @@
 }
 
 /* Header Actions */
-.header-actions {
-    margin-left: auto;
-    display: flex;
-    gap: 1rem;
-    flex-shrink: 0;
-}
 
-.btn-edit, .btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-    border: none;
-    cursor: pointer;
-}
-
-.btn-edit {
-    background: rgba(245, 158, 11, 0.2);
-    color: #fef3c7;
-    border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.btn-edit:hover {
-    background: rgba(245, 158, 11, 0.3);
-    transform: translateY(-1px);
-}
-
-.btn-secondary {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-1px);
-}
+/* Header/action button styles moved to components/header.css and base.css to avoid conflicts. */
 
 /* Statistics Grid */
 .stats-grid {

@@ -30,18 +30,6 @@ try {
     $db->query($sql);
     echo "✅ Payments table created successfully.\n";
     
-    // Add payment_status column to appointments table if it doesn't exist
-    try {
-        $db->query("ALTER TABLE appointments ADD COLUMN payment_status VARCHAR(20) DEFAULT 'pending'");
-        echo "✅ Added payment_status column to appointments table.\n";
-    } catch (Exception $e) {
-        if (strpos($e->getMessage(), 'duplicate column name') !== false) {
-            echo "ℹ️ payment_status column already exists in appointments table.\n";
-        } else {
-            throw $e;
-        }
-    }
-    
     // Add consultation_fee column to doctors table if it doesn't exist
     try {
         $db->query("ALTER TABLE doctors ADD COLUMN consultation_fee DECIMAL(10,2) DEFAULT 1500.00");
@@ -81,7 +69,7 @@ try {
     echo "\n🎉 Payment system setup completed successfully!\n";
     echo "📋 Summary:\n";
     echo "   - Payments table created\n";
-    echo "   - Appointment payment status tracking added\n";
+    echo "   - Payment status tracked in dedicated payments table\n";
     echo "   - Doctor consultation fees configured\n";
     echo "   - Upload directory secured\n";
     echo "\n🚀 Payment gateway is now ready to use!\n";

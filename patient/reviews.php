@@ -44,10 +44,12 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css">
     <style>
         /* Container & Grid */
-        .reviews-container { 
-            max-width: 1200px; 
-            margin: 24px auto; 
-            padding: 24px; 
+        .reviews-container {
+            /* occupy full width of the content column so it aligns with .content-header */
+            width: 100%;
+            max-width: none;
+            margin: 0; /* layout spacing follows surrounding content */
+            padding: 24px;
         }
         .reviews-grid { 
             display: grid; 

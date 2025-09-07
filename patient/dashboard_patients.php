@@ -68,6 +68,19 @@ require_once '../includes/header.php';
         <div class="content-header">
             <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['first_name']); ?>!</h1>
             <p>Manage your healthcare appointments and profile</p>
+            
+            <!-- Current Date and Time Display -->
+            <div class="datetime-display" style="margin-top: 1rem; padding: 1rem; background: rgba(0, 188, 212, 0.1); border-radius: 8px; border-left: 4px solid var(--primary-cyan);">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="font-size: 2rem;">
+                        <i class="fas fa-clock" style="color: var(--primary-cyan);"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.2rem; font-weight: 600; color: var(--primary-cyan);" id="current-date"></div>
+                        <div style="font-size: 1rem; color: var(--text-light);" id="current-time"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Quick Stats -->
@@ -193,5 +206,36 @@ require_once '../includes/header.php';
         </div>
     </div>
 </div>
+
+<script>
+// Update current date and time
+function updateDateTime() {
+    const now = new Date();
+    const dateElement = document.getElementById('current-date');
+    const timeElement = document.getElementById('current-time');
+    
+    // Format date
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    };
+    dateElement.textContent = now.toLocaleDateString('en-US', options);
+    
+    // Format time
+    const timeOptions = { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit',
+        hour12: true 
+    };
+    timeElement.textContent = now.toLocaleTimeString('en-US', timeOptions);
+}
+
+// Update immediately and then every second
+updateDateTime();
+setInterval(updateDateTime, 1000);
+</script>
 
 <?php require_once '../includes/footer.php'; ?>

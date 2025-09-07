@@ -101,17 +101,44 @@ try {
     
     $doctor_record_id = $doctor['doctor_record_id'];
 
-    // Verify the selected day is in doctor's schedule
+    // Verify the selected day or date is in doctor's schedule
     $doctor_days = array_map('trim', explode(',', $doctor['schedule_days']));
-    if (!in_array($schedule_day, $doctor_days)) {
-        $_SESSION['appointment_errors'] = ['Selected day is not available for this doctor.'];
-        $_SESSION['appointment_data'] = $_POST;
-        header('Location: book-appointment.php');
-        exit();
-    }
+    // Normalize doctor's days for case-insensitive compare
+    $doctor_days_upper = array_map('strtoupper', $doctor_days);
 
-    // Create appointment date (next occurrence of the selected day)
-    $appointment_date = getNextDateForDay($schedule_day);
+    // If the client sent a full date (YYYY-MM-DD), use it and validate its weekday
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $schedule_day)) {
+        $selectedDate = DateTime::createFromFormat('Y-m-d', $schedule_day);
+        if (!$selectedDate) {
+            $_SESSION['appointment_errors'] = ['Selected date is invalid. Please choose a valid date.'];
+            $_SESSION['appointment_data'] = $_POST;
+            header('Location: book-appointment.php');
+            exit();
+        }
+        $selectedDayName = strtoupper($selectedDate->format('l'));
+        if (!in_array($selectedDayName, $doctor_days_upper)) {
+            $_SESSION['appointment_errors'] = ['Selected day is not available for this doctor.'];
+            $_SESSION['appointment_data'] = $_POST;
+            header('Location: book-appointment.php');
+            exit();
+        }
+        // Use the selected date directly
+        $appointment_date = $selectedDate->format('Y-m-d');
+    } else {
+        // Otherwise assume a weekday name was submitted (backwards-compatibility)
+        $found = false;
+        foreach ($doctor_days as $d) {
+            if (strcasecmp($d, $schedule_day) === 0) { $found = true; break; }
+        }
+        if (!$found) {
+            $_SESSION['appointment_errors'] = ['Selected day is not available for this doctor.'];
+            $_SESSION['appointment_data'] = $_POST;
+            header('Location: book-appointment.php');
+            exit();
+        }
+        // Create appointment date (next occurrence of the selected day)
+        $appointment_date = getNextDateForDay($schedule_day);
+    }
 
     // Check for existing appointment conflicts using doctor record ID
     $existing = $db->fetch("

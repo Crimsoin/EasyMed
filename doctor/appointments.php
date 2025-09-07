@@ -30,13 +30,9 @@ if ($_POST && isset($_POST['action']) && isset($_POST['appointment_id'])) {
     
     if ($appointment) {
         switch ($action) {
-            case 'confirm':
-                $db->update('appointments', ['status' => 'confirmed'], 'id = ?', [$appointment_id]);
-                $success_message = "Appointment confirmed successfully.";
-                break;
-            case 'cancel':
-                $db->update('appointments', ['status' => 'cancelled'], 'id = ?', [$appointment_id]);
-                $success_message = "Appointment cancelled successfully.";
+            case 'no_show':
+                $db->update('appointments', ['status' => 'no_show'], 'id = ?', [$appointment_id]);
+                $success_message = "Appointment marked as no show.";
                 break;
             case 'complete':
                 $db->update('appointments', ['status' => 'completed'], 'id = ?', [$appointment_id]);
@@ -125,7 +121,9 @@ $total_pages = ceil($total_appointments / $per_page);
 $stats = [
     'total' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ?", [$doctor_id])['count'],
     'pending' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND status = 'pending'", [$doctor_id])['count'],
-    'confirmed' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND status = 'confirmed'", [$doctor_id])['count'],
+    'scheduled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND status = 'scheduled'", [$doctor_id])['count'],
+    'completed' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND status = 'completed'", [$doctor_id])['count'],
+    'no_show' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND status = 'no_show'", [$doctor_id])['count'],
     'today' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND DATE(appointment_date) = date('now')", [$doctor_id])['count']
 ];
 
@@ -186,12 +184,16 @@ require_once '../includes/header.php';
                         <div class="stat-label">Pending</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number"><?php echo $stats['confirmed']; ?></div>
-                        <div class="stat-label">Confirmed</div>
+                        <div class="stat-number"><?php echo $stats['scheduled']; ?></div>
+                        <div class="stat-label">Scheduled</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number"><?php echo $stats['today']; ?></div>
-                        <div class="stat-label">Today</div>
+                        <div class="stat-number"><?php echo $stats['completed']; ?></div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number"><?php echo $stats['no_show']; ?></div>
+                        <div class="stat-label">No Show</div>
                     </div>
                 </div>
             </div>
@@ -210,8 +212,9 @@ require_once '../includes/header.php';
                             <select name="status" id="status">
                                 <option value="all" <?php echo $status_filter === 'all' ? 'selected' : ''; ?>>All Status</option>
                                 <option value="pending" <?php echo $status_filter === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                <option value="confirmed" <?php echo $status_filter === 'confirmed' ? 'selected' : ''; ?>>Confirmed</option>
+                                <option value="scheduled" <?php echo $status_filter === 'scheduled' ? 'selected' : ''; ?>>Scheduled</option>
                                 <option value="completed" <?php echo $status_filter === 'completed' ? 'selected' : ''; ?>>Completed</option>
+                                <option value="no_show" <?php echo $status_filter === 'no_show' ? 'selected' : ''; ?>>No Show</option>
                                 <option value="cancelled" <?php echo $status_filter === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                             </select>
                         </div>
@@ -269,7 +272,6 @@ require_once '../includes/header.php';
                                     <th>Patient</th>
                                     <th>Contact</th>
                                     <th>Reason</th>
-                                    <th>Payment</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -325,12 +327,6 @@ require_once '../includes/header.php';
                                             ?>
                                         </td>
 
-                                        <td class="payment">
-                                            <span class="payment-badge payment-<?php echo htmlspecialchars($appointment['payment_status'] ?? 'pending'); ?>">
-                                                <?php echo ucfirst(htmlspecialchars($appointment['payment_status'] ?? 'pending')); ?>
-                                            </span>
-                                        </td>
-
                                         <td class="status">
                                             <span class="status-badge status-<?php echo htmlspecialchars($appointment['status']); ?>">
                                                 <?php echo ucfirst(htmlspecialchars($appointment['status'])); ?>
@@ -338,45 +334,85 @@ require_once '../includes/header.php';
                                         </td>
                                         <td class="actions">
                                             <div class="action-buttons">
-                                                <?php if ($appointment['status'] === 'pending'): ?>
-                                                    <?php $paymentStatus = $appointment['payment_status'] ?? 'pending'; ?>
-                                                    <?php if ($paymentStatus === 'verified'): ?>
-                                                        <form method="POST" style="display: inline;" 
-                                                              onsubmit="return confirm('Are you sure you want to confirm this appointment?')">
+                                                <?php 
+                                                $appointment_datetime = strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']);
+                                                $is_past = $appointment_datetime < time();
+                                                $is_today = date('Y-m-d', $appointment_datetime) === date('Y-m-d');
+                                                ?>
+                                                
+                                                <?php if ($appointment['status'] === 'scheduled'): ?>
+                                                    <?php if ($is_past || $is_today): ?>
+                                                        <form method="POST" style="display: inline;"
+                                                              onsubmit="return confirm('Are you sure you want to mark this appointment as completed?')">
                                                             <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                                            <input type="hidden" name="action" value="confirm">
-                                                            <button type="submit" class="btn btn-sm btn-success" title="Confirm Appointment">
-                                                                <i class="fas fa-check"></i>
+                                                            <input type="hidden" name="action" value="complete">
+                                                            <button type="submit" class="btn btn-sm btn-primary" title="Mark as Completed">
+                                                                <i class="fas fa-check-double"></i>
+                                                            </button>
+                                                        </form>
+
+                                                        <form method="POST" style="display: inline;"
+                                                              onsubmit="return confirm('Are you sure you want to mark this appointment as no show?')">
+                                                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                            <input type="hidden" name="action" value="no_show">
+                                                            <button type="submit" class="btn btn-sm btn-warning" title="Mark as No Show">
+                                                                <i class="fas fa-user-times"></i>
                                                             </button>
                                                         </form>
                                                     <?php else: ?>
-                                                        <!-- Payment not verified: do not allow confirming -->
-                                                        <button type="button" class="btn btn-sm btn-success" title="Cannot confirm - payment not verified" disabled>
-                                                            <i class="fas fa-check"></i>
-                                                        </button>
+                                                        <!-- Future appointments - no action buttons available -->
+                                                        <span class="text-muted">Appointment scheduled for future</span>
                                                     <?php endif; ?>
-                                                <?php endif; ?>
-                                                
-                                                <?php if ($appointment['status'] === 'confirmed' && strtotime($appointment['appointment_date']) >= strtotime('today')): ?>
-                                                    <form method="POST" style="display: inline;" 
-                                                          onsubmit="return confirm('Are you sure you want to mark this appointment as completed?')">
-                                                        <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                                        <input type="hidden" name="action" value="complete">
-                                                        <button type="submit" class="btn btn-sm btn-primary" title="Mark as Completed">
-                                                            <i class="fas fa-check-double"></i>
-                                                        </button>
-                                                    </form>
-                                                <?php endif; ?>
-                                                
-                                                <?php if (in_array($appointment['status'], ['pending', 'confirmed']) && strtotime($appointment['appointment_date']) >= strtotime('today')): ?>
-                                                    <form method="POST" style="display: inline;" 
-                                                          onsubmit="return confirm('Are you sure you want to cancel this appointment?')">
-                                                        <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                                        <input type="hidden" name="action" value="cancel">
-                                                        <button type="submit" class="btn btn-sm btn-danger" title="Cancel Appointment">
-                                                            <i class="fas fa-times"></i>
-                                                        </button>
-                                                    </form>
+                                                <?php elseif (in_array($appointment['status'], ['pending', 'rescheduled'])): ?>
+                                                    <?php if ($is_past): ?>
+                                                        <!-- Past pending/rescheduled appointments - allow completion or no-show -->
+                                                        <form method="POST" style="display: inline;" 
+                                                              onsubmit="return confirm('Are you sure you want to mark this appointment as completed?')">
+                                                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                            <input type="hidden" name="action" value="complete">
+                                                            <button type="submit" class="btn btn-sm btn-primary" title="Mark as Completed">
+                                                                <i class="fas fa-check-double"></i>
+                                                            </button>
+                                                        </form>
+                                                        
+                                                        <form method="POST" style="display: inline;" 
+                                                              onsubmit="return confirm('Are you sure you want to mark this appointment as no show?')">
+                                                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                            <input type="hidden" name="action" value="no_show">
+                                                            <button type="submit" class="btn btn-sm btn-warning" title="Mark as No Show">
+                                                                <i class="fas fa-user-times"></i>
+                                                            </button>
+                                                        </form>
+                                                    <?php elseif ($is_today): ?>
+                                                        <!-- Today's pending/rescheduled appointments - allow completion or no-show -->
+                                                        <form method="POST" style="display: inline;" 
+                                                              onsubmit="return confirm('Are you sure you want to mark this appointment as completed?')">
+                                                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                            <input type="hidden" name="action" value="complete">
+                                                            <button type="submit" class="btn btn-sm btn-primary" title="Mark as Completed">
+                                                                <i class="fas fa-check-double"></i>
+                                                            </button>
+                                                        </form>
+                                                        
+                                                        <form method="POST" style="display: inline;" 
+                                                              onsubmit="return confirm('Are you sure you want to mark this appointment as no show? This should only be used if the patient confirmed they will not attend.')">
+                                                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                            <input type="hidden" name="action" value="no_show">
+                                                            <button type="submit" class="btn btn-sm btn-warning" title="Mark as No Show">
+                                                                <i class="fas fa-user-times"></i>
+                                                            </button>
+                                                        </form>
+                                                    <?php else: ?>
+                                                        <!-- Future pending/rescheduled appointments - only allow no-show with warning -->
+                                                        <form method="POST" style="display: inline;" 
+                                                              onsubmit="return confirm('Are you sure you want to mark this appointment as no show? This should only be used if the patient confirmed they will not attend.')">
+                                                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                            <input type="hidden" name="action" value="no_show">
+                                                            <button type="submit" class="btn btn-sm btn-warning" title="Mark as No Show">
+                                                                <i class="fas fa-user-times"></i>
+                                                            </button>
+                                                        </form>
+                                                    <?php endif; ?>
                                                 <?php endif; ?>
                                             </div>
                                         </td>

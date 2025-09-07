@@ -1,6 +1,7 @@
 <?php
 $page_title = "Doctor Dashboard";
-$additional_css = ['base.css', 'doctor/sidebar-doctor.css', 'doctor/dashboard-doctor.css'];
+$additional_css = ['doctor/sidebar-doctor.css', 'doctor/dashboard-doctor.css'];
+
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 
@@ -22,21 +23,21 @@ $doctor_id = $doctor_record['id'];
 
 // Get doctor's appointments for today
 $today_appointments = $db->fetchAll("
-    SELECT a.*, 
+    SELECT a.*,
            a.reason_for_visit as reason_for_visit,
-           u.first_name as patient_first_name, u.last_name as patient_last_name, 
+           u.first_name as patient_first_name, u.last_name as patient_last_name,
            p.phone as patient_phone, p.date_of_birth as patient_dob,
            a.patient_info
     FROM appointments a
     JOIN patients p ON a.patient_id = p.id
     JOIN users u ON p.user_id = u.id
-    WHERE a.doctor_id = ? AND DATE(a.appointment_date) = date('now')
+    WHERE a.doctor_id = ? AND date(a.appointment_date) = date('now')
     ORDER BY a.appointment_time ASC
 ", [$doctor_id]);
 
 // Get upcoming appointments (next 7 days)
 $upcoming_appointments = $db->fetchAll("
-    SELECT a.*, 
+    SELECT a.*,
            a.reason_for_visit as reason_for_visit,
            u.first_name as patient_first_name, u.last_name as patient_last_name,
            p.date_of_birth as patient_dob,
@@ -44,8 +45,10 @@ $upcoming_appointments = $db->fetchAll("
     FROM appointments a
     JOIN patients p ON a.patient_id = p.id
     JOIN users u ON p.user_id = u.id
-    WHERE a.doctor_id = ? AND a.appointment_date BETWEEN date('now') AND date('now', '+7 days')
-    AND a.status IN ('scheduled', 'confirmed', 'pending')
+    WHERE a.doctor_id = ?
+    AND date(a.appointment_date) > date('now')
+    AND date(a.appointment_date) <= date('now', '+7 days')
+    AND a.status IN ('scheduled', 'confirmed', 'pending', 'rescheduled')
     ORDER BY a.appointment_date ASC, a.appointment_time ASC
     LIMIT 10
 ", [$doctor_id]);
@@ -77,9 +80,9 @@ unset($appt);
 // Get statistics
 $stats = [
     'today' => count($today_appointments),
-    'pending' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND status = 'pending'", [$_SESSION['user_id']])['count'],
-    'this_week' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND appointment_date BETWEEN date('now') AND date('now', '+7 days')", [$_SESSION['user_id']])['count'],
-    'total_patients' => $db->fetch("SELECT COUNT(DISTINCT patient_id) as count FROM appointments WHERE doctor_id = ?", [$_SESSION['user_id']])['count']
+    'pending' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND status = 'pending'", [$doctor_id])['count'],
+    'this_week' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND date(appointment_date) > date('now') AND date(appointment_date) <= date('now', '+7 days')", [$doctor_id])['count'],
+    'total_patients' => $db->fetch("SELECT COUNT(DISTINCT patient_id) as count FROM appointments WHERE doctor_id = ?", [$doctor_id])['count']
 ];
 
 require_once '../includes/header.php';
@@ -114,6 +117,19 @@ require_once '../includes/header.php';
         <div class="content-header">
             <h1><i class="fas fa-home"></i> Welcome back, Dr. <?php echo htmlspecialchars($_SESSION['first_name']); ?>!</h1>
             <p>Here's your practice overview for today</p>
+            
+            <!-- Current Date and Time Display -->
+            <div class="datetime-display" style="margin-top: 1rem; padding: 1rem; background: rgba(0, 188, 212, 0.1); border-radius: 8px; border-left: 4px solid var(--primary-cyan);">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="font-size: 2rem;">
+                        <i class="fas fa-clock" style="color: var(--primary-cyan);"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.2rem; font-weight: 600; color: var(--primary-cyan);" id="current-date"></div>
+                        <div style="font-size: 1rem; color: var(--text-light);" id="current-time"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Quick Stats -->
@@ -192,6 +208,7 @@ require_once '../includes/header.php';
         <div class="content-section">
             <div class="section-header">
                 <h2>Upcoming Appointments</h2>
+                <small style="color: #666; font-weight: normal;">Next 7 days (excluding today)</small>
             </div>
             <div class="section-content">
                 <?php if (empty($upcoming_appointments)): ?>
@@ -199,6 +216,17 @@ require_once '../includes/header.php';
                         <i class="fas fa-calendar-alt"></i>
                         <h3>No upcoming appointments</h3>
                         <p>Your schedule is clear for the next week.</p>
+                        <?php
+                        // Debug information (uncomment to troubleshoot)
+                        /*
+                        <p style="font-size: 12px; color: #999; margin-top: 10px;">
+                            Debug: Doctor ID = <?php echo $doctor_id; ?><br>
+                            Total appointments for this doctor: <?php echo $stats['total_patients']; ?><br>
+                            Today's date: <?php echo date('Y-m-d'); ?><br>
+                            Next week: <?php echo date('Y-m-d', strtotime('+7 days')); ?>
+                        </p>
+                        */
+                        ?>
                     </div>
                 <?php else: ?>
                     <div class="appointments-list">
@@ -244,7 +272,7 @@ require_once '../includes/header.php';
                         </div>
                         <div class="action-content">
                             <h3>Manage Appointments</h3>
-                            <p>View, confirm, or reschedule patient appointments</p>
+                            <p>View and manage your patient appointments</p>
                         </div>
                     </a>
                     
@@ -272,5 +300,36 @@ require_once '../includes/header.php';
         </div>
     </div>
 </div>
+
+<script>
+// Update current date and time
+function updateDateTime() {
+    const now = new Date();
+    const dateElement = document.getElementById('current-date');
+    const timeElement = document.getElementById('current-time');
+    
+    // Format date
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    };
+    dateElement.textContent = now.toLocaleDateString('en-US', options);
+    
+    // Format time
+    const timeOptions = { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit',
+        hour12: true 
+    };
+    timeElement.textContent = now.toLocaleTimeString('en-US', timeOptions);
+}
+
+// Update immediately and then every second
+updateDateTime();
+setInterval(updateDateTime, 1000);
+</script>
 
 <?php require_once '../includes/footer.php'; ?>

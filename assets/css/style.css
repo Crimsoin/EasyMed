@@ -446,17 +446,7 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .nav-container {
-        padding: 0 1rem;
-    }
-    
-    .nav-menu {
-        display: none;
-    }
-    
-    .mobile-toggle {
-        display: flex;
-    }
+    /* Header-related responsive rules moved to components/header.css to avoid duplication. */
     
     .modal-content {
         margin: 10% auto;

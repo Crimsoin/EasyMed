@@ -28,7 +28,7 @@ $patient_record_id = $patient_record['id'];
 $appointments = $db->fetchAll("
     SELECT 
         a.id, a.appointment_date, a.appointment_time, a.reason_for_visit, 
-        a.status, a.payment_status, a.patient_info, a.notes, a.created_at,
+        a.status, a.patient_info, a.notes, a.created_at,
         u.first_name as doctor_first_name, u.last_name as doctor_last_name,
         d.specialty, d.consultation_fee,
         p.id as payment_id, p.status as payment_verification_status, 
@@ -59,11 +59,13 @@ unset($_SESSION['appointment_errors']);
     <title>My Appointments - EasyMed</title>
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css">
     <style>
-        /* Container */
+        /* Container: match the page content/header width and alignment */
         .appointments-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px;
+            /* occupy full width of the content column so cards align with .content-header */
+            width: 100%;
+            max-width: none;
+            margin: 0; /* don't center separately from the page layout */
+            padding: 24px 0; /* keep vertical spacing, horizontal spacing follows page layout */
         }
 
         /* Messages */
@@ -401,10 +403,9 @@ unset($_SESSION['appointment_errors']);
                                             <div class="detail-label">Payment:</div>
                                             <div class="detail-value">
                                                 <?php 
-                                                $payment_status = $appointment['payment_status'] ?? 'pending';
                                                 $verification_status = $appointment['payment_verification_status'] ?? null;
                                                 
-                                                if ($payment_status === 'pending' && !$verification_status): ?>
+                                                if (!$verification_status): ?>
                                                     <span style="color: var(--warning); font-weight: bold;">
                                                         <i class="fas fa-clock"></i> Payment Required
                                                     </span>
@@ -414,7 +415,7 @@ unset($_SESSION['appointment_errors']);
                                                             <i class="fas fa-credit-card"></i> Pay Now
                                                         </a>
                                                     </div>
-                                                <?php elseif ($payment_status === 'submitted' && $verification_status === 'pending_verification'): ?>
+                                                <?php elseif ($verification_status === 'pending_verification'): ?>
                                                     <span style="color: var(--info); font-weight: bold;">
                                                         <i class="fas fa-hourglass-half"></i> Pending Verification
                                                     </span>

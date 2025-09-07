@@ -54,10 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'confirm_payment' && $appointment_id) {
         try {
             // Mark payment record as verified if a payments table exists for this appointment
-            // and set the appointment payment_status to 'verified'
             $db->query("UPDATE payments SET status = 'verified', verified_by = ?, verified_at = " . db_current_datetime() . " WHERE appointment_id = ? AND status != 'verified'", [$_SESSION['user_id'], $appointment_id]);
-
-            $db->query("UPDATE appointments SET payment_status = 'verified', updated_at = " . db_current_datetime() . " WHERE id = ?", [$appointment_id]);
 
             // Log activity
             logActivity($_SESSION['user_id'], 'confirm_payment', "Confirmed payment for appointment #$appointment_id");
@@ -72,20 +69,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Admin can unverify a previously verified payment
-    if ($action === 'unverify_payment' && $appointment_id) {
-        try {
-            // Reset payments verification fields for this appointment
-            $db->query("UPDATE payments SET status = 'submitted', verified_by = NULL, verified_at = NULL, updated_at = " . db_current_datetime() . " WHERE appointment_id = ? AND status = 'verified'", [$appointment_id]);
-
-            // Mark appointment payment_status back to submitted
-            $db->query("UPDATE appointments SET payment_status = 'submitted', updated_at = " . db_current_datetime() . " WHERE id = ?", [$appointment_id]);
-
-            logActivity($_SESSION['user_id'], 'unverify_payment', "Unverified payment for appointment #$appointment_id");
-            $_SESSION['success_message'] = "Payment unverified successfully.";
-        } catch (Exception $e) {
-            $_SESSION['error_message'] = "Error unverifying payment.";
+    if ($action === 'reschedule' && $appointment_id) {
+        $new_date = $_POST['appointment_date'] ?? '';
+        $new_time = $_POST['appointment_time'] ?? '';
+        
+        if (empty($new_date) || empty($new_time)) {
+            $_SESSION['error_message'] = "Please provide both date and time for rescheduling.";
+            header('Location: appointments.php');
+            exit();
         }
+        
+        try {
+            // Check if the new slot is available
+            $existing_appointment = $db->fetch("
+                SELECT id FROM appointments 
+                WHERE doctor_id = (SELECT doctor_id FROM appointments WHERE id = ?) 
+                AND appointment_date = ? 
+                AND appointment_time = ? 
+                AND status NOT IN ('cancelled', 'no_show')
+                AND id != ?
+            ", [$appointment_id, $new_date, $new_time, $appointment_id]);
+            
+            if ($existing_appointment) {
+                $_SESSION['error_message'] = "The selected date and time slot is not available. Please choose a different time.";
+                header('Location: appointments.php');
+                exit();
+            }
+            
+            // Get current appointment status to preserve it appropriately
+            $current_appointment = $db->fetch("SELECT status FROM appointments WHERE id = ?", [$appointment_id]);
+            $current_status = $current_appointment['status'];
 
+            // Determine the new status based on current status
+            $new_status = $current_status;
+            if ($current_status === 'pending' || $current_status === 'scheduled') {
+                // When rescheduling from pending or scheduled, set to rescheduled
+                $new_status = 'rescheduled';
+            } elseif ($current_status === 'rescheduled') {
+                // Keep as rescheduled to maintain the rescheduled state
+                $new_status = 'rescheduled';
+            }
+            // For completed, cancelled, no_show - reschedule shouldn't be available
+            
+            // Update appointment with new date/time and appropriate status
+            $db->query("
+                UPDATE appointments 
+                SET appointment_date = ?, appointment_time = ?, status = ?, updated_at = " . db_current_datetime() . " 
+                WHERE id = ?
+            ", [$new_date, $new_time, $new_status, $appointment_id]);
+            
+            // Log activity
+            logActivity($_SESSION['user_id'], 'reschedule_appointment', "Rescheduled appointment #$appointment_id to $new_date $new_time (status: $new_status)");
+            
+            $_SESSION['success_message'] = "Appointment rescheduled successfully!";
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = "Error rescheduling appointment.";
+        }
+        
         header('Location: appointments.php');
         exit();
     }
@@ -174,9 +214,10 @@ $total_pages = ceil($total_appointments / $per_page);
 $stats = [
     'total' => $db->fetch("SELECT COUNT(*) as count FROM appointments")['count'],
     'pending' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status IN ('pending', 'scheduled')")['count'],
-    'confirmed' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status = 'confirmed'")['count'],
+    'rescheduled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status = 'rescheduled'")['count'],
     'completed' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status = 'completed'")['count'],
     'cancelled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status = 'cancelled'")['count'],
+    'no_show' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status = 'no_show'")['count'],
     'today' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE " . db_date_equals('appointment_date'))['count']
 ];
 
@@ -254,11 +295,11 @@ require_once '../../includes/header.php';
             </div>
             <div class="stat-card">
                 <div class="stat-icon stat-icon-inactive">
-                    <i class="fas fa-check-circle"></i>
+                    <i class="fas fa-calendar-alt"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?php echo $stats['confirmed']; ?></h3>
-                    <p>Confirmed</p>
+                    <h3><?php echo $stats['rescheduled']; ?></h3>
+                    <p>Rescheduled</p>
                 </div>
             </div>
             <div class="stat-card">
@@ -268,6 +309,15 @@ require_once '../../includes/header.php';
                 <div class="stat-content">
                     <h3><?php echo $stats['completed']; ?></h3>
                     <p>Completed</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-filtered">
+                    <i class="fas fa-user-times"></i>
+                </div>
+                <div class="stat-content">
+                    <h3><?php echo $stats['no_show']; ?></h3>
+                    <p>No Show</p>
                 </div>
             </div>
         </div>
@@ -292,8 +342,8 @@ require_once '../../includes/header.php';
                         <select name="status" class="form-control">
                             <option value="">All Status</option>
                             <option value="pending" <?php echo $status_filter === 'pending' ? 'selected' : ''; ?>>Pending</option>
+                            <option value="rescheduled" <?php echo $status_filter === 'rescheduled' ? 'selected' : ''; ?>>Rescheduled</option>
                             <option value="scheduled" <?php echo $status_filter === 'scheduled' ? 'selected' : ''; ?>>Scheduled</option>
-                            <option value="confirmed" <?php echo $status_filter === 'confirmed' ? 'selected' : ''; ?>>Confirmed</option>
                             <option value="completed" <?php echo $status_filter === 'completed' ? 'selected' : ''; ?>>Completed</option>
                             <option value="cancelled" <?php echo $status_filter === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                             <option value="no_show" <?php echo $status_filter === 'no_show' ? 'selected' : ''; ?>>No Show</option>
@@ -363,7 +413,6 @@ require_once '../../includes/header.php';
                             <th>Date & Time</th>
                             <th>Reason</th>
                             <th>Status</th>
-                            <th>Payment</th>
                             <th>Fee</th>
                             <th>Actions</th>
                         </tr>
@@ -412,13 +461,7 @@ require_once '../../includes/header.php';
                                     </td>
 
                                     <td>
-                                        <span class="payment-badge payment-<?php echo htmlspecialchars($appointment['payment_status'] ?? 'pending'); ?>">
-                                            <?php echo ucfirst(htmlspecialchars($appointment['payment_status'] ?? 'pending')); ?>
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        $<?php echo number_format($appointment['consultation_fee'], 2); ?>
+                                        ₱<?php echo number_format($appointment['consultation_fee'], 2); ?>
                                     </td>
                                     <td>
                                         <div class="appointment-actions">
@@ -428,56 +471,46 @@ require_once '../../includes/header.php';
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                             
-                                            <?php if ($appointment['status'] !== 'completed' && $appointment['status'] !== 'cancelled'): ?>
+                                                <?php // Update Status - always available ?>
                                                 <button type="button" class="btn btn-sm btn-edit" 
                                                         onclick="editAppointment(<?php echo $appointment['id']; ?>, '<?php echo $appointment['status']; ?>')" 
                                                         title="Update Status">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                            <?php endif; ?>
-                                            
-                                            <?php 
-                                                // Toggle-confirm button: confirms when pending/submitted, unverifies when verified
-                                                $paymentStatus = $appointment['payment_status'] ?? 'pending';
-                                                $enabledStatuses = ['pending', 'submitted', 'verified'];
-                                                $isEnabled = in_array($paymentStatus, $enabledStatuses, true);
 
-                                                if ($paymentStatus === 'verified') {
-                                                    $formAction = 'unverify_payment';
-                                                    $btnClass = 'btn-secondary';
-                                                    $btnIcon = 'fa-undo';
-                                                    $btnTitle = 'Set payment to pending';
-                                                    $confirmMsg = 'Set this payment back to pending?';
-                                                } else {
-                                                    $formAction = 'confirm_payment';
-                                                    $btnClass = 'btn-warning';
-                                                    $btnIcon = 'fa-credit-card';
-                                                    $btnTitle = 'Confirm Payment';
-                                                    $confirmMsg = 'Mark payment as verified?';
-                                                }
-                                            ?>
-                                            <form method="POST" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars($confirmMsg); ?>')">
-                                                <input type="hidden" name="action" value="<?php echo $formAction; ?>">
-                                                <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                                <button type="submit" class="btn btn-sm <?php echo $btnClass; ?>" 
-                                                        title="<?php echo htmlspecialchars($btnTitle); ?>" 
-                                                        <?php echo $isEnabled ? '' : 'disabled'; ?>
-                                                        <?php echo $isEnabled ? '' : 'style="opacity:0.55;cursor:not-allowed;"'; ?>
-                                                >
-                                                    <i class="fas <?php echo $btnIcon; ?>"></i>
-                                                </button>
-                                            </form>
-                                            
-                                            <?php if ($appointment['status'] !== 'cancelled'): ?>
-                                                <form method="POST" style="display: inline;" 
-                                                      onsubmit="return confirm('Are you sure you want to cancel this appointment?')">
-                                                    <input type="hidden" name="action" value="delete">
-                                                    <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                                    <button type="submit" class="btn btn-sm btn-delete" title="Cancel">
-                                                        <i class="fas fa-ban"></i>
+                                                <?php // Schedule Appointment - only for pending ?>
+                                                <?php if ($appointment['status'] === 'pending'): ?>
+                                                    <form method="POST" style="display: inline;" 
+                                                          onsubmit="return confirm('Are you sure you want to schedule this appointment?')">
+                                                        <input type="hidden" name="action" value="update_status">
+                                                        <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                        <input type="hidden" name="status" value="scheduled">
+                                                        <button type="submit" class="btn btn-primary btn-sm" title="Schedule Appointment">
+                                                            <i class="fas fa-calendar-check"></i>
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
+
+                                                <?php // Reschedule Appointment - only for scheduled or rescheduled ?>
+                                                <?php if (in_array($appointment['status'], ['scheduled', 'rescheduled'])): ?>
+                                                    <button type="button" class="btn btn-sm btn-reschedule" 
+                                                            onclick="openRescheduleModal(<?php echo $appointment['id']; ?>, '<?php echo $appointment['appointment_date']; ?>', '<?php echo $appointment['appointment_time']; ?>')" 
+                                                            title="Reschedule Appointment">
+                                                        <i class="fas fa-calendar-alt"></i>
                                                     </button>
-                                                </form>
-                                            <?php endif; ?>
+                                                <?php endif; ?>
+
+                                                <?php // Cancel - only for pending, scheduled, rescheduled ?>
+                                                <?php if (in_array($appointment['status'], ['pending', 'scheduled', 'rescheduled'])): ?>
+                                                    <form method="POST" style="display: inline;" 
+                                                          onsubmit="return confirm('Are you sure you want to cancel this appointment?')">
+                                                        <input type="hidden" name="action" value="delete">
+                                                        <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                        <button type="submit" class="btn btn-sm btn-delete" title="Cancel">
+                                                            <i class="fas fa-ban"></i>
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
@@ -485,7 +518,7 @@ require_once '../../includes/header.php';
                             
                             <?php if (empty($appointments)): ?>
                             <tr>
-                                <td colspan="9" class="empty-state">
+                                <td colspan="8" class="empty-state">
                                     <?php if ($search || $status_filter || $doctor_filter || $date_filter): ?>
                                         <i class="fas fa-search"></i>
                                         <h3>No appointments found</h3>
@@ -573,8 +606,8 @@ require_once '../../includes/header.php';
                     <label for="status">Status</label>
                     <select name="status" id="statusSelect" class="form-control" required>
                         <option value="pending">Pending</option>
+                        <option value="rescheduled">Rescheduled</option>
                         <option value="scheduled">Scheduled</option>
-                        <option value="confirmed">Confirmed</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
                         <option value="no_show">No Show</option>
@@ -584,6 +617,57 @@ require_once '../../includes/header.php';
                 <div class="modal-actions">
                     <button type="submit" class="btn btn-primary">Update Status</button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal('statusModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reschedule Modal -->
+<div id="rescheduleModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Reschedule Appointment</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="rescheduleForm" method="POST">
+                <input type="hidden" name="action" value="reschedule">
+                <input type="hidden" name="appointment_id" id="rescheduleAppointmentId">
+                
+                <div class="form-group">
+                    <label for="appointment_date">New Date</label>
+                    <input type="date" name="appointment_date" id="rescheduleDate" class="form-control" required 
+                           min="<?php echo date('Y-m-d'); ?>">
+                </div>
+                
+                <div class="form-group">
+                    <label for="appointment_time">New Time</label>
+                    <select name="appointment_time" id="rescheduleTime" class="form-control" required>
+                        <option value="">Select Time</option>
+                        <option value="09:00:00">9:00 AM</option>
+                        <option value="09:30:00">9:30 AM</option>
+                        <option value="10:00:00">10:00 AM</option>
+                        <option value="10:30:00">10:30 AM</option>
+                        <option value="11:00:00">11:00 AM</option>
+                        <option value="11:30:00">11:30 AM</option>
+                        <option value="12:00:00">12:00 PM</option>
+                        <option value="12:30:00">12:30 PM</option>
+                        <option value="13:00:00">1:00 PM</option>
+                        <option value="13:30:00">1:30 PM</option>
+                        <option value="14:00:00">2:00 PM</option>
+                        <option value="14:30:00">2:30 PM</option>
+                        <option value="15:00:00">3:00 PM</option>
+                        <option value="15:30:00">3:30 PM</option>
+                        <option value="16:00:00">4:00 PM</option>
+                        <option value="16:30:00">4:30 PM</option>
+                        <option value="17:00:00">5:00 PM</option>
+                    </select>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Reschedule Appointment</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('rescheduleModal')">Cancel</button>
                 </div>
             </form>
         </div>
@@ -657,7 +741,6 @@ function viewAppointment(id) {
                             <div style="margin-bottom: 0.5rem;"><strong>Time:</strong> ${formatTime(appointment.appointment_time)}</div>
                             <div style="margin-bottom: 0.5rem;"><strong>Status:</strong> <span class="status-badge status-${appointment.status}">${appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}</span></div>
                             <div style="margin-bottom: 0.5rem;"><strong>Consultation Fee:</strong> ₱${parseFloat(appointment.consultation_fee || 0).toFixed(2)}</div>
-                            <div style="margin-bottom: 0.5rem;"><strong>Payment Status:</strong> <span class="payment-badge payment-${appointment.payment_status || 'pending'}">${(appointment.payment_status || 'pending').charAt(0).toUpperCase() + (appointment.payment_status || 'pending').slice(1)}</span></div>
                             ${appointment.reason_for_visit ? `<div><strong>Reason:</strong> ${appointment.reason_for_visit}</div>` : ''}
                         </div>
                         
@@ -727,6 +810,13 @@ function editAppointment(id, currentStatus) {
     document.getElementById('statusModal').style.display = 'block';
 }
 
+function openRescheduleModal(id, currentDate, currentTime) {
+    document.getElementById('rescheduleAppointmentId').value = id;
+    document.getElementById('rescheduleDate').value = currentDate;
+    document.getElementById('rescheduleTime').value = currentTime;
+    document.getElementById('rescheduleModal').style.display = 'block';
+}
+
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
@@ -735,12 +825,16 @@ function closeModal(modalId) {
 window.onclick = function(event) {
     const appointmentModal = document.getElementById('appointmentModal');
     const statusModal = document.getElementById('statusModal');
+    const rescheduleModal = document.getElementById('rescheduleModal');
     
     if (event.target === appointmentModal) {
         appointmentModal.style.display = 'none';
     }
     if (event.target === statusModal) {
         statusModal.style.display = 'none';
+    }
+    if (event.target === rescheduleModal) {
+        rescheduleModal.style.display = 'none';
     }
 }
 

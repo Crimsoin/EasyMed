@@ -22,7 +22,7 @@ Successfully implemented a complete GCash payment gateway for the EasyMed appoin
 
 ### 3. **Database Schema** (Setup via `dev/database/setup_payment_system.php`)
 - ✅ **Payments Table**: Complete payment tracking system
-- ✅ **Appointment Updates**: Added payment_status column
+- ✅ **Appointment Updates**: Payment status tracked in dedicated payments table
 - ✅ **Doctor Fees**: Added consultation_fee column
 - ✅ **Foreign Key Relationships**: Proper data integrity
 

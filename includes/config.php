@@ -37,7 +37,8 @@ define('ROLE_PATIENT', 'patient');
 
 // Appointment status
 define('STATUS_PENDING', 'pending');
-define('STATUS_CONFIRMED', 'confirmed');
+define('STATUS_RESCHEDULED', 'rescheduled');
+define('STATUS_SCHEDULED', 'scheduled');
 define('STATUS_COMPLETED', 'completed');
 define('STATUS_CANCELLED', 'cancelled');
 define('STATUS_NO_SHOW', 'no_show');

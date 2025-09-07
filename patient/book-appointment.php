@@ -253,9 +253,8 @@ unset($_SESSION['appointment_data']);
             <div class="form-row">
               <div class="form-group" style="flex:1; margin-right:1rem;">
                 <label for="modal_schedule_day">Choose Schedule Day:</label>
-                <select name="schedule_day" id="modal_schedule_day" class="form-control">
-                  <option value="">Select Day</option>
-                </select>
+                <!-- Native date picker -->
+                <input type="date" name="schedule_day" id="modal_schedule_day" class="form-control" />
               </div>
               <div class="form-group" style="flex:1;">
                 <label for="modal_schedule_time">Set Time:</label>
@@ -585,10 +584,62 @@ function openAppointmentModal(buttonElement) {
   
   document.getElementById('modalDoctorPanel').innerHTML = panelHtml;
   document.getElementById('modal_doctor_id').value = doctor.user_id;
+  // expose current doctor to calendar/time helpers
+  window._currentModalDoctor = doctor;
   
-  // Populate schedule days
+  // Populate schedule days (kept for compatibility)
   populateScheduleDays(doctor.schedule_days);
+  // Setup native date input: min/max and allowed weekdays
+  setupDateInput(doctor.schedule_days);
+  // If calendar produced no visible buttons (edge cases), show a date input fallback
+  // ensure date input change populates times
+  var dateInput = document.getElementById('modal_schedule_day');
+  if (dateInput) {
+    dateInput.addEventListener('change', function(){
+      if (!this.value) return;
+      populateScheduleTimesForDate(new Date(this.value));
+    });
+  }
+
+  // helper to hide any previous calendar container if present
+  var oldCal = document.getElementById('modal_calendar'); if (oldCal) oldCal.style.display = 'none';
   
+
+function setupDateInput(scheduleDays) {
+  var input = document.getElementById('modal_schedule_day');
+  if (!input || input.tagName.toLowerCase() !== 'input') return;
+  var today = new Date();
+  var advance = 30;
+  try { var adv = document.getElementById('advance_booking_days'); if (adv) advance = parseInt(adv.value)||advance; } catch(e){}
+  var minDate = new Date();
+  // allow same-day booking when there are remaining future time slots
+  minDate.setDate(today.getDate()+0); // allow today
+  var maxDate = new Date(); maxDate.setDate(today.getDate()+advance);
+  input.min = minDate.toISOString().slice(0,10);
+  input.max = maxDate.toISOString().slice(0,10);
+
+  // store allowed weekdays on input for validation
+  var allowed = [];
+  if (scheduleDays) scheduleDays.split(',').forEach(function(d){ allowed.push(d.trim().toLowerCase()); });
+  input.dataset.allowedDays = JSON.stringify(allowed);
+
+  // validate selection on change
+  input.addEventListener('change', function(){
+    var v = this.value; if (!v) return;
+    var dt = new Date(v);
+    var dow = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][dt.getDay()];
+    var allowed = JSON.parse(this.dataset.allowedDays || '[]');
+    if (allowed.length && allowed.indexOf(dow) === -1) {
+      alert('Selected date is not on the doctor\'s working days. Please choose another date.');
+      this.value = '';
+      document.getElementById('modal_schedule_time').innerHTML = '<option value="">Select Time</option>';
+      document.getElementById('modal_time_range').textContent = '';
+      return;
+    }
+    // valid date: populate times
+    populateScheduleTimesForDate(dt);
+  });
+}
   // Populate schedule times
   populateScheduleTimes(doctor.schedule_time_start, doctor.schedule_time_end);
   
@@ -600,6 +651,83 @@ function openAppointmentModal(buttonElement) {
   
   // Prefill form data
   prefillFormData();
+}
+
+// Calendar rendering for Choose Schedule Day
+function renderModalCalendar(scheduleDays) {
+  var container = document.getElementById('modal_calendar');
+  var input = document.getElementById('modal_schedule_day');
+  container.innerHTML = '';
+
+  var advanceDays = 30; // default
+  try {
+    var advEl = document.getElementById('advance_booking_days');
+    if (advEl) advanceDays = parseInt(advEl.value) || advanceDays;
+  } catch (e) {}
+
+  var allowedDow = [];
+  if (scheduleDays) {
+    scheduleDays.split(',').forEach(function(d) { allowedDow.push(d.trim().toLowerCase()); });
+  }
+
+  var today = new Date();
+  var ul = document.createElement('div');
+  ul.style.display = 'flex';
+  ul.style.flexWrap = 'wrap';
+  ul.style.gap = '6px';
+
+  for (var i = 0; i <= advanceDays; i++) {
+    var dt = new Date();
+    dt.setDate(today.getDate() + i);
+    var dowName = dt.toLocaleDateString('en-US',{ weekday: 'long' }).toLowerCase();
+    var disabled = (allowedDow.length > 0 && allowedDow.indexOf(dowName) === -1);
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn';
+    btn.style.padding = '6px 8px';
+    btn.style.borderRadius = '6px';
+    btn.style.border = '1px solid #e1e5e9';
+    btn.style.background = disabled ? '#f4f5f6' : '#fff';
+    btn.style.cursor = disabled ? 'not-allowed' : 'pointer';
+    btn.textContent = (dt.getMonth()+1) + '/' + dt.getDate();
+    btn.title = dt.toDateString();
+    if (!disabled) {
+      (function(d){ btn.addEventListener('click', function(){
+        input.value = d.toISOString().slice(0,10);
+        // set schedule_time options based on dow
+        var dow = d.getDay();
+        // convert dow to weekday name matching scheduleDays
+        populateScheduleTimesForDate(d);
+        // highlight selected
+        Array.from(container.querySelectorAll('button')).forEach(function(b){ b.style.boxShadow = ''; b.style.borderColor = '#e1e5e9'; });
+        this.style.boxShadow = '0 0 0 3px rgba(0,180,204,0.12)';
+        this.style.borderColor = '#00b4cc';
+      }); })(dt);
+    }
+    ul.appendChild(btn);
+  }
+
+  container.appendChild(ul);
+}
+
+function populateScheduleTimesForDate(dateObj) {
+  // Determine day-of-week and populate times using existing populateScheduleTimes helper
+  var dow = dateObj.getDay();
+  // map numeric dow to string day used in doctor.schedule_days (e.g., monday)
+  var days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  var dowName = days[dow];
+  // Find the currently selected doctor's schedule info from the modalDoctorPanel data
+  var doctorJson = window._currentModalDoctor || (document.querySelector('button[data-doctor]') ? JSON.parse(document.querySelector('button[data-doctor]').getAttribute('data-doctor')) : null);
+  if (!doctorJson) return;
+  var scheduleDays = (doctorJson.schedule_days || '').split(',').map(function(s){ return s.trim().toLowerCase(); });
+  if (scheduleDays.indexOf(dowName) === -1) {
+    // no schedule this day
+    document.getElementById('modal_schedule_time').innerHTML = '<option value="">No available time</option>';
+    document.getElementById('modal_time_range').textContent = '';
+    return;
+  }
+  populateScheduleTimes(doctorJson.schedule_time_start, doctorJson.schedule_time_end);
 }
 
 function populateScheduleDays(scheduleDays) {
@@ -633,8 +761,24 @@ function populateScheduleTimes(startTime, endTime) {
     
     var endHour = Math.floor(endMinutes / 60);
     
+    // If the currently selected date is today, filter out past times
+    var selectedDateVal = document.getElementById('modal_schedule_day') ? document.getElementById('modal_schedule_day').value : '';
+    var allowOnlyFuture = false;
+    var nowMinutes = null;
+    var bufferMinutes = 30; // don't allow slots starting within the next 30 minutes
+    if (selectedDateVal) {
+      var sel = new Date(selectedDateVal + 'T00:00:00');
+      var todayCheck = new Date();
+      if (sel.getFullYear() === todayCheck.getFullYear() && sel.getMonth() === todayCheck.getMonth() && sel.getDate() === todayCheck.getDate()) {
+        allowOnlyFuture = true;
+        nowMinutes = todayCheck.getHours() * 60 + todayCheck.getMinutes() + bufferMinutes;
+      }
+    }
+
     for (var hour = startHour; hour <= endHour; hour++) {
       var timeValue = String(hour).padStart(2,'0') + ':00';
+      var optionMinutes = timeToMinutes(timeValue);
+      if (allowOnlyFuture && optionMinutes <= nowMinutes) continue; // skip past/too-soon slots
       var option = document.createElement('option');
       option.value = timeValue;
       option.textContent = formatDisplayTime(timeValue);

@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     appointment_date DATE NOT NULL,
     appointment_time TIME NOT NULL,
     reason TEXT NOT NULL,
-    status ENUM('pending', 'confirmed', 'completed', 'cancelled', 'no_show') DEFAULT 'pending',
+    status ENUM('pending', 'rescheduled', 'scheduled', 'completed', 'cancelled', 'no_show') DEFAULT 'pending',
     notes TEXT,
     admin_notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -80,6 +80,6 @@ INSERT IGNORE INTO clinic_settings (setting_key, setting_value, description) VAL
 
 -- Sample appointment data (optional - remove in production)
 -- INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, reason, status) VALUES
--- (3, 2, '2025-08-25', '10:00:00', 'Regular checkup', 'confirmed'),
+-- (3, 2, '2025-08-25', '10:00:00', 'Regular checkup', 'scheduled'),
 -- (4, 2, '2025-08-25', '10:30:00', 'Follow-up consultation', 'pending'),
--- (5, 6, '2025-08-26', '14:00:00', 'Skin examination', 'confirmed');
+-- (5, 6, '2025-08-26', '14:00:00', 'Skin examination', 'scheduled');

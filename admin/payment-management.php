@@ -28,13 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         
         // Update appointment payment status
         if ($status === 'verified') {
-            $payment = $db->fetch("SELECT appointment_id FROM payments WHERE id = ?", [$payment_id]);
-            if ($payment) {
-                $db->update('appointments', [
-                    'payment_status' => 'verified',
-                    'updated_at' => date('Y-m-d H:i:s')
-                ], ['id' => $payment['appointment_id']]);
-            }
+            // Payment status is now only tracked in the payments table
+            // No need to update appointments table
         }
         
         $_SESSION['admin_message'] = "Payment {$action}d successfully!";
