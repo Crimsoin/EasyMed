@@ -112,9 +112,10 @@
 /* Form Layout */
 .form-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+    
+    gap: 15px;
     margin-bottom: 1.5rem;
+    
 }
 
 .form-row:last-child {
@@ -364,9 +365,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 /* Number Input Styling */
+/* Number Input Styling */
 input[type="number"] {
-    appearance: textfield;
+    -webkit-appearance: textfield;
     -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 input[type="number"]::-webkit-outer-spin-button,

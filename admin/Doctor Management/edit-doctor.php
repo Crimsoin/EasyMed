@@ -283,7 +283,7 @@ require_once '../../includes/header.php';
                     <input type="text" id="first_name" name="first_name" class="form-control" 
                            value="<?php echo htmlspecialchars($_POST['first_name'] ?? $doctor['first_name']); ?>" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="last_name" class="form-label required">Last Name</label>
                     <input type="text" id="last_name" name="last_name" class="form-control" 

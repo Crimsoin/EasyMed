@@ -21,10 +21,11 @@ define('SITE_NAME', 'EasyMed - Patient Appointment Management System');
 // Email configuration (for notifications)
 define('SMTP_HOST', 'smtp.gmail.com');
 define('SMTP_PORT', 587);
-define('SMTP_USERNAME', 'your-email@gmail.com');
-define('SMTP_PASSWORD', 'your-app-password');
-define('FROM_EMAIL', 'noreply@easymed.com');
-define('FROM_NAME', 'EasyMed Clinic');
+define('SMTP_USERNAME', 'easymed.notifications@gmail.com');
+define('SMTP_PASSWORD', 'knar lflg menl ljoc');
+define('SMTP_FROM_EMAIL', 'easymed.notifications@gmail.com');
+define('SMTP_FROM_NAME', 'EasyMed Clinic');
+define('SMTP_ENCRYPTION', 'tls');
 
 // Security settings
 define('ENCRYPTION_KEY', 'your-secret-encryption-key-here');

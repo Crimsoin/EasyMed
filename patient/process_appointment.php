@@ -2,6 +2,7 @@
 session_start();
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
+require_once '../includes/email.php';
 
 // Check if user is logged in and is patient
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'patient') {
@@ -184,6 +185,32 @@ try {
     $appointment_id = $db->insert('appointments', $appointment_data);
 
     if ($appointment_id) {
+        // Send email notification for new appointment
+        try {
+            $emailService = new EmailService();
+            $doctor_name = "Dr. {$doctor['first_name']} {$doctor['last_name']}";
+            $patient_name = "$first_name $last_name";
+            
+            $appointment_data = [
+                'appointment_id' => $appointment_id,
+                'patient_name' => $patient_name,
+                'doctor_name' => $doctor_name,
+                'specialty' => $doctor['specialty'],
+                'appointment_date' => formatDate($appointment_date),
+                'appointment_time' => formatTime($schedule_time),
+                'reason' => $laboratory ?: 'General consultation',
+                'fee' => number_format($doctor['consultation_fee'], 2),
+                'reference_number' => $reference_number
+            ];
+            
+            // Send appointment confirmation email
+            $emailService->sendAppointmentScheduled($email, $patient_name, $appointment_data);
+            
+        } catch (Exception $e) {
+            // Log email error but don't stop the appointment process
+            error_log("Email notification error for appointment #$appointment_id: " . $e->getMessage());
+        }
+        
         // Log activity
         logActivity($patient_id, 'appointment_created', "Created appointment with Dr. {$doctor['first_name']} {$doctor['last_name']}");
         

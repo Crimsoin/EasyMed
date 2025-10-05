@@ -240,7 +240,7 @@ require_once '../../includes/header.php';
                         </div>
                         <div class="info-item">
                             <label>Consultation Fee</label>
-                            <span>$<?php echo number_format($doctor['consultation_fee'], 2); ?></span>
+                            <span>₱<?php echo number_format($doctor['consultation_fee'], 2); ?></span>
                         </div>
                         <div class="info-item full-width">
                             <label>Schedule</label>

@@ -1,19 +1,7 @@
 /* Reviews admin styles aligned with patient-management/dashboard design */
 
-:root {
-	--primary-cyan: #00bcd4;
-	--light-cyan: #4dd0e1;
-	--dark-cyan: #00838f;
-	--success: #4caf50;
-	--warning: #ff9800;
-	--error: #f44336;
-	--white: #ffffff;
-	--text-dark: #333333;
-	--text-light: #888888;
-	--light-gray: #f8f9fa;
-	--table-border: rgba(0, 188, 212, 0.08);
-}
-
+/* CSS variables are defined centrally in assets/css/style.css :root.
+   This file relies on those variables. Do not redefine them here. */
 /* Content Header - match dashboard look */
 .content-header {
 	margin-bottom: 2rem;

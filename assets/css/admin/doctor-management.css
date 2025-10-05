@@ -458,6 +458,9 @@
     font-size: 0.9rem;
     position: relative;
     cursor: pointer;
+    -webkit-user-select: none; /* Safari/Chrome */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+ */
     user-select: none;
     border-bottom: 3px solid var(--dark-cyan);
 }
@@ -525,7 +528,7 @@
 
 .table-responsive {
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    /* Removed -webkit-overflow-scrolling: touch; as it's not widely supported across browsers */
 }
 
 @media (max-width: 768px) {
@@ -665,6 +668,19 @@
     background: linear-gradient(135deg, rgba(244, 67, 54, 0.1), rgba(244, 67, 54, 0.05));
     color: var(--error);
     border-color: rgba(244, 67, 54, 0.2);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--error), #e53935);
+    color: var(--white);
+    border-color: var(--error);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #d32f2f, #f44336);
+    color: var(--white);
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
 }
 
 

@@ -264,7 +264,7 @@ require_once '../../includes/header.php';
                             <i class="fas fa-tachometer-alt"></i> Overview
                         </button>
                         <button class="tab-button" data-tab="financial">
-                            <i class="fas fa-dollar-sign"></i> Financial
+                            <i class="fas fa-coins"></i> Financial
                         </button>
                         <button class="tab-button" data-tab="performance">
                             <i class="fas fa-chart-line"></i> Performance
@@ -291,12 +291,12 @@ require_once '../../includes/header.php';
                             
                             <div class="kpi-card">
                                 <div class="kpi-icon revenue">
-                                    <i class="fas fa-dollar-sign"></i>
+                                    <i class="fas fa-coins"></i>
                                 </div>
                                 <div class="kpi-content">
-                                    <h3>$<?php echo number_format($stats['revenue']['total'], 2); ?></h3>
+                                    <h3>₱<?php echo number_format($stats['revenue']['total'], 2); ?></h3>
                                     <p>Total Revenue</p>
-                                    <small>$<?php echo number_format($stats['revenue']['average_per_appointment'], 2); ?> avg per appointment</small>
+                                    <small>₱<?php echo number_format($stats['revenue']['average_per_appointment'], 2); ?> avg per appointment</small>
                                 </div>
                             </div>
                             
@@ -387,10 +387,10 @@ require_once '../../includes/header.php';
                         <div class="kpi-grid">
                             <div class="kpi-card">
                                 <div class="kpi-icon revenue">
-                                    <i class="fas fa-dollar-sign"></i>
+                                    <i class="fas fa-coins"></i>
                                 </div>
                                 <div class="kpi-content">
-                                    <h3>$<?php echo number_format($stats['revenue']['total'], 2); ?></h3>
+                                    <h3>₱<?php echo number_format($stats['revenue']['total'], 2); ?></h3>
                                     <p>Total Revenue</p>
                                     <small><?php echo $stats['revenue']['completed_appointments']; ?> completed appointments</small>
                                 </div>
@@ -415,7 +415,7 @@ require_once '../../includes/header.php';
                                     <i class="fas fa-calculator"></i>
                                 </div>
                                 <div class="kpi-content">
-                                    <h3>$<?php echo number_format($stats['revenue']['average_per_appointment'], 2); ?></h3>
+                                    <h3>₱<?php echo number_format($stats['revenue']['average_per_appointment'], 2); ?></h3>
                                     <p>Average per Appointment</p>
                                     <small>Revenue per completed appointment</small>
                                 </div>
@@ -448,8 +448,8 @@ require_once '../../includes/header.php';
                                             <p><?php echo $specialty['completed_appointments']; ?> appointments</p>
                                         </div>
                                         <div class="specialty-revenue">
-                                            <strong>$<?php echo number_format($specialty['total_revenue'], 2); ?></strong>
-                                            <small>Avg: $<?php echo number_format($specialty['avg_fee'], 2); ?></small>
+                                            <strong>₱<?php echo number_format($specialty['total_revenue'], 2); ?></strong>
+                                            <small>Avg: ₱<?php echo number_format($specialty['avg_fee'], 2); ?></small>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -500,9 +500,9 @@ require_once '../../includes/header.php';
                                             <td><span class="badge badge-warning"><?php echo $doctor['cancelled_appointments']; ?></span></td>
                                             <td><span class="badge badge-danger"><?php echo $doctor['no_show_appointments']; ?></span></td>
                                             <td>
-                                                <strong class="revenue">$<?php echo number_format($doctor['revenue'], 2); ?></strong>
+                                                <strong class="revenue">₱<?php echo number_format($doctor['revenue'], 2); ?></strong>
                                             </td>
-                                            <td>$<?php echo number_format($doctor['avg_fee'], 2); ?></td>
+                                            <td>₱<?php echo number_format($doctor['avg_fee'], 2); ?></td>
                                             <td>
                                                 <?php 
                                                 $success_rate = $doctor['total_appointments'] > 0 ? 

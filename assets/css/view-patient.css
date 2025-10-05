@@ -99,6 +99,7 @@
     font-size: 0.875rem;
     font-weight: 500;
     background: rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 }
 
@@ -163,12 +164,8 @@
     color: white;
 }
 
-/* CSS Variables */
-:root {
-    --primary-cyan: #00bcd4;
-    --text-dark: #2c3e50;
-    --text-light: #64748b;
-}
+/* CSS variables are defined centrally in assets/css/style.css :root.
+   Keep variables in one place to avoid conflicts and duplication. */
 
 /* Header Actions */
 

@@ -140,15 +140,18 @@ $gcash_number = getClinicSetting('gcash_number', '09123456789');
                 <!-- QR Code Display -->
                 <div style="text-align: center; margin-bottom: 2rem;">
                     <div style="background-color: var(--light-gray); padding: 2rem; border-radius: 10px; margin-bottom: 1rem;">
-                        <!-- Dynamic QR Code for this specific payment -->
-                        <img src="<?php echo SITE_URL; ?>/assets/generate-qr.php?amount=<?php echo urlencode($consultation_fee); ?>&ref=<?php echo urlencode($reference_number); ?>" 
-                             alt="GCash QR Code" 
-                             style="width: 200px; height: 200px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
+                        <!-- Your GCash QR Code -->
+                        <img src="<?php echo SITE_URL; ?>/assets/images/Gcash-QR.png" 
+                             alt="EasyMed Clinic GCash QR Code" 
+                             style="width: 250px; height: 250px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); object-fit: contain;">
                     </div>
                     
                     <div style="background-color: rgba(0, 188, 212, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                         <p style="margin: 0; font-size: 0.9rem; text-align: center;">
-                            <strong>GCash Number:</strong> <?php echo htmlspecialchars($gcash_number); ?>
+                            <strong>Scan QR Code or Send to GCash:</strong> <?php echo htmlspecialchars($gcash_number); ?>
+                        </p>
+                        <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; text-align: center; color: var(--text-light);">
+                            <em>Use the QR code above for faster payment processing</em>
                         </p>
                     </div>
                 </div>

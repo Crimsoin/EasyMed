@@ -1,5 +1,4 @@
     </main>
-
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
@@ -11,7 +10,7 @@
                     </h4>
                     <p>
                         <i class="fas fa-map-marker-alt"></i> 
-                        <?php echo htmlspecialchars(getClinicSetting('clinic_address', '123 Healthcare Street, Medical District, Manila, Philippines')); ?>
+                        <?php echo htmlspecialchars(getClinicSetting('clinic_address', 'Brgy. Ngoso, Gandara Samar')); ?>
                     </p>
                     <p>
                         <i class="fas fa-phone"></i> 
@@ -25,7 +24,7 @@
                 
                 <!-- Quick Links -->
                 <div class="footer-section">
-                    <h5>Quick Links</h4>
+                    <h4>Quick Links</h4>
                     <div class="footer-links">
                         <a href="<?php echo SITE_URL; ?>/index.php">
                             <i class="fas fa-home"></i> Home
@@ -60,49 +59,6 @@
                         </p>
                     </div>
                 </div>
-                
-                <!-- Operating Hours -->
-                <div class="footer-section">
-                    <h4>Operating Hours</h4>
-                    <div class="footer-hours">
-                        <p class="hours-item">
-                            <strong>Monday - Friday:</strong><br>
-                            8:00 AM - 6:00 PM
-                        </p>
-                        <p class="hours-item">
-                            <strong>Saturday:</strong><br>
-                            8:00 AM - 4:00 PM
-                        </p>
-                        <p class="hours-item">
-                            <strong>Sunday:</strong><br>
-                            Closed
-                        </p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Social Media & Copyright -->
-            <div class="footer-bottom">
-                <div class="social-links">
-                    <a href="#" class="social-link">
-                        <i class="fab fa-facebook-f"></i>
-                    </a>
-                    <a href="#" class="social-link">
-                        <i class="fab fa-twitter"></i>
-                    </a>
-                    <a href="#" class="social-link">
-                        <i class="fab fa-instagram"></i>
-                    </a>
-                    <a href="#" class="social-link">
-                        <i class="fab fa-linkedin-in"></i>
-                    </a>
-                </div>
-                <p class="copyright">
-                    &copy; <?php echo date('Y'); ?> EasyMed Private Clinic. All rights reserved.
-                </p>
-                <p class="footer-tagline">
-                    Designed with <i class="fas fa-heart"></i> for better healthcare
-                </p>
             </div>
         </div>
     </footer>

@@ -1,8 +1,7 @@
 <?php
 $page_title = "Doctor Profile";
-$additional_css = ['base.css', 'doctor/sidebar-doctor.css', 'doctor/profile-doctor.css'];
+$additional_css = ['doctor/sidebar-doctor.css', 'doctor/profile-doctor.css'];
 require_once '../includes/config.php';
-require_once '../includes/database.php';
 require_once '../includes/functions.php';
 
 // Check if user is logged in and is a doctor
@@ -238,26 +237,9 @@ function getInitials($name) {
     }
     return strtoupper(substr($name, 0, 2));
 }
-?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $page_title; ?> - EasyMed Doctor Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Additional CSS for specific pages -->
-    <?php if (isset($additional_css)): ?>
-        <?php foreach ($additional_css as $css): ?>
-            <link rel="stylesheet" href="<?php echo SITE_URL; ?>/assets/css/<?php echo $css; ?>">
-        <?php endforeach; ?>
-    <?php endif; ?>
-</head>
-<body>
-    <?php include '../includes/header.php'; ?>
+require_once '../includes/header.php';
+?>
     
     <div class="doctor-container">
         <div class="doctor-sidebar">
@@ -477,7 +459,7 @@ function getInitials($name) {
                                 
                                 <div class="form-group">
                                     <label for="consultation_fee" class="form-label">
-                                        <i class="fas fa-dollar-sign"></i> Consultation Fee ($)
+                                        <i class="fas fa-coins"></i> Consultation Fee (₱)
                                     </label>
                                     <input type="number" id="consultation_fee" name="consultation_fee" class="form-control" 
                                            value="<?= htmlspecialchars($doctor_info['consultation_fee'] ?? '') ?>" 
@@ -667,5 +649,3 @@ function getInitials($name) {
     </script>
 
     <?php require_once '../includes/footer.php'; ?>
-</body>
-</html>

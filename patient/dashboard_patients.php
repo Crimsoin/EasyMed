@@ -148,8 +148,8 @@ require_once '../includes/header.php';
                                             <?php echo htmlspecialchars($appointment['reason']); ?>
                                         </div>
                                         <div class="fee">
-                                            <i class="fas fa-dollar-sign"></i>
-                                            $<?php echo number_format($appointment['consultation_fee'], 2); ?>
+                                            <i class="fas fa-coins"></i>
+                                            ₱<?php echo number_format($appointment['consultation_fee'], 2); ?>
                                         </div>
                                     </div>
                                 </div>

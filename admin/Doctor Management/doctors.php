@@ -1,6 +1,7 @@
 <?php
 $page_title = "Doctor Management";
 $additional_css = ['admin/sidebar.css', 'admin/doctor-management.css'];
+$additional_js = ['admin/doctor-management.js'];
 require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
 
@@ -27,6 +28,114 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Exception $e) {
             $message = "Error updating doctor status.";
             $message_type = 'error';
+        }
+    } elseif ($action === 'delete' && $doctor_id) {
+        try {
+            // Get doctor information before deletion
+            $doctor = $db->fetch("
+                SELECT u.*, d.id as doctor_record_id 
+                FROM users u 
+                LEFT JOIN doctors d ON u.id = d.user_id 
+                WHERE u.id = ? AND u.role = 'doctor'
+            ", [$doctor_id]);
+            
+            if ($doctor) {
+                $doctorName = $doctor['first_name'] . ' ' . $doctor['last_name'];
+                $doctorRecordId = $doctor['doctor_record_id'];
+                
+                // Begin transaction
+                $db->beginTransaction();
+                
+                        // Delete related records in the correct order to handle foreign key constraints
+                        
+                        if ($doctorRecordId) {
+                            // 1. Delete lab_offer_doctors
+                            $db->query("DELETE FROM lab_offer_doctors WHERE doctor_id = ?", [$doctorRecordId]);
+                            
+                            // 2. Delete doctor schedules
+                            $db->query("DELETE FROM doctor_schedules WHERE doctor_id = ?", [$doctorRecordId]);
+                            
+                            // 3. Delete doctor breaks
+                            $db->query("DELETE FROM doctor_breaks WHERE doctor_id = ?", [$doctorRecordId]);
+                            
+                            // 4. Delete doctor unavailable periods
+                            $db->query("DELETE FROM doctor_unavailable WHERE doctor_id = ?", [$doctorRecordId]);
+                            
+                            // 5. Delete reviews for this doctor
+                            $db->query("DELETE FROM reviews WHERE doctor_id = ?", [$doctorRecordId]);
+                            
+                            // 6. Handle appointments - find another active doctor or delete appointments
+                            $alternativeDoctor = $db->fetch("
+                                SELECT d.id FROM doctors d 
+                                JOIN users u ON d.user_id = u.id 
+                                WHERE u.is_active = 1 AND u.role = 'doctor' AND d.id != ? 
+                                LIMIT 1
+                            ", [$doctorRecordId]);
+                            
+                            if ($alternativeDoctor) {
+                                // Assign appointments to another active doctor with a note
+                                $db->query("
+                                    UPDATE appointments 
+                                    SET doctor_id = ?, 
+                                        notes = COALESCE(notes, '') || CASE 
+                                            WHEN notes IS NULL OR notes = '' THEN '[Original doctor deleted: ' || ? || ']'
+                                            ELSE ' [Original doctor deleted: ' || ? || ']'
+                                        END
+                                    WHERE doctor_id = ?
+                                ", [$alternativeDoctor['id'], $doctorName, $doctorName, $doctorRecordId]);
+                            } else {
+                                // No alternative doctor available - we have to delete appointments
+                                $db->query("DELETE FROM appointments WHERE doctor_id = ?", [$doctorRecordId]);
+                            }
+                            
+                            // 7. Delete doctor record
+                            $db->query("DELETE FROM doctors WHERE id = ?", [$doctorRecordId]);
+                        }
+                        
+                        // 8. Check if user also has a patient record and delete it
+                        $patientRecord = $db->fetch("SELECT id FROM patients WHERE user_id = ?", [$doctor_id]);
+                        if ($patientRecord) {
+                            $patientId = $patientRecord['id'];
+                            
+                            // Delete patient-related records (similar to patient deletion logic)
+                            // Delete reviews written by this patient
+                            $db->query("DELETE FROM reviews WHERE patient_id = ?", [$patientId]);
+                            
+                            // Delete payments made by this patient  
+                            $db->query("DELETE FROM payments WHERE patient_id = ?", [$patientId]);
+                            
+                            // Handle appointments as patient - delete them since doctor is being deleted anyway
+                            $db->query("DELETE FROM appointments WHERE patient_id = ?", [$patientId]);
+                            
+                            // Delete patient record
+                            $db->query("DELETE FROM patients WHERE id = ?", [$patientId]);
+                        }
+                        
+                        // 9. Update payments verified_by to NULL if this doctor verified them
+                        $db->query("UPDATE payments SET verified_by = NULL WHERE verified_by = ?", [$doctor_id]);
+                        
+                        // 10. Delete activity logs for this user
+                        $db->query("DELETE FROM activity_logs WHERE user_id = ?", [$doctor_id]);
+                        
+                        // 11. Delete notifications for this user
+                        $db->query("DELETE FROM notifications WHERE user_id = ?", [$doctor_id]);
+                        
+                        // 11. Finally, delete user record
+                        $db->query("DELETE FROM users WHERE id = ?", [$doctor_id]);                // Commit transaction
+                $db->commit();
+                
+                $message = "Doctor account '$doctorName' deleted successfully.";
+                $message_type = 'success';
+            } else {
+                $message = "Doctor not found.";
+                $message_type = 'error';
+            }
+        } catch (Exception $e) {
+            // Rollback transaction on error
+            $db->rollback();
+            $message = "Error deleting doctor account: " . $e->getMessage();
+            $message_type = 'error';
+            error_log("Doctor deletion error: " . $e->getMessage());
         }
     }
 }
@@ -298,9 +407,6 @@ require_once '../../includes/header.php';
                                     <td><?php echo $doctor['id']; ?></td>
                                     <td>
                                         <div class="doctor-info">
-                                            <div class="doctor-avatar">
-                                                <?php echo strtoupper(substr($doctor['first_name'], 0, 1) . substr($doctor['last_name'], 0, 1)); ?>
-                                            </div>
                                             <div class="doctor-details">
                                                 <h4><?php echo htmlspecialchars($doctor['first_name'] . ' ' . $doctor['last_name']); ?></h4>
                                                 <p class="license-number">License: <?php echo htmlspecialchars($doctor['license_number']); ?></p>
@@ -314,7 +420,7 @@ require_once '../../includes/header.php';
                                         </span>
                                     </td>
                                     <td><?php echo $doctor['experience_years']; ?> years</td>
-                                    <td>$<?php echo number_format($doctor['consultation_fee'], 2); ?></td>
+                                    <td>₱<?php echo number_format($doctor['consultation_fee'], 2); ?></td>
                                     <td>
                                         <span class="status-badge <?php echo $doctor['is_active'] ? 'active' : 'inactive'; ?>">
                                             <?php echo $doctor['is_active'] ? 'Active' : 'Inactive'; ?>
@@ -363,6 +469,16 @@ require_once '../../includes/header.php';
                                                         <i class="fas fa-check"></i>
                                                     </button>
                                                 <?php endif; ?>
+                                            </form>
+                                            
+                                            <form method="POST" style="display: inline;">
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="doctor_id" value="<?php echo $doctor['id']; ?>">
+                                                <button type="submit" class="btn-action btn-danger" 
+                                                        title="Delete Account"
+                                                        onclick="return confirm('Are you sure you want to permanently delete this doctor account? This action cannot be undone and will remove all associated data including appointments, schedules, and reviews.')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
                                             </form>
                                         </div>
                                     </td>

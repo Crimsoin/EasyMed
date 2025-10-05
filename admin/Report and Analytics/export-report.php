@@ -203,7 +203,7 @@ if ($export_type === 'csv') {
                 <p>Pending</p>
             </div>
             <div class="stat">
-                <h3>$<?php echo number_format($stats['total_revenue'], 2); ?></h3>
+                <h3>₱<?php echo number_format($stats['total_revenue'], 2); ?></h3>
                 <p>Revenue</p>
             </div>
         </div>
@@ -235,7 +235,7 @@ if ($export_type === 'csv') {
                                 <?php echo ucfirst($appointment['status']); ?>
                             </span>
                         </td>
-                        <td>$<?php echo number_format($appointment['consultation_fee'], 2); ?></td>
+                        <td>₱<?php echo number_format($appointment['consultation_fee'], 2); ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

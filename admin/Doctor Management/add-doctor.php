@@ -338,7 +338,7 @@ require_once '../../includes/header.php';
                     </div>
                     
                     <div class="form-group">
-                        <label for="consultation_fee" class="form-label">Consultation Fee ($)</label>
+                        <label for="consultation_fee" class="form-label">Consultation Fee (₱)</label>
                         <input type="number" id="consultation_fee" name="consultation_fee" class="form-control" 
                                value="<?php echo htmlspecialchars($_POST['consultation_fee'] ?? ''); ?>" 
                                min="0" step="0.01">

@@ -38,6 +38,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: patients.php');
         exit;
     }
+    
+    if ($action === 'delete_patient' && $patient_id) {
+        $patientId = (int)$patient_id;
+        if ($patientId !== $_SESSION['user_id']) { // Can't delete your own account
+            try {
+                $db->beginTransaction();
+                
+                // Ensure foreign key constraints are enabled
+                $db->query("PRAGMA foreign_keys = ON");
+                
+                // Check if patient exists
+                $patient = $db->fetch("SELECT id, first_name, last_name FROM users WHERE id = ? AND role = 'patient'", [$patientId]);
+                if (!$patient) {
+                    $_SESSION['error'] = 'Patient not found.';
+                    $db->rollback();
+                    header('Location: patients.php');
+                    exit;
+                }
+                
+                // Get the patient record ID (patients.id) which is referenced by some foreign keys
+                $patientRecord = $db->fetch("SELECT id FROM patients WHERE user_id = ?", [$patientId]);
+                $patientRecordId = $patientRecord ? $patientRecord['id'] : null;
+                
+                if (!$patientRecordId) {
+                    $_SESSION['error'] = 'Patient record not found.';
+                    $db->rollback();
+                    header('Location: patients.php');
+                    exit;
+                }
+                
+                // Delete related records first (in correct order based on foreign key constraints)
+                
+                // 1. First, delete any reviews that reference appointments of this patient
+                // (reviews.appointment_id -> appointments.id where appointments.patient_id = patients.id)
+                $db->query("DELETE FROM reviews WHERE appointment_id IN (SELECT id FROM appointments WHERE patient_id = ?)", [$patientRecordId]);
+                
+                // 2. Delete reviews directly referencing this patient
+                $db->query("DELETE FROM reviews WHERE patient_id = ?", [$patientRecordId]);
+                
+                // 3. Delete payments (references patients.id)
+                $db->query("DELETE FROM payments WHERE patient_id = ?", [$patientRecordId]);
+                
+                // 4. Delete appointments (references patients.id)
+                $db->query("DELETE FROM appointments WHERE patient_id = ?", [$patientRecordId]);
+                
+                // 5. Delete notifications (references users.id)
+                $db->query("DELETE FROM notifications WHERE user_id = ?", [$patientId]);
+                
+                // 6. Log the deletion activity BEFORE deleting activity logs
+                logActivity($_SESSION['user_id'], 'delete_patient', "Deleted patient account: {$patient['first_name']} {$patient['last_name']} (ID: {$patientId})");
+                
+                // 7. Delete activity logs (references users.id) - required due to foreign key constraint
+                // We preserve the deletion log by creating it before deleting the user's other logs
+                $db->query("DELETE FROM activity_logs WHERE user_id = ?", [$patientId]);
+                
+                // 8. Delete patient record (references users.id)
+                $db->query("DELETE FROM patients WHERE user_id = ?", [$patientId]);
+                
+                // 9. Finally delete user account
+                $db->query("DELETE FROM users WHERE id = ? AND role = 'patient'", [$patientId]);
+                
+                $db->commit();
+                $_SESSION['success'] = "Patient account has been permanently deleted.";
+                
+            } catch (Exception $e) {
+                $db->rollback();
+                $_SESSION['error'] = 'Error deleting patient account: ' . $e->getMessage() . ' (Code: ' . $e->getCode() . ')';
+            }
+        } else {
+            $_SESSION['error'] = 'Cannot delete your own account';
+        }
+        header('Location: patients.php');
+        exit;
+    }
 }
 
 if ($_GET['action'] ?? '' === 'reset_password' && isset($_GET['id'])) {
@@ -401,6 +475,16 @@ require_once '../../includes/header.php';
                                                 </button>
                                             <?php endif; ?>
                                         </form>
+                                        
+                                        <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="action" value="delete_patient">
+                                            <input type="hidden" name="patient_id" value="<?php echo $patient['id']; ?>">
+                                            <button type="submit" class="btn-action btn-danger" 
+                                                    title="Delete Account Permanently"
+                                                    onclick="return confirm('⚠️ WARNING: This will permanently delete the patient account and ALL related data (appointments, reviews, etc.).\n\nPatient: <?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']); ?>\n\nThis action CANNOT be undone. Are you absolutely sure?')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -438,6 +522,6 @@ require_once '../../includes/header.php';
 </div>
 
 <!-- Patient Management JavaScript -->
-<script src="../assets/js/patient-management.js"></script>
+<script src="../../assets/js/admin/patient-management.js"></script>
 
 <?php require_once '../../includes/footer.php'; ?>

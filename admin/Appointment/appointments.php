@@ -4,11 +4,13 @@ $additional_css = ['admin/sidebar.css', 'admin/appointment.css'];
 require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/database_helper.php';
+require_once '../../includes/email.php';
 
 $auth = new Auth();
 $auth->requireRole('admin');
 
 $db = Database::getInstance();
+$emailService = new EmailService();
 
 // Handle actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -19,8 +21,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $new_status = $_POST['status'] ?? '';
         
         try {
+            // Get appointment and patient details before updating
+            $appointment_details = $db->fetch("
+                SELECT a.*, 
+                       pu.first_name as patient_first_name, pu.last_name as patient_last_name, pu.email as patient_email,
+                       du.first_name as doctor_first_name, du.last_name as doctor_last_name,
+                       d.specialty, d.consultation_fee
+                FROM appointments a
+                LEFT JOIN patients p ON a.patient_id = p.id
+                LEFT JOIN users pu ON p.user_id = pu.id
+                LEFT JOIN doctors d ON a.doctor_id = d.id
+                LEFT JOIN users du ON d.user_id = du.id
+                WHERE a.id = ?
+            ", [$appointment_id]);
+            
             $db->query("UPDATE appointments SET status = ?, updated_at = " . db_current_datetime() . " WHERE id = ?", 
                       [$new_status, $appointment_id]);
+            
+            // Send email notification based on status change
+            if ($appointment_details && $appointment_details['patient_email']) {
+                $patient_email = $appointment_details['patient_email'];
+                $patient_name = $appointment_details['patient_first_name'] . ' ' . $appointment_details['patient_last_name'];
+                $doctor_name = 'Dr. ' . $appointment_details['doctor_first_name'] . ' ' . $appointment_details['doctor_last_name'];
+                
+                $appointment_data = [
+                    'appointment_id' => $appointment_id,
+                    'patient_name' => $patient_name,
+                    'doctor_name' => $doctor_name,
+                    'specialty' => $appointment_details['specialty'],
+                    'appointment_date' => formatDate($appointment_details['appointment_date']),
+                    'appointment_time' => formatTime($appointment_details['appointment_time']),
+                    'reason' => $appointment_details['reason_for_visit'] ?? 'General consultation',
+                    'fee' => number_format($appointment_details['consultation_fee'], 2)
+                ];
+                
+                switch ($new_status) {
+                    case 'scheduled':
+                        $emailService->sendAppointmentScheduled($patient_email, $patient_name, $appointment_data);
+                        break;
+                    case 'cancelled':
+                        $emailService->sendAppointmentCancelled($patient_email, $patient_name, $appointment_data);
+                        break;
+                }
+            }
             
             // Log activity
             logActivity($_SESSION['user_id'], 'update_appointment', "Updated appointment #$appointment_id status to $new_status");
@@ -36,7 +79,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($action === 'delete' && $appointment_id) {
         try {
+            // Get appointment and patient details before cancelling
+            $appointment_details = $db->fetch("
+                SELECT a.*, 
+                       pu.first_name as patient_first_name, pu.last_name as patient_last_name, pu.email as patient_email,
+                       du.first_name as doctor_first_name, du.last_name as doctor_last_name,
+                       d.specialty, d.consultation_fee
+                FROM appointments a
+                LEFT JOIN patients p ON a.patient_id = p.id
+                LEFT JOIN users pu ON p.user_id = pu.id
+                LEFT JOIN doctors d ON a.doctor_id = d.id
+                LEFT JOIN users du ON d.user_id = du.id
+                WHERE a.id = ?
+            ", [$appointment_id]);
+            
             $db->query("UPDATE appointments SET status = 'cancelled', updated_at = " . db_current_datetime() . " WHERE id = ?", [$appointment_id]);
+            
+            // Send cancellation email notification
+            if ($appointment_details && $appointment_details['patient_email']) {
+                $patient_email = $appointment_details['patient_email'];
+                $patient_name = $appointment_details['patient_first_name'] . ' ' . $appointment_details['patient_last_name'];
+                $doctor_name = 'Dr. ' . $appointment_details['doctor_first_name'] . ' ' . $appointment_details['doctor_last_name'];
+                
+                $appointment_data = [
+                    'appointment_id' => $appointment_id,
+                    'patient_name' => $patient_name,
+                    'doctor_name' => $doctor_name,
+                    'specialty' => $appointment_details['specialty'],
+                    'appointment_date' => formatDate($appointment_details['appointment_date']),
+                    'appointment_time' => formatTime($appointment_details['appointment_time']),
+                    'reason' => $appointment_details['reason_for_visit'] ?? 'General consultation',
+                    'fee' => number_format($appointment_details['consultation_fee'], 2)
+                ];
+                
+                $emailService->sendAppointmentCancelled($patient_email, $patient_name, $appointment_data);
+            }
             
             // Log activity
             logActivity($_SESSION['user_id'], 'cancel_appointment', "Cancelled appointment #$appointment_id");
@@ -80,6 +157,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         try {
+            // Get appointment and patient details before rescheduling
+            $appointment_details = $db->fetch("
+                SELECT a.*, 
+                       pu.first_name as patient_first_name, pu.last_name as patient_last_name, pu.email as patient_email,
+                       du.first_name as doctor_first_name, du.last_name as doctor_last_name,
+                       d.specialty, d.consultation_fee
+                FROM appointments a
+                LEFT JOIN patients p ON a.patient_id = p.id
+                LEFT JOIN users pu ON p.user_id = pu.id
+                LEFT JOIN doctors d ON a.doctor_id = d.id
+                LEFT JOIN users du ON d.user_id = du.id
+                WHERE a.id = ?
+            ", [$appointment_id]);
+            
             // Check if the new slot is available
             $existing_appointment = $db->fetch("
                 SELECT id FROM appointments 
@@ -117,6 +208,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 SET appointment_date = ?, appointment_time = ?, status = ?, updated_at = " . db_current_datetime() . " 
                 WHERE id = ?
             ", [$new_date, $new_time, $new_status, $appointment_id]);
+            
+            // Send reschedule email notification
+            if ($appointment_details && $appointment_details['patient_email']) {
+                $patient_email = $appointment_details['patient_email'];
+                $patient_name = $appointment_details['patient_first_name'] . ' ' . $appointment_details['patient_last_name'];
+                $doctor_name = 'Dr. ' . $appointment_details['doctor_first_name'] . ' ' . $appointment_details['doctor_last_name'];
+                
+                $appointment_data = [
+                    'appointment_id' => $appointment_id,
+                    'patient_name' => $patient_name,
+                    'doctor_name' => $doctor_name,
+                    'specialty' => $appointment_details['specialty'],
+                    'appointment_date' => formatDate($new_date), // Use new date
+                    'appointment_time' => formatTime($new_time), // Use new time
+                    'old_date' => formatDate($appointment_details['appointment_date']), // Include old date for reference
+                    'old_time' => formatTime($appointment_details['appointment_time']), // Include old time for reference
+                    'reason' => $appointment_details['reason_for_visit'] ?? 'General consultation',
+                    'fee' => number_format($appointment_details['consultation_fee'], 2)
+                ];
+                
+                $emailService->sendAppointmentRescheduled($patient_email, $patient_name, $appointment_data);
+            }
             
             // Log activity
             logActivity($_SESSION['user_id'], 'reschedule_appointment', "Rescheduled appointment #$appointment_id to $new_date $new_time (status: $new_status)");

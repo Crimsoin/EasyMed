@@ -3,6 +3,7 @@ $page_title = "My Appointments";
 $additional_css = ['base.css', 'doctor/sidebar-doctor.css', 'doctor/dashboard-doctor.css'];
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
+require_once '../includes/email.php';
 
 // Check if user is logged in and is doctor
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'doctor') {
@@ -25,18 +26,56 @@ if ($_POST && isset($_POST['action']) && isset($_POST['appointment_id'])) {
     $appointment_id = (int)$_POST['appointment_id'];
     $action = $_POST['action'];
     
-    // Verify this appointment belongs to the logged-in doctor
-    $appointment = $db->fetch("SELECT id FROM appointments WHERE id = ? AND doctor_id = ?", [$appointment_id, $doctor_id]);
+    // Get appointment and patient details before updating
+    $appointment_details = $db->fetch("
+        SELECT a.*, 
+               pu.first_name as patient_first_name, pu.last_name as patient_last_name, pu.email as patient_email,
+               du.first_name as doctor_first_name, du.last_name as doctor_last_name,
+               d.specialty, d.consultation_fee
+        FROM appointments a
+        LEFT JOIN patients p ON a.patient_id = p.id
+        LEFT JOIN users pu ON p.user_id = pu.id
+        LEFT JOIN doctors d ON a.doctor_id = d.id
+        LEFT JOIN users du ON d.user_id = du.id
+        WHERE a.id = ? AND a.doctor_id = ?
+    ", [$appointment_id, $doctor_id]);
     
-    if ($appointment) {
+    if ($appointment_details) {
+        $emailService = new EmailService();
+        $patient_email = $appointment_details['patient_email'];
+        $patient_name = $appointment_details['patient_first_name'] . ' ' . $appointment_details['patient_last_name'];
+        $doctor_name = 'Dr. ' . $appointment_details['doctor_first_name'] . ' ' . $appointment_details['doctor_last_name'];
+        
+        $appointment_data = [
+            'appointment_id' => $appointment_id,
+            'patient_name' => $patient_name,
+            'doctor_name' => $doctor_name,
+            'specialty' => $appointment_details['specialty'],
+            'appointment_date' => formatDate($appointment_details['appointment_date']),
+            'appointment_time' => formatTime($appointment_details['appointment_time']),
+            'reason' => $appointment_details['reason_for_visit'] ?? 'General consultation',
+            'fee' => number_format($appointment_details['consultation_fee'], 2)
+        ];
+        
         switch ($action) {
             case 'no_show':
                 $db->update('appointments', ['status' => 'no_show'], 'id = ?', [$appointment_id]);
                 $success_message = "Appointment marked as no show.";
+                // Note: We might not want to send email for no-show, or send a different type
                 break;
             case 'complete':
                 $db->update('appointments', ['status' => 'completed'], 'id = ?', [$appointment_id]);
                 $success_message = "Appointment marked as completed.";
+                // Send completion confirmation email (optional)
+                try {
+                    // You can create a completion email template or use existing one
+                    if ($patient_email) {
+                        // For now, we'll skip completion emails, but you can add this later
+                        // $emailService->sendAppointmentCompleted($patient_email, $patient_name, $appointment_data);
+                    }
+                } catch (Exception $e) {
+                    error_log("Email notification error for completed appointment #$appointment_id: " . $e->getMessage());
+                }
                 break;
         }
     }

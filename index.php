@@ -254,22 +254,6 @@ $db = Database::getInstance();
                 <p style="color: rgba(255, 255, 255, 0.9); margin-bottom: 2rem;">
                     Join thousands of satisfied patients who trust EasyMed for their healthcare needs.
                 </p>
-                <div>
-                    <?php if (!isset($_SESSION['user_id'])): ?>
-                        <button class="btn" onclick="EasyMed.openModal('registerModal')" 
-                                style="background-color: white; color: var(--primary-cyan); margin-right: 1rem;">
-                            <i class="fas fa-user-plus"></i> Register Now
-                        </button>
-                        <a href="<?php echo SITE_URL; ?>/about.php" class="btn btn-secondary">
-                            <i class="fas fa-info-circle"></i> Learn More
-                        </a>
-                    <?php else: ?>
-                        <a href="<?php echo SITE_URL; ?>/patient/dashboard_patients.php" 
-                           class="btn" style="background-color: white; color: var(--primary-cyan);">
-                            <i class="fas fa-tachometer-alt"></i> Go to Dashboard
-                        </a>
-                    <?php endif; ?>
-                </div>
             </div>
         </div>
     </div>

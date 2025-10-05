@@ -5,7 +5,6 @@ body {
     margin: 0;
     padding: 0;
     background-color: var(--light-gray);
-    font-family: var(--font-family);
 }
 
 /* Ensure main content is properly positioned */
@@ -54,7 +53,7 @@ body {
 }
 
 .content-header h1 {
-    font-size: var(--font-size-xxxl);
+    font-size: 2.2rem;
     font-weight: 700;
     color: var(--text-dark);
     margin: 0 0 0.5rem 0;
@@ -65,11 +64,11 @@ body {
 
 .content-header h1 i {
     color: var(--primary-cyan);
-    font-size: var(--font-size-xxl);
+    font-size: 2rem;
 }
 
 .content-header p {
-    font-size: var(--font-size-lg);
+    font-size: 1.1rem;
     color: var(--text-light);
     margin: 0;
 }
@@ -139,18 +138,18 @@ body {
     justify-content: center;
     margin: 0 auto 1rem;
     color: var(--white);
-    font-size: var(--font-size-xl);
+    font-size: 1.5rem;
 }
 
 .stat-number {
-    font-size: var(--font-size-xxxl);
+    font-size: 2.5rem;
     font-weight: 700;
     color: var(--primary-cyan);
     margin-bottom: 0.5rem;
 }
 
 .stat-label {
-    font-size: var(--font-size-base);
+    font-size: 1rem;
     font-weight: 600;
     color: var(--text-dark);
     text-transform: uppercase;
@@ -183,7 +182,7 @@ body {
     padding: 0.75rem 1rem 0.75rem 2.5rem;
     border: 2px solid #eee;
     border-radius: 8px;
-    font-size: var(--font-size-base);
+    font-size: 0.9rem;
     transition: all 0.3s ease;
     background: var(--white);
 }
@@ -200,14 +199,14 @@ body {
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-light);
-    font-size: var(--font-size-base);
+    font-size: 1rem;
 }
 
 .filter-select {
     padding: 0.75rem;
     border: 2px solid #eee;
     border-radius: 8px;
-    font-size: var(--font-size-base);
+    font-size: 0.9rem;
     background: var(--white);
     transition: all 0.3s ease;
 }
@@ -260,7 +259,7 @@ body {
     justify-content: center;
     color: var(--white);
     font-weight: 700;
-    font-size: var(--font-size-xl);
+    font-size: 1.2rem;
     flex-shrink: 0;
 }
 
@@ -269,14 +268,14 @@ body {
 }
 
 .patient-name {
-    font-size: var(--font-size-xl);
+    font-size: 1.2rem;
     font-weight: 600;
     color: var(--text-dark);
     margin: 0 0 0.25rem 0;
 }
 
 .patient-id {
-    font-size: var(--font-size-sm);
+    font-size: 0.9rem;
     color: var(--text-light);
     margin: 0;
 }
@@ -284,7 +283,7 @@ body {
 .patient-status {
     padding: 0.25rem 0.75rem;
     border-radius: 15px;
-    font-size: var(--font-size-xs);
+    font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -672,7 +671,7 @@ body {
     }
     
     .content-header {
-        padding: 2rem;
+        padding: 1.5rem;
     }
     
     .content-header h1 {
