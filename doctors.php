@@ -100,15 +100,6 @@ $doctors = $db->fetchAll("
                                     <?php endif; ?>
                                 </div>
                                 
-                                <?php if (!empty($doctor['biography'])): ?>
-                                    <div style="margin-bottom: 1.5rem;">
-                                        <h4 style="color: var(--text-dark); margin-bottom: 0.5rem; font-size: 1rem;">About</h4>
-                                        <p style="color: var(--text-light); line-height: 1.6;">
-                                            <?php echo htmlspecialchars($doctor['biography']); ?>
-                                        </p>
-                                    </div>
-                                <?php endif; ?>
-                                
                                 <!-- Contact Information -->
                                 <div style="margin-bottom: 1.5rem;">
                                     <h4 style="color: var(--text-dark); margin-bottom: 0.5rem; font-size: 1rem;">Contact</h4>

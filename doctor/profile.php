@@ -1,6 +1,6 @@
 <?php
 $page_title = "Doctor Profile";
-$additional_css = ['doctor/sidebar-doctor.css', 'doctor/profile-doctor.css'];
+$additional_css = ['doctor/sidebar-doctor.css', 'doctor/profile-doctor.css?v=' . time()];
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 
@@ -16,6 +16,10 @@ $db = Database::getInstance();
 $doctor_id = $_SESSION['user_id'];
 $message = '';
 $error = '';
+
+// Get doctor's internal ID from doctors table
+$doctorRecord = $db->fetch("SELECT id FROM doctors WHERE user_id = ?", [$doctor_id]);
+$doctor_internal_id = $doctorRecord['id'] ?? 0;
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -60,12 +64,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = $result['message'];
                 }
                 break;
+                
+            case 'add_lab_offer':
+                $result = addLabOffer($db, $doctor_internal_id, $_POST);
+                if ($result['success']) {
+                    $message = $result['message'];
+                } else {
+                    $error = $result['message'];
+                }
+                break;
+                
+            case 'update_lab_offer':
+                $result = updateLabOffer($db, $doctor_internal_id, $_POST);
+                if ($result['success']) {
+                    $message = $result['message'];
+                } else {
+                    $error = $result['message'];
+                }
+                break;
+                
+            case 'delete_lab_offer':
+                $result = deleteLabOffer($db, $doctor_internal_id, $_POST);
+                if ($result['success']) {
+                    $message = $result['message'];
+                } else {
+                    $error = $result['message'];
+                }
+                break;
+                
+            case 'toggle_lab_offer':
+                $result = toggleLabOffer($db, $doctor_internal_id, $_POST);
+                if ($result['success']) {
+                    $message = $result['message'];
+                } else {
+                    $error = $result['message'];
+                }
+                break;
         }
     }
 }
 
 // Get doctor information
 $doctor_info = getDoctorProfile($db, $doctor_id);
+
+// Get doctor's lab offers
+$lab_offers = getLabOffers($db, $doctor_internal_id);
 
 // Helper functions
 function getDoctorProfile($db, $doctor_id) {
@@ -132,29 +175,16 @@ function updateBasicInfo($db, $doctor_id, $data) {
 
 function updateMedicalInfo($db, $doctor_id, $data) {
     try {
-        // Check which columns exist and use appropriate ones
         $sql = "UPDATE doctors SET 
                 specialty = ?, 
-                specialization = ?, 
                 license_number = ?, 
                 experience_years = ?, 
-                years_of_experience = ?, 
-                education = COALESCE(?, education), 
-                biography = ?, 
-                bio = ?, 
-                office_address = COALESCE(?, office_address), 
                 consultation_fee = ? 
                 WHERE user_id = ?";
         $result = $db->query($sql, [
-            $data['specialization'], // for old specialty column
-            $data['specialization'], // for new specialization column
+            $data['specialization'],
             $data['license_number'],
-            (int)$data['years_of_experience'], // for old column
-            (int)$data['years_of_experience'], // for new column
-            $data['education'],
-            $data['bio'], // for old biography column
-            $data['bio'], // for new bio column
-            $data['office_address'],
+            (int)$data['years_of_experience'],
             (float)$data['consultation_fee'],
             $doctor_id
         ]);
@@ -227,6 +257,159 @@ function updatePreferences($db, $doctor_id, $data) {
         }
     } catch (Exception $e) {
         return ['success' => false, 'message' => 'Error updating preferences: ' . $e->getMessage()];
+    }
+}
+
+function getLabOffers($db, $doctor_internal_id) {
+    try {
+        $sql = "SELECT lo.* 
+                FROM lab_offers lo
+                JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
+                WHERE lod.doctor_id = ?
+                ORDER BY lo.title ASC";
+        return $db->fetchAll($sql, [$doctor_internal_id]);
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
+function addLabOffer($db, $doctor_internal_id, $data) {
+    try {
+        if (empty($data['title'])) {
+            return ['success' => false, 'message' => 'Title is required.'];
+        }
+        
+        // Check if offer already exists for this doctor
+        $existing = $db->fetch("
+            SELECT lo.id 
+            FROM lab_offers lo
+            JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
+            WHERE lod.doctor_id = ? AND LOWER(lo.title) = LOWER(?)
+        ", [$doctor_internal_id, $data['title']]);
+        
+        if ($existing) {
+            return ['success' => false, 'message' => 'This lab offer already exists.'];
+        }
+        
+        // Insert lab offer
+        $lab_offer_id = $db->insert('lab_offers', [
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'price' => !empty($data['price']) ? (float)$data['price'] : null,
+            'is_active' => 1,
+            'created_at' => db_current_datetime()
+        ]);
+        
+        // Link to doctor
+        $db->insert('lab_offer_doctors', [
+            'lab_offer_id' => $lab_offer_id,
+            'doctor_id' => $doctor_internal_id,
+            'created_at' => db_current_datetime()
+        ]);
+        
+        return ['success' => true, 'message' => 'Lab offer added successfully!'];
+    } catch (Exception $e) {
+        return ['success' => false, 'message' => 'Error adding lab offer: ' . $e->getMessage()];
+    }
+}
+
+function updateLabOffer($db, $doctor_internal_id, $data) {
+    try {
+        if (empty($data['offer_id']) || empty($data['title'])) {
+            return ['success' => false, 'message' => 'Missing required fields.'];
+        }
+        
+        // Verify this offer belongs to the doctor
+        $verify = $db->fetch("
+            SELECT lod.id 
+            FROM lab_offer_doctors lod
+            WHERE lod.lab_offer_id = ? AND lod.doctor_id = ?
+        ", [$data['offer_id'], $doctor_internal_id]);
+        
+        if (!$verify) {
+            return ['success' => false, 'message' => 'Unauthorized action.'];
+        }
+        
+        // Update lab offer
+        $db->update('lab_offers', [
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'price' => !empty($data['price']) ? (float)$data['price'] : null
+        ], 'id = ?', [$data['offer_id']]);
+        
+        return ['success' => true, 'message' => 'Lab offer updated successfully!'];
+    } catch (Exception $e) {
+        return ['success' => false, 'message' => 'Error updating lab offer: ' . $e->getMessage()];
+    }
+}
+
+function deleteLabOffer($db, $doctor_internal_id, $data) {
+    try {
+        if (empty($data['offer_id'])) {
+            return ['success' => false, 'message' => 'Missing offer ID.'];
+        }
+        
+        // Verify this offer belongs to the doctor
+        $verify = $db->fetch("
+            SELECT lod.id 
+            FROM lab_offer_doctors lod
+            WHERE lod.lab_offer_id = ? AND lod.doctor_id = ?
+        ", [$data['offer_id'], $doctor_internal_id]);
+        
+        if (!$verify) {
+            return ['success' => false, 'message' => 'Unauthorized action.'];
+        }
+        
+        // Check if this is the only doctor with this offer
+        $doctor_count = $db->fetch("
+            SELECT COUNT(*) as count 
+            FROM lab_offer_doctors 
+            WHERE lab_offer_id = ?
+        ", [$data['offer_id']])['count'];
+        
+        if ($doctor_count <= 1) {
+            // Delete the offer itself if no other doctors have it
+            $db->delete('lab_offers', 'id = ?', [$data['offer_id']]);
+        } else {
+            // Just remove the link
+            $db->delete('lab_offer_doctors', 'lab_offer_id = ? AND doctor_id = ?', [$data['offer_id'], $doctor_internal_id]);
+        }
+        
+        return ['success' => true, 'message' => 'Lab offer deleted successfully!'];
+    } catch (Exception $e) {
+        return ['success' => false, 'message' => 'Error deleting lab offer: ' . $e->getMessage()];
+    }
+}
+
+function toggleLabOffer($db, $doctor_internal_id, $data) {
+    try {
+        if (empty($data['offer_id'])) {
+            return ['success' => false, 'message' => 'Missing offer ID.'];
+        }
+        
+        // Verify this offer belongs to the doctor
+        $verify = $db->fetch("
+            SELECT lod.id 
+            FROM lab_offer_doctors lod
+            WHERE lod.lab_offer_id = ? AND lod.doctor_id = ?
+        ", [$data['offer_id'], $doctor_internal_id]);
+        
+        if (!$verify) {
+            return ['success' => false, 'message' => 'Unauthorized action.'];
+        }
+        
+        // Toggle active status
+        $current = $db->fetch("SELECT is_active FROM lab_offers WHERE id = ?", [$data['offer_id']]);
+        $new_status = $current['is_active'] ? 0 : 1;
+        
+        $db->update('lab_offers', [
+            'is_active' => $new_status
+        ], 'id = ?', [$data['offer_id']]);
+        
+        $status_text = $new_status ? 'activated' : 'deactivated';
+        return ['success' => true, 'message' => "Lab offer $status_text successfully!"];
+    } catch (Exception $e) {
+        return ['success' => false, 'message' => 'Error toggling lab offer: ' . $e->getMessage()];
     }
 }
 
@@ -329,6 +512,9 @@ require_once '../includes/header.php';
                     </button>
                     <button class="tab-btn" data-tab="medical-info">
                         <i class="fas fa-stethoscope"></i> Medical Information
+                    </button>
+                    <button class="tab-btn" data-tab="lab-offers">
+                        <i class="fas fa-flask"></i> Lab Offers
                     </button>
                     <button class="tab-btn" data-tab="security">
                         <i class="fas fa-lock"></i> Security
@@ -467,36 +653,81 @@ require_once '../includes/header.php';
                                 </div>
                             </div>
                             
-                            <div class="form-group">
-                                <label for="education" class="form-label">
-                                    <i class="fas fa-graduation-cap"></i> Education & Qualifications
-                                </label>
-                                <textarea id="education" name="education" class="form-control" rows="3" 
-                                          placeholder="List your medical degrees, certifications, and qualifications"><?= htmlspecialchars($doctor_info['education'] ?? '') ?></textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="bio" class="form-label">
-                                    <i class="fas fa-user-md"></i> Professional Bio
-                                </label>
-                                <textarea id="bio" name="bio" class="form-control" rows="4" 
-                                          placeholder="Tell patients about your background, experience, and approach to medicine"><?= htmlspecialchars($doctor_info['bio'] ?? '') ?></textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="office_address" class="form-label">
-                                    <i class="fas fa-map-marker-alt"></i> Office Address
-                                </label>
-                                <textarea id="office_address" name="office_address" class="form-control" rows="2" 
-                                          placeholder="Your clinic or office address"><?= htmlspecialchars($doctor_info['office_address'] ?? '') ?></textarea>
-                            </div>
-                            
                             <div class="form-actions">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save"></i> Update Medical Information
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+
+                <!-- Lab Offers Tab -->
+                <div class="tab-content" id="lab-offers">
+                    <div class="content-section">
+                        <div class="section-header">
+                            <div>
+                                <h3><i class="fas fa-flask"></i> Laboratory Offers</h3>
+                                <p>Manage your laboratory tests and diagnostic services</p>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="openAddLabOfferModal()">
+                                <i class="fas fa-plus"></i> Add New Lab Offer
+                            </button>
+                        </div>
+                        
+                        <?php if (!empty($lab_offers)): ?>
+                        <div class="lab-offers-grid">
+                            <?php foreach ($lab_offers as $offer): ?>
+                            <div class="lab-offer-card">
+                                <div class="lab-offer-header">
+                                    <h4><?= htmlspecialchars($offer['title']) ?></h4>
+                                    <div class="lab-offer-status">
+                                        <span class="status-badge <?= $offer['is_active'] ? 'status-active' : 'status-inactive' ?>">
+                                            <?= $offer['is_active'] ? 'Active' : 'Inactive' ?>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="lab-offer-body">
+                                    <?php if (!empty($offer['description'])): ?>
+                                    <p class="lab-offer-description"><?= htmlspecialchars($offer['description']) ?></p>
+                                    <?php endif; ?>
+                                    <?php if (!empty($offer['price'])): ?>
+                                    <div class="lab-offer-price">
+                                        <i class="fas fa-coins"></i> ₱<?= number_format($offer['price'], 2) ?>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="lab-offer-actions">
+                                    <button type="button" class="btn btn-sm btn-secondary" 
+                                            onclick="editLabOffer(<?= $offer['id'] ?>, '<?= htmlspecialchars($offer['title'], ENT_QUOTES) ?>', '<?= htmlspecialchars($offer['description'] ?? '', ENT_QUOTES) ?>', <?= $offer['price'] ?? 'null' ?>)">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Toggle this lab offer status?');">
+                                        <input type="hidden" name="action" value="toggle_lab_offer">
+                                        <input type="hidden" name="offer_id" value="<?= $offer['id'] ?>">
+                                        <button type="submit" class="btn btn-sm <?= $offer['is_active'] ? 'btn-warning' : 'btn-success' ?>">
+                                            <i class="fas fa-<?= $offer['is_active'] ? 'eye-slash' : 'eye' ?>"></i> 
+                                            <?= $offer['is_active'] ? 'Deactivate' : 'Activate' ?>
+                                        </button>
+                                    </form>
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this lab offer?');">
+                                        <input type="hidden" name="action" value="delete_lab_offer">
+                                        <input type="hidden" name="offer_id" value="<?= $offer['id'] ?>">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php else: ?>
+                        <div class="empty-state">
+                            <i class="fas fa-flask"></i>
+                            <h4>No Lab Offers Yet</h4>
+                            <p>Start by adding your first laboratory test or diagnostic service.</p>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -525,7 +756,7 @@ require_once '../includes/header.php';
                                     </label>
                                     <input type="password" id="new_password" name="new_password" class="form-control" 
                                            minlength="8">
-                                    <small class="form-help">Password must be at least 8 characters long</small>
+                                    
                                 </div>
                                 
                                 <div class="form-group">
@@ -646,6 +877,89 @@ require_once '../includes/header.php';
                 setTimeout(() => alert.remove(), 300);
             });
         }, 5000);
+
+        // Lab Offers Modal Functions
+        function openAddLabOfferModal() {
+            document.getElementById('labOfferModalTitle').textContent = 'Add New Lab Offer';
+            document.getElementById('labOfferForm').reset();
+            document.getElementById('labOfferAction').value = 'add_lab_offer';
+            document.getElementById('labOfferId').value = '';
+            document.getElementById('labOfferModal').style.display = 'flex';
+        }
+
+        function editLabOffer(id, title, description, price) {
+            document.getElementById('labOfferModalTitle').textContent = 'Edit Lab Offer';
+            document.getElementById('labOfferAction').value = 'update_lab_offer';
+            document.getElementById('labOfferId').value = id;
+            document.getElementById('offerTitle').value = title;
+            document.getElementById('offerDescription').value = description || '';
+            document.getElementById('offerPrice').value = price || '';
+            document.getElementById('labOfferModal').style.display = 'flex';
+        }
+
+        function closeLabOfferModal() {
+            document.getElementById('labOfferModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('labOfferModal');
+            if (event.target == modal) {
+                closeLabOfferModal();
+            }
+        }
     </script>
+
+    <!-- Lab Offer Modal -->
+    <div id="labOfferModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="labOfferModalTitle">
+                    <i class="fas fa-flask"></i> Add New Lab Offer
+                </h3>
+                <button type="button" class="close-btn" onclick="closeLabOfferModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form method="POST" id="labOfferForm">
+                <div class="modal-body">
+                    <input type="hidden" name="action" id="labOfferAction" value="add_lab_offer">
+                    <input type="hidden" name="offer_id" id="labOfferId">
+                    
+                    <div class="form-group">
+                        <label for="offerTitle" class="form-label">
+                            <i class="fas fa-flask"></i> Lab Test Title <span style="color: #dc3545;">*</span>
+                        </label>
+                        <input type="text" id="offerTitle" name="title" class="form-control" 
+                               placeholder="e.g., Complete Blood Count (CBC)" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="offerDescription" class="form-label">
+                            <i class="fas fa-align-left"></i> Description
+                        </label>
+                        <textarea id="offerDescription" name="description" class="form-control" 
+                                  rows="4" placeholder="Brief description of the lab test"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="offerPrice" class="form-label">
+                            <i class="fas fa-coins"></i> Price (₱)
+                        </label>
+                        <input type="number" id="offerPrice" name="price" class="form-control" 
+                               step="0.01" min="0" placeholder="0.00" value="0.00">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeLabOfferModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Lab Offer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <?php require_once '../includes/footer.php'; ?>

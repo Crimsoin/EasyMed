@@ -60,7 +60,7 @@ function initializeModals() {
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
         currentModal = modal;
         document.body.style.overflow = 'hidden';
         
@@ -470,24 +470,39 @@ function handleRegistration(event) {
     
     showSpinner(event.target);
     
-    fetch('includes/ajax/register_debug.php', {
+    fetch('includes/ajax/register.php', {
         method: 'POST',
         body: formData
     })
     .then(response => {
         console.log('Response status:', response.status);
-        return response.json();
+        console.log('Response headers:', response.headers.get('content-type'));
+        
+        // Get the response as text first to see what we're getting
+        return response.text().then(text => {
+            console.log('Raw response text:', text);
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error('JSON parse error:', e);
+                console.error('Response was:', text.substring(0, 500));
+                throw new Error('Invalid JSON response: ' + text.substring(0, 100));
+            }
+        });
     })
     .then(data => {
-        console.log('Response data:', data);
+        console.log('Parsed response data:', data);
         hideSpinner(event.target);
         
         if (data.success) {
+            // Close registration modal immediately
+            closeModal();
+            // Show success message
             showAlert('Registration successful! Please login.', 'success');
+            // Open login modal after a brief delay
             setTimeout(() => {
-                closeModal();
                 openModal('loginModal');
-            }, 1500);
+            }, 500);
         } else {
             showAlert(data.message, 'error');
         }
@@ -556,10 +571,12 @@ function showValidationError(input, message) {
 }
 
 function clearValidationError(input) {
+    if (!input || !input.parentNode) return;
+    
     input.classList.remove('error');
     
     // Look for error message after the input group
-    const errorMessage = input.parentNode.parentNode.querySelector('.error-message');
+    const errorMessage = input.parentNode.parentNode?.querySelector('.error-message');
     if (errorMessage) {
         errorMessage.remove();
     }
@@ -677,13 +694,16 @@ function initializeUIElements() {
     const anchorLinks = document.querySelectorAll('a[href^="#"]');
     anchorLinks.forEach(link => {
         link.addEventListener('click', function(e) {
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                e.preventDefault();
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
+            const href = this.getAttribute('href');
+            if (href && href !== '#' && href.length > 1) {
+                const target = document.querySelector(href);
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
             }
         });
     });

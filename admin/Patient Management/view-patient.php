@@ -50,26 +50,31 @@ if ($user['role'] === 'patient') {
 // Get recent activity (appointments)
 $recentActivity = [];
 if ($user['role'] === 'patient') {
-    $recentActivity = $db->fetchAll("
-        SELECT a.*, 
-               d.first_name as doctor_first_name, d.last_name as doctor_last_name,
-               doc.specialty
-        FROM appointments a
-        JOIN doctors doc ON a.doctor_id = doc.id
-        JOIN users d ON doc.user_id = d.id
-        WHERE a.patient_id = ?
-        ORDER BY a.created_at DESC
-        LIMIT 10", [$userId]);
+    // Get patient_id from patients table using user_id
+    $patientId = $db->fetch("SELECT id FROM patients WHERE user_id = ?", [$userId])['id'] ?? 0;
+    if ($patientId) {
+        $recentActivity = $db->fetchAll("
+            SELECT a.*, 
+                   du.first_name as doctor_first_name, du.last_name as doctor_last_name,
+                   doc.specialty
+            FROM appointments a
+            JOIN doctors doc ON a.doctor_id = doc.id
+            JOIN users du ON doc.user_id = du.id
+            WHERE a.patient_id = ?
+            ORDER BY a.appointment_date DESC, a.appointment_time DESC
+            LIMIT 10", [$patientId]);
+    }
 } elseif ($user['role'] === 'doctor') {
     $doctorId = $db->fetch("SELECT id FROM doctors WHERE user_id = ?", [$userId])['id'] ?? 0;
     if ($doctorId) {
         $recentActivity = $db->fetchAll("
             SELECT a.*, 
-                   p.first_name as patient_first_name, p.last_name as patient_last_name
+                   pu.first_name as patient_first_name, pu.last_name as patient_last_name
             FROM appointments a
-            JOIN users p ON a.patient_id = p.id
+            JOIN patients p ON a.patient_id = p.id
+            JOIN users pu ON p.user_id = pu.id
             WHERE a.doctor_id = ?
-            ORDER BY a.created_at DESC
+            ORDER BY a.appointment_date DESC, a.appointment_time DESC
             LIMIT 10", [$doctorId]);
     }
 }
@@ -277,7 +282,7 @@ require_once '../../includes/header.php';
         <?php if (!empty($recentActivity)): ?>
         <div class="info-section">
             <div class="section-header">
-                <h2><i class="fas fa-history"></i> Recent Appointments</h2>
+                <h2><i class="fas fa-history"></i> Patient History</h2>
                 <a href="../Appointment/appointments.php" class="view-all-link">View All</a>
             </div>
             
@@ -303,9 +308,11 @@ require_once '../../includes/header.php';
                             <strong>Specialty:</strong> <?php echo htmlspecialchars($activity['specialty']); ?>
                         </p>
                         <?php endif; ?>
+                        <?php if (!empty($activity['reason_for_visit'])): ?>
                         <p class="appointment-reason">
-                            <strong>Service:</strong> <?php echo ucfirst($activity['service_type']); ?>
+                            <strong>Reason:</strong> <?php echo htmlspecialchars($activity['reason_for_visit']); ?>
                         </p>
+                        <?php endif; ?>
                     </div>
                     <span class="appointment-status status-<?php echo $activity['status']; ?>">
                         <?php echo ucfirst($activity['status']); ?>
@@ -317,7 +324,7 @@ require_once '../../includes/header.php';
         <?php else: ?>
         <div class="info-section">
             <div class="section-header">
-                <h2><i class="fas fa-history"></i> Recent Appointments</h2>
+                <h2><i class="fas fa-history"></i> Patient History</h2>
             </div>
             <div class="no-appointments">
                 <i class="fas fa-calendar-times"></i>

@@ -1093,4 +1093,57 @@
     font-size: 0.9rem;
 }
 
+/* Status badges for table cells */
+.status-completed,
+.status-cancelled,
+.status-scheduled,
+.status-pending,
+.status-no-show,
+.status-rescheduled {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    min-width: 60px;
+}
+
+.status-completed {
+    background: rgba(76, 175, 80, 0.15);
+    color: #4CAF50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.status-cancelled {
+    background: rgba(255, 152, 0, 0.15);
+    color: #FF9800;
+    border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.status-scheduled {
+    background: rgba(33, 150, 243, 0.15);
+    color: #2196F3;
+    border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.status-pending {
+    background: rgba(158, 158, 158, 0.15);
+    color: #9E9E9E;
+    border: 1px solid rgba(158, 158, 158, 0.3);
+}
+
+.status-no-show {
+    background: rgba(244, 67, 54, 0.15);
+    color: #F44336;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.status-rescheduled {
+    background: rgba(156, 39, 176, 0.15);
+    color: #9C27B0;
+    border: 1px solid rgba(156, 39, 176, 0.3);
+}
+
+
 

@@ -48,11 +48,17 @@ body {
     background-color: rgba(0, 0, 0, 0.5);
     -webkit-backdrop-filter: blur(3px);
     backdrop-filter: blur(3px);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show {
+    display: flex !important;
 }
 
 .modal-content {
     background-color: var(--white);
-    margin: 5% auto;
+    margin: auto;
     border-radius: 12px;
     width: 90%;
     max-width: 500px;

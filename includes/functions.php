@@ -156,6 +156,25 @@ class Auth {
             error_log("Insert result - User ID: " . $userId);
             
             if ($userId) {
+                // Create patient record
+                try {
+                    error_log("Creating patient record for user ID: " . $userId);
+                    $patientData = [
+                        'user_id' => $userId,
+                        'status' => 'active'
+                    ];
+                    $patientId = $this->db->insert('patients', $patientData);
+                    error_log("Patient record created with ID: " . $patientId);
+                    
+                    if (!$patientId) {
+                        error_log("WARNING: Patient record creation returned no ID");
+                    }
+                } catch (Exception $e) {
+                    error_log("Error creating patient record: " . $e->getMessage());
+                    error_log("Patient creation error trace: " . $e->getTraceAsString());
+                    // Don't fail registration - patient record can be created later
+                }
+                
                 error_log("User inserted successfully, logging activity");
                 try {
                     logActivity($userId, 'register', 'New user registered');
@@ -224,8 +243,8 @@ function generateToken($length = 32) {
 
 function sendEmail($to, $subject, $message, $isHTML = true) {
     // Basic email function - can be enhanced with PHPMailer
-    $headers = "From: " . FROM_NAME . " <" . FROM_EMAIL . ">\r\n";
-    $headers .= "Reply-To: " . FROM_EMAIL . "\r\n";
+    $headers = "From: " . SMTP_FROM_NAME . " <" . SMTP_FROM_EMAIL . ">\r\n";
+    $headers .= "Reply-To: " . SMTP_FROM_EMAIL . "\r\n";
     
     if ($isHTML) {
         $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
@@ -235,13 +254,28 @@ function sendEmail($to, $subject, $message, $isHTML = true) {
 }
 
 function createNotification($userId, $title, $message, $type = 'info') {
-    $db = Database::getInstance();
-    return $db->insert('notifications', [
-        'user_id' => $userId,
-        'title' => $title,
-        'message' => $message,
-        'type' => $type
-    ]);
+    try {
+        $db = Database::getInstance();
+        
+        // Check if notifications table exists
+        $tableCheck = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='notifications'");
+        $tableExists = $tableCheck->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$tableExists) {
+            error_log("Notifications table does not exist - skipping notification creation");
+            return false;
+        }
+        
+        return $db->insert('notifications', [
+            'user_id' => $userId,
+            'title' => $title,
+            'message' => $message,
+            'type' => $type
+        ]);
+    } catch (Exception $e) {
+        error_log("Error creating notification: " . $e->getMessage());
+        return false;
+    }
 }
 
 function getClinicSetting($key, $default = '') {
@@ -318,6 +352,16 @@ function uploadFile($file, $uploadDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'p
 function logActivity($userId, $type, $description) {
     try {
         $db = Database::getInstance();
+        
+        // Check if activity_logs table exists
+        $tableCheck = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='activity_logs'");
+        $tableExists = $tableCheck->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$tableExists) {
+            error_log("Activity_logs table does not exist - skipping activity logging");
+            return false;
+        }
+        
         return $db->insert('activity_logs', [
             'user_id' => $userId,
             'action' => $type,

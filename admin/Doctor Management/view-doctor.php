@@ -258,21 +258,15 @@ require_once '../../includes/header.php';
                                 <?php endif; ?>
                             </span>
                         </div>
-                        <?php if ($doctor['biography']): ?>
-                            <div class="info-item full-width">
-                                <label>Biography</label>
-                                <span class="biography"><?php echo nl2br(htmlspecialchars($doctor['biography'])); ?></span>
-                            </div>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
 
             <div class="content-right">
-                <!-- Recent Appointments -->
+                <!-- Patient History -->
                 <div class="info-section">
                     <div class="section-header">
-                        <h3><i class="fas fa-calendar-check"></i> Recent Appointments</h3>
+                        <h3><i class="fas fa-calendar-check"></i> Patient History</h3>
                         <a href="../Appointment/appointments.php?doctor_id=<?php echo $doctor['id']; ?>" class="view-all-link">
                             View All
                         </a>

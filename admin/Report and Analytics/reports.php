@@ -10,15 +10,15 @@ $auth->requireRole('admin');
 
 $db = Database::getInstance();
 
-// Get date range for reports (default to last 30 days)
-$end_date = $_GET['end_date'] ?? date('Y-m-d');
+// Get date range for reports (default to last 30 days and next 30 days to capture all appointments)
+$end_date = $_GET['end_date'] ?? date('Y-m-d', strtotime('+30 days'));
 $start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-30 days'));
 $report_type = $_GET['report_type'] ?? 'overview';
 
 // Validate dates
 if (!isValidDate($start_date) || !isValidDate($end_date)) {
     $start_date = date('Y-m-d', strtotime('-30 days'));
-    $end_date = date('Y-m-d');
+    $end_date = date('Y-m-d', strtotime('+30 days'));
 }
 
 // Ensure start date is not after end date
@@ -37,14 +37,17 @@ $stats['appointments'] = [
     'completed' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'completed'", [$start_date, $end_date])['count'],
     'cancelled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'cancelled'", [$start_date, $end_date])['count'],
     'scheduled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'scheduled'", [$start_date, $end_date])['count'],
-    'pending' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'pending'", [$start_date, $end_date])['count']
+    'pending' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'pending'", [$start_date, $end_date])['count'],
+    'no_show' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'no_show'", [$start_date, $end_date])['count'],
+    'rescheduled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'rescheduled'", [$start_date, $end_date])['count']
 ];
 
 // Calculate rates
 $total_appointments = $stats['appointments']['total'];
 $stats['rates'] = [
     'cancellation_rate' => $total_appointments > 0 ? round(($stats['appointments']['cancelled'] / $total_appointments) * 100, 1) : 0,
-    'completion_rate' => $total_appointments > 0 ? round(($stats['appointments']['completed'] / $total_appointments) * 100, 1) : 0
+    'completion_rate' => $total_appointments > 0 ? round(($stats['appointments']['completed'] / $total_appointments) * 100, 1) : 0,
+    'no_show_rate' => $total_appointments > 0 ? round(($stats['appointments']['no_show'] / $total_appointments) * 100, 1) : 0
 ];
 
 $stats['users'] = [
@@ -61,7 +64,9 @@ $daily_trends = $db->fetchAll("
         COUNT(*) as total_appointments,
         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
         SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
-        SUM(CASE WHEN status = 'scheduled' THEN 1 ELSE 0 END) as scheduled
+        SUM(CASE WHEN status = 'scheduled' THEN 1 ELSE 0 END) as scheduled,
+        SUM(CASE WHEN status = 'no_show' THEN 1 ELSE 0 END) as no_show,
+        SUM(CASE WHEN status = 'rescheduled' THEN 1 ELSE 0 END) as rescheduled
     FROM appointments 
     WHERE appointment_date BETWEEN ? AND ?
     GROUP BY DATE(appointment_date)
@@ -76,6 +81,8 @@ $doctor_performance = $db->fetchAll("
         COUNT(a.id) as total_appointments,
         SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) as completed_appointments,
         SUM(CASE WHEN a.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_appointments,
+        SUM(CASE WHEN a.status = 'no_show' THEN 1 ELSE 0 END) as no_show_appointments,
+        SUM(CASE WHEN a.status = 'rescheduled' THEN 1 ELSE 0 END) as rescheduled_appointments,
         ROUND((CAST(SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(a.id)) * 100, 1) as completion_rate
     FROM doctors d
     JOIN users du ON d.user_id = du.id
@@ -162,37 +169,23 @@ require_once '../../includes/header.php';
             
             <div class="stat-card">
                 <div class="stat-icon">
-                    <i class="fas fa-user-md"></i>
+                    <i class="fas fa-user-times"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?php echo $stats['users']['active_doctors']; ?></h3>
-                    <p>Active Doctors</p>
-                    <small><?php echo $stats['users']['total_doctors']; ?> total</small>
+                    <h3><?php echo $stats['rates']['no_show_rate']; ?>%</h3>
+                    <p>No Show Rate</p>
+                    <small><?php echo $stats['appointments']['no_show']; ?> no shows</small>
                 </div>
             </div>
             
             <div class="stat-card">
                 <div class="stat-icon">
-                    <i class="fas fa-users"></i>
+                    <i class="fas fa-times-circle"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?php echo $stats['users']['new_patients']; ?></h3>
-                    <p>New Patients</p>
-                    <small><?php echo $stats['users']['total_patients']; ?> total</small>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-history"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?php 
-                        $activity_count = $db->fetch("SELECT COUNT(*) as count FROM activity_logs WHERE DATE(created_at) BETWEEN ? AND ?", [$start_date, $end_date])['count'];
-                        echo $activity_count;
-                    ?></h3>
-                    <p>System Logs</p>
-                    <small>Account activity tracking</small>
+                    <h3><?php echo $stats['rates']['cancellation_rate']; ?>%</h3>
+                    <p>Cancellation Rate</p>
+                    <small><?php echo $stats['appointments']['cancelled']; ?> cancelled</small>
                 </div>
             </div>
         </div>
@@ -266,46 +259,6 @@ require_once '../../includes/header.php';
             </div>
         </div>
 
-        <!-- Appointment Trends -->
-        <?php if (!empty($daily_trends)): ?>
-        <div class="content-section">
-            <div class="section-header">
-                <h2><i class="fas fa-chart-line"></i> Daily Appointment Trends</h2>
-            </div>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Total</th>
-                            <th>Completed</th>
-                            <th>Scheduled</th>
-                            <th>Cancelled</th>
-                            <th>Completion Rate</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($daily_trends as $trend): ?>
-                        <tr>
-                            <td><?php echo formatDate($trend['date']); ?></td>
-                            <td><strong><?php echo $trend['total_appointments']; ?></strong></td>
-                            <td><span class="status-completed"><?php echo $trend['completed']; ?></span></td>
-                            <td><span class="status-scheduled"><?php echo $trend['scheduled']; ?></span></td>
-                            <td><span class="status-cancelled"><?php echo $trend['cancelled']; ?></span></td>
-                            <td>
-                                <?php 
-                                $rate = $trend['total_appointments'] > 0 ? round(($trend['completed'] / $trend['total_appointments']) * 100, 1) : 0;
-                                echo $rate; 
-                                ?>%
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <?php endif; ?>
-
         <!-- Doctor Performance -->
         <div class="content-section">
             <div class="section-header">
@@ -320,6 +273,8 @@ require_once '../../includes/header.php';
                             <th>Total Appointments</th>
                             <th>Completed</th>
                             <th>Cancelled</th>
+                            <th>No Show</th>
+                            <th>Rescheduled</th>
                             <th>Completion Rate</th>
                         </tr>
                     </thead>
@@ -337,6 +292,8 @@ require_once '../../includes/header.php';
                             <td><strong><?php echo $doctor['total_appointments']; ?></strong></td>
                             <td><span class="status-completed"><?php echo $doctor['completed_appointments']; ?></span></td>
                             <td><span class="status-cancelled"><?php echo $doctor['cancelled_appointments']; ?></span></td>
+                            <td><span class="status-no-show"><?php echo $doctor['no_show_appointments']; ?></span></td>
+                            <td><span class="status-rescheduled"><?php echo $doctor['rescheduled_appointments']; ?></span></td>
                             <td>
                                 <span class="completion-rate completion-rate-<?php echo $doctor['completion_rate'] >= 80 ? 'good' : ($doctor['completion_rate'] >= 60 ? 'average' : 'poor'); ?>">
                                     <?php echo $doctor['completion_rate'] ?: '0'; ?>%
@@ -356,32 +313,6 @@ require_once '../../includes/header.php';
                 </table>
             </div>
         </div>
-
-        <!-- Hourly Distribution -->
-        <?php if (!empty($hourly_stats)): ?>
-        <div class="content-section">
-            <div class="section-header">
-                <h2><i class="fas fa-clock"></i> Hourly Appointment Distribution</h2>
-            </div>
-            <div class="hourly-grid">
-                <?php foreach ($hourly_stats as $stat): ?>
-                <div class="hourly-stat-card">
-                    <div class="hourly-count">
-                        <?php echo $stat['total_appointments']; ?>
-                    </div>
-                    <div class="hourly-time">
-                        <?php echo sprintf('%02d:00', $stat['hour']); ?>
-                    </div>
-                    <?php if ($stat['cancellations'] > 0): ?>
-                    <div class="hourly-cancellations">
-                        <?php echo $stat['cancellations']; ?> cancelled
-                    </div>
-                    <?php endif; ?>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
 
         <!-- System Logs Section -->
         <div class="content-section">
@@ -505,6 +436,10 @@ require_once '../../includes/header.php';
                         <li>
                             <i class="fas fa-times-circle"></i> 
                             <?php echo $stats['rates']['cancellation_rate']; ?>% cancellation rate
+                        </li>
+                        <li>
+                            <i class="fas fa-user-times"></i> 
+                            <?php echo $stats['rates']['no_show_rate']; ?>% no-show rate
                         </li>
                         <li>
                             <i class="fas fa-calendar-alt"></i> 

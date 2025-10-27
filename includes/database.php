@@ -1,5 +1,7 @@
 <?php
-require_once 'config.php';
+if (!defined('DB_TYPE')) {
+    require_once 'config.php';
+}
 
 class Database {
     private $connection;

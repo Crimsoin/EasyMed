@@ -64,7 +64,7 @@
     </footer>
 
     <!-- JavaScript -->
-    <script src="<?php echo SITE_URL; ?>/assets/js/script.js"></script>
+    <script src="<?php echo SITE_URL; ?>/assets/js/script.js?v=<?php echo time(); ?>"></script>
     
     <!-- Additional JavaScript for specific pages -->
     <?php if (isset($additional_js)): ?>

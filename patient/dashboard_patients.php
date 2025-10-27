@@ -13,25 +13,31 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'patient') {
 
 $db = Database::getInstance();
 
+// Get patient_id from patients table
+$patientId = $db->fetch("SELECT id FROM patients WHERE user_id = ?", [$_SESSION['user_id']])['id'] ?? 0;
+
 // Get patient's appointments
-$appointments = $db->fetchAll("
-    SELECT a.*, 
-           d.first_name as doctor_first_name, d.last_name as doctor_last_name,
-           doc.specialty, doc.consultation_fee
-    FROM appointments a
-    JOIN users d ON a.doctor_id = d.id
-    JOIN doctors doc ON d.id = doc.user_id
-    WHERE a.patient_id = ?
-    ORDER BY a.appointment_date DESC, a.appointment_time DESC
-    LIMIT 10
-", [$_SESSION['user_id']]);
+$appointments = [];
+if ($patientId) {
+    $appointments = $db->fetchAll("
+        SELECT a.*, 
+               du.first_name as doctor_first_name, du.last_name as doctor_last_name,
+               doc.specialty, doc.consultation_fee
+        FROM appointments a
+        JOIN doctors doc ON a.doctor_id = doc.id
+        JOIN users du ON doc.user_id = du.id
+        WHERE a.patient_id = ?
+        ORDER BY a.appointment_date DESC, a.appointment_time DESC
+        LIMIT 10
+    ", [$patientId]);
+}
 
 // Get appointment statistics for patient
 $stats = [
-    'total' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ?", [$_SESSION['user_id']])['count'],
-    'upcoming' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND appointment_date >= date('now') AND status IN ('scheduled', 'confirmed')", [$_SESSION['user_id']])['count'],
-    'completed' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND status = 'completed'", [$_SESSION['user_id']])['count'],
-    'pending' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND status = 'scheduled'", [$_SESSION['user_id']])['count']
+    'total' => $patientId ? $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ?", [$patientId])['count'] : 0,
+    'upcoming' => $patientId ? $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND appointment_date >= date('now') AND status IN ('scheduled', 'confirmed')", [$patientId])['count'] : 0,
+    'completed' => $patientId ? $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND status = 'completed'", [$patientId])['count'] : 0,
+    'pending' => $patientId ? $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND status = 'scheduled'", [$patientId])['count'] : 0
 ];
 
 require_once '../includes/header.php';
@@ -113,10 +119,10 @@ require_once '../includes/header.php';
             </div>
         </div>
 
-        <!-- Recent Appointments -->
+        <!-- Patient History -->
         <div class="content-section">
             <div class="section-header">
-                <h2>Recent Appointments</h2>
+                <h2>Patient History</h2>
                 <a href="appointments.php" class="btn btn-secondary">
                     <i class="fas fa-list"></i> View All
                 </a>
@@ -143,10 +149,12 @@ require_once '../includes/header.php';
                                             <i class="fas fa-calendar"></i>
                                             <?php echo formatDate($appointment['appointment_date']); ?> at <?php echo formatTime($appointment['appointment_time']); ?>
                                         </div>
+                                        <?php if (!empty($appointment['reason_for_visit'])): ?>
                                         <div class="reason">
                                             <i class="fas fa-clipboard"></i>
-                                            <?php echo htmlspecialchars($appointment['reason']); ?>
+                                            <?php echo htmlspecialchars($appointment['reason_for_visit']); ?>
                                         </div>
+                                        <?php endif; ?>
                                         <div class="fee">
                                             <i class="fas fa-coins"></i>
                                             ₱<?php echo number_format($appointment['consultation_fee'], 2); ?>

@@ -129,11 +129,19 @@
     background-color: rgba(0, 0, 0, 0.5);
     -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show,
+.modal[style*="display: block"],
+.modal[style*="display: flex"] {
+    display: flex !important;
 }
 
 .modal-content {
     background-color: white;
-    margin: 2% auto;
+    margin: auto;
     padding: 0;
     border-radius: 12px;
     width: 90%;

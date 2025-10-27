@@ -185,7 +185,6 @@ require_once '../../includes/header.php';
                             <th>Email</th>
                             <th>Role</th>
                             <th>Created</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -201,93 +200,10 @@ require_once '../../includes/header.php';
                                 </span>
                             </td>
                             <td><?php echo date('M j, Y', strtotime($user['created_at'])); ?></td>
-                            <td>
-                                <div class="user-actions">
-                                    <a href="view-user.php?id=<?php echo $user['id']; ?>" class="btn btn-sm btn-view">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="edit-user.php?id=<?php echo $user['id']; ?>" class="btn btn-sm btn-edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                </div>
-                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="content-section">
-            <div class="section-header">
-                <h2>Quick Actions</h2>
-            </div>
-            
-            <div class="quick-actions">
-                <a href="add-patient-admin.php" class="action-card">
-                    <div class="action-icon">
-                        <i class="fas fa-user-plus"></i>
-                    </div>
-                    <div class="action-content">
-                        <h4>Add New User</h4>
-                        <p>Create a new user account</p>
-                    </div>
-                </a>
-                
-                <a href="../Patient Management/patients.php" class="action-card">
-                    <div class="action-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="action-content">
-                        <h4>Manage Users</h4>
-                        <p>View and edit all users</p>
-                    </div>
-                </a>
-                
-                <a href="../Doctor Management/doctors.php" class="action-card">
-                    <div class="action-icon">
-                        <i class="fas fa-user-md"></i>
-                    </div>
-                    <div class="action-content">
-                        <h4>Manage Doctors</h4>
-                        <p>Add and manage doctors</p>
-                    </div>
-                </a>
-                
-                <a href="../Appointment/appointments.php" class="action-card">
-                    <div class="action-icon">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div class="action-content">
-                        <h4>View Appointments</h4>
-                        <p>Check all appointments</p>
-                    </div>
-                </a>
-            </div>
-        </div>
-
-        <!-- System Overview -->
-        <div class="content-section">
-            <div class="section-header">
-                <h2>System Overview</h2>
-            </div>
-            
-            <div style="padding: 2rem;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-                    <div style="text-align: center; padding: 1rem; background: rgba(0, 188, 212, 0.1); border-radius: 8px;">
-                        <h4 style="color: var(--primary-cyan); margin-bottom: 0.5rem;"><?php echo $pendingAppointments; ?></h4>
-                        <p style="margin: 0; color: var(--text-light);">Pending Appointments</p>
-                    </div>
-                    <div style="text-align: center; padding: 1rem; background: rgba(76, 175, 80, 0.1); border-radius: 8px;">
-                        <h4 style="color: #4caf50; margin-bottom: 0.5rem;"><?php echo $todayAppointments; ?></h4>
-                        <p style="margin: 0; color: var(--text-light);">Today's Appointments</p>
-                    </div>
-                    <div style="text-align: center; padding: 1rem; background: rgba(255, 152, 0, 0.1); border-radius: 8px;">
-                        <h4 style="color: #ff9800; margin-bottom: 0.5rem;"><?php echo $adminCount; ?></h4>
-                        <p style="margin: 0; color: var(--text-light);">System Administrators</p>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

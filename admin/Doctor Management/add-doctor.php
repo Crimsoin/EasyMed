@@ -344,12 +344,6 @@ require_once '../../includes/header.php';
                                min="0" step="0.01">
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="biography" class="form-label">Biography</label>
-                    <textarea id="biography" name="biography" class="form-control" rows="4"
-                              placeholder="Brief description of the doctor's background and expertise"><?php echo htmlspecialchars($_POST['biography'] ?? ''); ?></textarea>
-                </div>
             </div>
 
             <!-- Laboratory Offers removed -->

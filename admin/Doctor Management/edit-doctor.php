@@ -389,12 +389,6 @@ require_once '../../includes/header.php';
                            min="0" step="0.01" value="<?php echo htmlspecialchars($_POST['consultation_fee'] ?? $doctor['consultation_fee']); ?>">
                 </div>
             </div>
-            
-            <div class="form-group">
-                <label for="biography" class="form-label">Biography</label>
-                <textarea id="biography" name="biography" class="form-control" rows="4" 
-                          placeholder="Brief professional biography and qualifications..."><?php echo htmlspecialchars($_POST['biography'] ?? $doctor['biography']); ?></textarea>
-            </div>
         </div>
     </div>
     

@@ -573,11 +573,19 @@
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     animation: fadeIn 0.3s ease;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show,
+.modal[style*="display: block"],
+.modal[style*="display: flex"] {
+    display: flex !important;
 }
 
 .modal-content {
     background-color: var(--white);
-    margin: 5% auto;
+    margin: auto;
     padding: 0;
     border-radius: 12px;
     width: 90%;
