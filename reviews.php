@@ -161,44 +161,4 @@ $avgRating = $db->fetch("
     </div>
 </section>
 
-<!-- Statistics Section -->
-<?php if (!empty($reviews)): ?>
-<section class="section" style="background-color: var(--light-gray);">
-    <div class="container">
-        <h2 class="section-title">Review Statistics</h2>
-        
-        <?php
-        // Calculate rating distribution
-        $ratingCounts = array_fill(1, 5, 0);
-        foreach ($reviews as $review) {
-            $ratingCounts[$review['rating']]++;
-        }
-        $totalReviews = count($reviews);
-        ?>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
-            <?php for ($rating = 5; $rating >= 1; $rating--): ?>
-                <?php $count = $ratingCounts[$rating]; ?>
-                <?php $percentage = $totalReviews > 0 ? ($count / $totalReviews) * 100 : 0; ?>
-                
-                <div class="card text-center">
-                    <div style="font-size: 2rem; color: var(--primary-cyan); margin-bottom: 0.5rem;">
-                        <?php echo $rating; ?> <i class="fas fa-star"></i>
-                    </div>
-                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-dark); margin-bottom: 0.5rem;">
-                        <?php echo $count; ?>
-                    </div>
-                    <div style="background-color: var(--medium-gray); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 0.5rem;">
-                        <div style="background-color: var(--primary-cyan); height: 100%; width: <?php echo $percentage; ?>%; transition: width 0.3s ease;"></div>
-                    </div>
-                    <div style="font-size: 0.9rem; color: var(--text-light);">
-                        <?php echo number_format($percentage, 1); ?>%
-                    </div>
-                </div>
-            <?php endfor; ?>
-        </div>
-    </div>
-</section>
-<?php endif; ?>
-
 <?php require_once 'includes/footer.php'; ?>
