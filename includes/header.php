@@ -16,7 +16,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <meta name="author" content="EasyMed">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="<?php echo SITE_URL; ?>/assets/images/favicon.ico">
+    <link rel="icon" type="image/png" href="<?php echo SITE_URL; ?>/assets/images/favicon.png">
     
     <!-- CSS -->
     <link rel="stylesheet" href="<?php echo SITE_URL; ?>/assets/css/style.css">
