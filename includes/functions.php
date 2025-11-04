@@ -115,18 +115,13 @@ class Auth {
     
     public function register($userData) {
         try {
-            error_log("Auth::register called with data: " . print_r($userData, true));
-            
             // Check if username or email already exists
             $existing = $this->db->fetch(
                 "SELECT id FROM users WHERE username = ? OR email = ?",
                 [$userData['username'], $userData['email']]
             );
             
-            error_log("Existing user check result: " . print_r($existing, true));
-            
             if ($existing) {
-                error_log("User already exists - returning error");
                 return [
                     'success' => false,
                     'message' => 'Username or email already exists'
@@ -135,7 +130,6 @@ class Auth {
             
             // Hash password
             $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
-            error_log("Password hashed successfully");
             
             // Prepare data for insertion (exclude confirm_password)
             $insertData = [
@@ -151,7 +145,6 @@ class Auth {
             ];
             
             // Insert user
-            error_log("Attempting to insert user into database with data: " . print_r($insertData, true));
             $userId = $this->db->insert('users', $insertData);
             error_log("Insert result - User ID: " . $userId);
             
@@ -226,15 +219,36 @@ function sanitize($input) {
 }
 
 function formatDate($date, $format = 'F j, Y') {
-    return date($format, strtotime($date));
+    if (empty($date) || $date === '0000-00-00' || $date === '0000-00-00 00:00:00') {
+        return '';
+    }
+    $timestamp = strtotime($date);
+    if ($timestamp === false) {
+        return '';
+    }
+    return date($format, $timestamp);
 }
 
 function formatTime($time, $format = 'g:i A') {
-    return date($format, strtotime($time));
+    if (empty($time) || $time === '00:00:00') {
+        return '';
+    }
+    $timestamp = strtotime($time);
+    if ($timestamp === false) {
+        return '';
+    }
+    return date($format, $timestamp);
 }
 
 function formatDateTime($datetime, $format = 'F j, Y g:i A') {
-    return date($format, strtotime($datetime));
+    if (empty($datetime) || $datetime === '0000-00-00 00:00:00') {
+        return '';
+    }
+    $timestamp = strtotime($datetime);
+    if ($timestamp === false) {
+        return '';
+    }
+    return date($format, $timestamp);
 }
 
 function generateToken($length = 32) {

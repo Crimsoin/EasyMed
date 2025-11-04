@@ -147,7 +147,13 @@ $doctors = $db->fetchAll("
                                                 <strong>Time:</strong>
                                             </div>
                                             <div style="color: var(--text-dark);">
-                                                <?php echo formatTime($doctor['schedule_time_start']) . ' - ' . formatTime($doctor['schedule_time_end']); ?>
+                                                <?php 
+                                                if (!empty($doctor['schedule_time_start']) && !empty($doctor['schedule_time_end'])) {
+                                                    echo formatTime($doctor['schedule_time_start']) . ' - ' . formatTime($doctor['schedule_time_end']);
+                                                } else {
+                                                    echo 'Not set';
+                                                }
+                                                ?>
                                             </div>
                                         </div>
                                     </div>

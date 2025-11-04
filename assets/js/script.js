@@ -148,18 +148,13 @@ function resetMultiStepForm() {
 }
 
 function nextStep() {
-    console.log('Next step called, current step:', currentStep);
-    
     if (validateCurrentStep()) {
         if (currentStep < totalSteps) {
             currentStep++;
-            console.log('Moving to step:', currentStep);
             updateFormStep();
             updateProgressIndicator();
             updateNavigationButtons();
         }
-    } else {
-        console.log('Current step validation failed');
     }
 }
 

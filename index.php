@@ -121,7 +121,13 @@ $db = Database::getInstance();
                                 <div class="schedule-item" style="margin-bottom: 0.75rem; font-size: 0.95rem;">
                                     <strong style="color: var(--text-dark);">Time:</strong> 
                                     <span style="color: var(--text-light);">
-                                        <?php echo formatTime($doctor['schedule_time_start']) . ' - ' . formatTime($doctor['schedule_time_end']); ?>
+                                        <?php 
+                                        if (!empty($doctor['schedule_time_start']) && !empty($doctor['schedule_time_end'])) {
+                                            echo formatTime($doctor['schedule_time_start']) . ' - ' . formatTime($doctor['schedule_time_end']);
+                                        } else {
+                                            echo 'Not set';
+                                        }
+                                        ?>
                                     </span>
                                 </div>
                                 <div class="schedule-item" style="margin-bottom: 0; font-size: 0.95rem;">

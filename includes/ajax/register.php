@@ -58,9 +58,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    error_log("=== REGISTRATION START ===");
-    error_log("POST data: " . print_r($_POST, true));
-    
     $auth = new Auth();
     
     // Sanitize and validate input data
@@ -135,12 +132,9 @@ try {
     $userData['is_active'] = true;
     $userData['email_verified'] = false;
     
-    error_log("Calling auth->register()");
     $result = $auth->register($userData);
-    error_log("Register result: " . print_r($result, true));
     
     if ($result['success']) {
-        error_log("Registration successful, sending response");
         // Try to send welcome notification (non-critical)
         try {
             createNotification(
