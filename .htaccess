@@ -1,13 +1,9 @@
-# EasyMed Security Configuration - PRODUCTION VERSION
+# EasyMed Security Configuration - LOCAL DEVELOPMENT
 
 # Enable RewriteEngine
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /
-    
-    # Force HTTPS
-    RewriteCond %{HTTPS} off
-    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    RewriteBase /Project_EasyMed/
 </IfModule>
 
 # Protect sensitive files and directories
