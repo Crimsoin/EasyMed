@@ -1,7 +1,7 @@
 <?php
 // Database configuration
 define('DB_TYPE', 'sqlite'); // Change to 'mysql' if you want to use MySQL
-define('DB_HOST', '0.0.0.0');
+define('DB_HOST', '127.0.0.1');
 define('DB_USERNAME', 'root');
 define('DB_PASSWORD', '');
 define('DB_NAME', 'easymed');
@@ -9,13 +9,19 @@ define('SQLITE_PATH', __DIR__ . '/../database/easymed.sqlite');
 
 // Site configuration
 // Auto-detect if running on development server or Apache
-$protocol = 'http://';
-$host = $_SERVER['HTTP_HOST'] ?? '0.0.0.0';
-if ($host === '0.0.0.0:8080') {
-    define('SITE_URL', 'http://0.0.0.0:8080');
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+// Ensure no accidental output (remove any stray $host outside PHP tags)
+if (strpos($host, 'localhost') !== false) {
+    // Keep helpful default for local dev but allow override via environment
+    $site_host = getenv('EASYMED_SITE_HOST') ?: $host;
 } else {
-    define('SITE_URL', 'http://0.0.0.0/Project_EasyMed');
+    $site_host = $host;
 }
+
+define('SITE_URL', $protocol . $site_host);
+
 define('SITE_NAME', 'EasyMed - Patient Appointment Management System');
 define('BASE_URL', SITE_URL);
 

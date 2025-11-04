@@ -12,12 +12,12 @@ Start-Process "C:\xampp\xampp-control.exe"
 
 ### Step 2: Open Browser 🌐
 ```
-http://0.0.0.0/Project_EasyMed
+http://localhost/Project_EasyMed
 ```
 
 ### Step 3: Login 👤
 ```
-Admin Panel: http://0.0.0.0/Project_EasyMed/admin
+Admin Panel: http://localhost/Project_EasyMed/admin
 Email: admin@easymed.com
 Password: admin123
 ```
@@ -40,7 +40,7 @@ netstat -ano | findstr :80
 # 1. Edit C:\xampp\apache\conf\httpd.conf
 # 2. Change "Listen 80" to "Listen 8080"
 # 3. Restart Apache
-# 4. Access: http://0.0.0.0:8080/Project_EasyMed
+# 4. Access: http://localhost:8080/Project_EasyMed
 ```
 
 ### Problem: Project not in correct folder?
@@ -99,7 +99,7 @@ Start-Process "C:\xampp\xampp-control.exe"
 # 2. Start Apache (click button)
 
 # 3. Open browser
-Start-Process "http://0.0.0.0/Project_EasyMed"
+Start-Process "http://localhost/Project_EasyMed"
 
 # 4. When done, stop Apache (click button)
 ```
@@ -110,11 +110,11 @@ Start-Process "http://0.0.0.0/Project_EasyMed"
 
 | What | Where |
 |------|-------|
-| Homepage | http://0.0.0.0/Project_EasyMed |
-| Admin | http://0.0.0.0/Project_EasyMed/admin |
-| Doctor Portal | http://0.0.0.0/Project_EasyMed/doctor |
-| Patient Portal | http://0.0.0.0/Project_EasyMed/patient |
-| ERD Docs | http://0.0.0.0/Project_EasyMed/docs/EasyMed_ERD.html |
+| Homepage | http://localhost/Project_EasyMed |
+| Admin | http://localhost/Project_EasyMed/admin |
+| Doctor Portal | http://localhost/Project_EasyMed/doctor |
+| Patient Portal | http://localhost/Project_EasyMed/patient |
+| ERD Docs | http://localhost/Project_EasyMed/docs/EasyMed_ERD.html |
 
 ---
 
@@ -137,7 +137,7 @@ C:\xampp\php\php.exe -r "require 'includes/config.php'; require 'includes/databa
 - [ ] XAMPP installed
 - [ ] Apache started (green in XAMPP)
 - [ ] Project at: `C:\xampp\htdocs\Project_EasyMed`
-- [ ] Can open: http://0.0.0.0/Project_EasyMed
+- [ ] Can open: http://localhost/Project_EasyMed
 - [ ] Homepage loads
 - [ ] Can login to admin panel
 
@@ -153,7 +153,7 @@ Get-Content "C:\xampp\apache\logs\error.log" -Tail 20
 C:\xampp\php\php.exe -v
 
 # Check port 80 available
-Test-NetConnection 0.0.0.0 -Port 80
+Test-NetConnection localhost -Port 80
 
 # Fix permissions
 icacls "C:\xampp\htdocs\Project_EasyMed\database" /grant Users:F
