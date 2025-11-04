@@ -10,7 +10,7 @@
 
 // Database configuration
 define('DB_TYPE', 'sqlite'); // Change to 'mysql' if you want to use MySQL
-define('DB_HOST', 'localhost');
+define('DB_HOST', '0.0.0.0');
 define('DB_USERNAME', 'root');
 define('DB_PASSWORD', '');
 define('DB_NAME', 'easymed');

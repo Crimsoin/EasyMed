@@ -76,7 +76,7 @@ cd EasyMed
    - Open `includes/config.php`
    - Update the `SITE_URL` if needed:
    ```php
-   define('SITE_URL', 'http://localhost/EasyMed');
+   define('SITE_URL', 'http://0.0.0.0/EasyMed');
    ```
 
 3. **File Permissions**:
@@ -102,7 +102,7 @@ pdo_sqlite
 ### Step 5: Access the Application
 
 1. Open your web browser
-2. Navigate to: `http://localhost/EasyMed`
+2. Navigate to: `http://0.0.0.0/EasyMed`
 3. The application should load successfully
 
 ## 🔧 Configuration
@@ -111,7 +111,7 @@ pdo_sqlite
 
 1. **Development Environment**:
    ```
-   SITE_URL = http://localhost/EasyMed
+   SITE_URL = http://0.0.0.0/EasyMed
    DEBUG_MODE = true
    ```
 
