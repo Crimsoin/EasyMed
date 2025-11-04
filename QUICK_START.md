@@ -1,5 +1,5 @@
 # ⚡ EasyMed Quick Start Guide
-
+asd
 ## 🚀 Super Fast Setup (5 Minutes)
 
 ### Step 1: Check XAMPP ✅
