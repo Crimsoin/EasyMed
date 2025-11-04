@@ -418,7 +418,10 @@ function handleLogin(event) {
     
     showSpinner(event.target);
     
-    fetch('includes/ajax/login.php', {
+    // Get the base URL from the page
+    const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+    
+    fetch(baseUrl + '/includes/ajax/login.php', {
         method: 'POST',
         body: formData
     })
@@ -465,7 +468,10 @@ function handleRegistration(event) {
     
     showSpinner(event.target);
     
-    fetch('includes/ajax/register.php', {
+    // Get the base URL from the page
+    const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+    
+    fetch(baseUrl + '/includes/ajax/register.php', {
         method: 'POST',
         body: formData
     })

@@ -12,15 +12,21 @@ define('SQLITE_PATH', __DIR__ . '/../database/easymed.sqlite');
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
-// Ensure no accidental output (remove any stray $host outside PHP tags)
+// Detect the base path from the current script
+$script_name = $_SERVER['SCRIPT_NAME'] ?? '';
+$base_path = '';
+if (preg_match('#^(/[^/]+)/#', $script_name, $matches)) {
+    $base_path = $matches[1];
+}
+
+// Build the site URL
 if (strpos($host, 'localhost') !== false) {
     // Keep helpful default for local dev but allow override via environment
     $site_host = getenv('EASYMED_SITE_HOST') ?: $host;
+    define('SITE_URL', $protocol . $site_host . $base_path);
 } else {
-    $site_host = $host;
+    define('SITE_URL', $protocol . $host);
 }
-
-define('SITE_URL', $protocol . $site_host);
 
 define('SITE_NAME', 'EasyMed - Patient Appointment Management System');
 define('BASE_URL', SITE_URL);
