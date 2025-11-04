@@ -193,15 +193,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <span class="input-icon"><i class="fas fa-lock"></i></span>
                             <input type="password" id="loginPassword" name="password" class="form-control" 
                                    placeholder="Enter your password" required>
-                            <span class="password-toggle" onclick="EasyMed.togglePassword('loginPassword')">
-                                <i class="fas fa-eye"></i>
-                            </span>
                         </div>
-                    </div>
-                    
-                    <div class="form-check">
-                        <input type="checkbox" id="rememberMe" class="form-check-input">
-                        <label for="rememberMe" class="form-check-label">Remember me</label>
                     </div>
                     
                     <div class="form-group">
@@ -213,10 +205,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <div class="auth-links">
                         <a href="#" onclick="EasyMed.goBackToRoleSelection()" class="auth-link">
                             <i class="fas fa-arrow-left"></i> Back to Role Selection
-                        </a>
-                        <span style="margin: 0 1rem; color: #ccc;">|</span>
-                        <a href="#" class="auth-link">
-                            <i class="fas fa-key"></i> Forgot Password?
                         </a>
                     </div>
                 </form>
@@ -300,9 +288,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <span class="input-icon"><i class="fas fa-lock"></i></span>
                             <input type="password" id="regPassword" name="password" class="form-control" 
                                    placeholder="Enter secure password" required>
-                            <span class="password-toggle" onclick="EasyMed.togglePassword('regPassword')">
-                                <i class="fas fa-eye"></i>
-                            </span>
                         </div>
                         <small style="color: #666; font-size: 0.8rem;">
                             Password must be at least 8 characters long
@@ -317,9 +302,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <span class="input-icon"><i class="fas fa-lock"></i></span>
                             <input type="password" id="regConfirmPassword" name="confirm_password" class="form-control" 
                                    placeholder="Confirm your password" required>
-                            <span class="password-toggle" onclick="EasyMed.togglePassword('regConfirmPassword')">
-                                <i class="fas fa-eye"></i>
-                            </span>
                         </div>
                     </div>
                 </div>
