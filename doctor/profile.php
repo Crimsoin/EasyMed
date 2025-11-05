@@ -297,14 +297,14 @@ function addLabOffer($db, $doctor_internal_id, $data) {
             'description' => $data['description'] ?? null,
             'price' => !empty($data['price']) ? (float)$data['price'] : null,
             'is_active' => 1,
-            'created_at' => db_current_datetime()
+            'created_at' => date('Y-m-d H:i:s')
         ]);
         
         // Link to doctor
         $db->insert('lab_offer_doctors', [
             'lab_offer_id' => $lab_offer_id,
             'doctor_id' => $doctor_internal_id,
-            'created_at' => db_current_datetime()
+            'created_at' => date('Y-m-d H:i:s')
         ]);
         
         return ['success' => true, 'message' => 'Lab offer added successfully!'];

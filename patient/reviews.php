@@ -1,5 +1,4 @@
 <?php
-session_start();
 require_once '../includes/config.php';
 require_once '../includes/database.php';
 require_once '../includes/functions.php';
@@ -8,7 +7,7 @@ $additional_css = ['patient/sidebar-patient.css', 'patient/dashboard-patient.css
 
 // Require login as patient
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'patient') {
-    header('Location: ' . SITE_URL . '/login.php');
+    header('Location: ' . SITE_URL . '/index.php');
     exit();
 }
 
@@ -106,31 +105,39 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
 
         /* Review Form */
         .review-form { 
-            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); 
-            padding: 28px; 
-            border-radius: 20px; 
-            box-shadow: 0 12px 40px rgba(0,0,0,0.1); 
-            border: 1px solid rgba(0,0,0,0.06);
+            background: #fff;
+            padding: 32px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+            border: 1px solid #e9ecef;
             position: sticky;
             top: 20px;
         }
         .review-form h3 {
-            margin: 0 0 24px 0;
+            margin: 0 0 28px 0;
             color: #1a1a1a;
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 700;
             text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .review-form h3::before {
+            content: '✨';
+            font-size: 24px;
         }
         
         .form-group { 
-            margin-bottom: 20px; 
+            margin-bottom: 24px; 
         }
         .form-group label { 
             display: block; 
-            margin-bottom: 8px; 
-            color: #2c3e50; 
+            margin-bottom: 10px; 
+            color: #2d3748; 
             font-weight: 600; 
-            font-size: 14px;
+            font-size: 15px;
         }
         
         /* Form Controls */
@@ -138,46 +145,60 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
         .form-group textarea, 
         .form-group input[type="number"] { 
             width: 100%; 
-            padding: 14px 16px; 
-            border: 2px solid #e9ecef; 
-            border-radius: 12px; 
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background: #fff;
+            padding: 14px 18px; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 10px; 
+            font-size: 15px;
+            transition: all 0.2s ease;
+            background: #fafbfc;
             box-sizing: border-box;
+            font-family: inherit;
         }
         .form-group select:focus, 
         .form-group textarea:focus, 
         .form-group input[type="number"]:focus { 
             outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            border-color: #00bcd4;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.1);
         }
         
         .form-group textarea { 
-            min-height: 120px; 
+            min-height: 130px; 
             resize: vertical; 
-            font-family: inherit;
+            line-height: 1.6;
+        }
+        .form-group textarea::placeholder {
+            color: #a0aec0;
         }
 
         /* Star Rating */
         .star-rating {
             display: flex;
-            gap: 4px;
-            margin: 8px 0;
+            gap: 6px;
+            margin: 12px 0;
+            justify-content: center;
+            padding: 12px 0;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-radius: 12px;
         }
         .star {
-            font-size: 24px;
-            color: #ddd;
+            font-size: 32px;
+            color: #e2e8f0;
             cursor: pointer;
-            transition: color 0.2s ease;
+            transition: all 0.2s ease;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .star:hover,
+        .star:hover {
+            transform: scale(1.15);
+        }
         .star.active {
-            color: #ffb400;
+            color: #fbbf24;
+            animation: starPulse 0.3s ease;
         }
-        .star:hover ~ .star {
-            color: #ddd;
+        @keyframes starPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
         
         /* Hidden number input for rating */
@@ -189,55 +210,69 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
         .checkbox-group {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin: 16px 0;
+            gap: 12px;
+            margin: 20px 0;
+            padding: 14px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
         }
         .checkbox-group input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             cursor: pointer;
+            accent-color: #00bcd4;
         }
         .checkbox-group label {
             margin: 0;
             cursor: pointer;
             font-size: 14px;
-            color: #495057;
+            color: #4a5568;
+            font-weight: 500;
         }
 
         /* Buttons */
         .form-actions {
             display: flex;
             gap: 12px;
-            margin-top: 24px;
+            margin-top: 28px;
         }
         .btn { 
-            display: inline-block; 
-            padding: 14px 24px; 
-            border-radius: 12px; 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px 28px; 
+            border-radius: 10px; 
             font-weight: 600;
-            font-size: 14px;
+            font-size: 15px;
             text-decoration: none; 
             border: none; 
             cursor: pointer; 
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             text-align: center;
             flex: 1;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            background: linear-gradient(135deg, #00bcd4 0%, #0097a7 100%);
             color: #fff;
-            box-shadow: 0 4px 16px rgba(0, 123, 255, 0.3);
+            box-shadow: 0 4px 14px rgba(0, 188, 212, 0.4);
         }
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+            box-shadow: 0 6px 20px rgba(0, 188, 212, 0.5);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
         }
         .btn-secondary { 
-            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-            color: #fff;
+            background: #fff;
+            color: #64748b;
+            border: 2px solid #e2e8f0;
         }
         .btn-secondary:hover {
-            transform: translateY(-1px);
+            background: #f8fafc;
+            border-color: #cbd5e1;
         }
 
         /* Messages */
@@ -371,7 +406,7 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
 
                     <aside>
                         <div class="review-form">
-                            <h3>✨ Submit a Review</h3>
+                            <h3>Submit a Review</h3>
                             <form action="process_review.php" method="post">
                                 <div class="form-group">
                                     <label for="doctor_id">Select Doctor</label>
@@ -397,7 +432,7 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
 
                                 <div class="form-group">
                                     <label for="review_text">Your Experience</label>
-                                    <textarea name="review_text" id="review_text" placeholder="Share your experience with this doctor. What did you like? How was the service? Any recommendations for future patients?"></textarea>
+                                    <textarea name="review_text" id="review_text" placeholder="Share your experience with this doctor..."></textarea>
                                 </div>
 
                                 <div class="checkbox-group">
@@ -406,8 +441,14 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
                                 </div>
 
                                 <div class="form-actions">
-                                    <button class="btn btn-primary" type="submit">Submit Review</button>
-                                    <a href="reviews.php" class="btn btn-secondary">Clear Form</a>
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-paper-plane"></i>
+                                        Submit Review
+                                    </button>
+                                    <a href="reviews.php" class="btn btn-secondary">
+                                        <i class="fas fa-redo"></i>
+                                        Clear Form
+                                    </a>
                                 </div>
                             </form>
                         </div>

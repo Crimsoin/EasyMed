@@ -6,7 +6,7 @@ require_once '../includes/functions.php';
 
 // Check if user is logged in and is doctor
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'doctor') {
-    header('Location: ' . SITE_URL . '/login.php');
+    header('Location: ' . SITE_URL . '/index.php');
     exit();
 }
 

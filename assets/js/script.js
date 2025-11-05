@@ -64,6 +64,13 @@ function openModal(modalId) {
         currentModal = modal;
         document.body.style.overflow = 'hidden';
         
+        // Clear any existing modal alerts
+        const alertContainers = modal.querySelectorAll('[id$="ModalAlert"]');
+        alertContainers.forEach(container => {
+            container.style.display = 'none';
+            container.innerHTML = '';
+        });
+        
         // Add fade-in animation
         setTimeout(() => {
             modal.style.opacity = '1';
@@ -84,6 +91,13 @@ function openModal(modalId) {
 
 function closeModal() {
     if (currentModal) {
+        // Clear any modal alerts before closing
+        const alertContainers = currentModal.querySelectorAll('[id$="ModalAlert"]');
+        alertContainers.forEach(container => {
+            container.style.display = 'none';
+            container.innerHTML = '';
+        });
+        
         currentModal.style.opacity = '0';
         
         setTimeout(() => {
@@ -107,7 +121,6 @@ function closeModal() {
         }, 300);
     }
 }
-
 // Password Toggle Functions
 function initializePasswordToggles() {
     document.addEventListener('click', function(e) {
@@ -409,7 +422,7 @@ function handleLogin(event) {
     event.preventDefault();
     
     if (!selectedRole) {
-        showAlert('Please select a login type', 'error');
+        showModalAlert('loginModalAlert', 'Please select a login type', 'error');
         return;
     }
     
@@ -430,17 +443,17 @@ function handleLogin(event) {
         hideSpinner(event.target);
         
         if (data.success) {
-            showAlert('Login successful! Redirecting...', 'success');
+            showModalAlert('loginModalAlert', 'Login successful! Redirecting...', 'success');
             setTimeout(() => {
                 window.location.href = data.redirect;
             }, 1000);
         } else {
-            showAlert(data.message, 'error');
+            showModalAlert('loginModalAlert', data.message, 'error');
         }
     })
     .catch(error => {
         hideSpinner(event.target);
-        showAlert('An error occurred. Please try again.', 'error');
+        showModalAlert('loginModalAlert', 'An error occurred. Please try again.', 'error');
         console.error('Login error:', error);
     });
 }
@@ -462,7 +475,7 @@ function handleRegistration(event) {
     const confirmPassword = formData.get('confirm_password');
     
     if (password !== confirmPassword) {
-        showAlert('Passwords do not match', 'error');
+        showModalAlert('registerModalAlert', 'Passwords do not match', 'error');
         return;
     }
     
@@ -505,13 +518,13 @@ function handleRegistration(event) {
                 openModal('loginModal');
             }, 500);
         } else {
-            showAlert(data.message, 'error');
+            showModalAlert('registerModalAlert', data.message, 'error');
         }
     })
     .catch(error => {
         console.error('Registration error:', error);
         hideSpinner(event.target);
-        showAlert('An error occurred. Please try again.', 'error');
+        showModalAlert('registerModalAlert', 'An error occurred. Please try again.', 'error');
     });
 }
 
@@ -657,6 +670,50 @@ function showAlert(message, type = 'info') {
             }
         }, 300);
     });
+}
+
+// Modal Alert Function (displays alerts inside modals)
+function showModalAlert(containerId, message, type = 'info') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Set alert styling based on type
+    const colors = {
+        success: { bg: '#d4edda', border: '#c3e6cb', text: '#155724' },
+        error: { bg: '#f8d7da', border: '#f5c6cb', text: '#721c24' },
+        info: { bg: '#d1ecf1', border: '#bee5eb', text: '#0c5460' },
+        warning: { bg: '#fff3cd', border: '#ffeeba', text: '#856404' }
+    };
+    
+    const color = colors[type] || colors.info;
+    
+    // Build alert HTML
+    container.innerHTML = `
+        <div class="alert alert-${type}" style="
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid ${color.border};
+            background-color: ${color.bg};
+            color: ${color.text};
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        ">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    container.style.display = 'block';
+    
+    // Auto hide after 5 seconds for success messages
+    if (type === 'success') {
+        setTimeout(() => {
+            container.style.display = 'none';
+            container.innerHTML = '';
+        }, 5000);
+    }
 }
 
 // Spinner Functions

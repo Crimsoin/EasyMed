@@ -1,12 +1,11 @@
 <?php
-session_start();
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 require_once '../includes/email.php';
 
 // Check if user is logged in and is patient
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'patient') {
-    header('Location: ' . SITE_URL . '/login.php');
+    header('Location: ' . SITE_URL . '/index.php');
     exit();
 }
 

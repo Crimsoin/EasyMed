@@ -3,7 +3,7 @@
 # Enable RewriteEngine
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /Project_EasyMed/
+    RewriteBase /
 </IfModule>
 
 # Protect sensitive files and directories

@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE a.id = ?
             ", [$appointment_id]);
             
-            $db->query("UPDATE appointments SET status = ?, updated_at = " . db_current_datetime() . " WHERE id = ?", 
+            $db->query("UPDATE appointments SET status = ?, updated_at = datetime('now') WHERE id = ?", 
                       [$new_status, $appointment_id]);
             
             // Send email notification based on status change
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE a.id = ?
             ", [$appointment_id]);
             
-            $db->query("UPDATE appointments SET status = 'cancelled', updated_at = " . db_current_datetime() . " WHERE id = ?", [$appointment_id]);
+            $db->query("UPDATE appointments SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?", [$appointment_id]);
             
             // Send cancellation email notification
             if ($appointment_details && $appointment_details['patient_email']) {
@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'confirm_payment' && $appointment_id) {
         try {
             // Mark payment record as verified if a payments table exists for this appointment
-            $db->query("UPDATE payments SET status = 'verified', verified_by = ?, verified_at = " . db_current_datetime() . " WHERE appointment_id = ? AND status != 'verified'", [$_SESSION['user_id'], $appointment_id]);
+            $db->query("UPDATE payments SET status = 'verified', verified_by = ?, verified_at = " . date('Y-m-d H:i:s') . " WHERE appointment_id = ? AND status != 'verified'", [$_SESSION['user_id'], $appointment_id]);
 
             // Log activity
             logActivity($_SESSION['user_id'], 'confirm_payment', "Confirmed payment for appointment #$appointment_id");
@@ -205,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Update appointment with new date/time and appropriate status
             $db->query("
                 UPDATE appointments 
-                SET appointment_date = ?, appointment_time = ?, status = ?, updated_at = " . db_current_datetime() . " 
+                SET appointment_date = ?, appointment_time = ?, status = ?, updated_at = datetime('now') 
                 WHERE id = ?
             ", [$new_date, $new_time, $new_status, $appointment_id]);
             
@@ -692,7 +692,7 @@ require_once '../../includes/header.php';
 
 <!-- Appointment Details Modal -->
 <div id="appointmentModal" class="modal">
-    <div class="modal-content" style="max-width: 1000px; width: 90%;">
+    <div class="modal-content" style="max-width: 1000px; width: 90%; max-height: 90vh; overflow-y: auto;">
         <div class="modal-header">
             <h3>Appointment Details</h3>
             <span class="close">&times;</span>
@@ -816,22 +816,31 @@ function viewAppointment(id) {
                         <h4 style="color: var(--primary-cyan); margin-bottom: 1rem; border-bottom: 2px solid var(--light-cyan); padding-bottom: 0.5rem;">
                             <i class="fas fa-user"></i> Patient Information
                         </h4>
-                        <div style="background: var(--light-gray); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                            <div style="margin-bottom: 0.5rem;"><strong>Name:</strong> ${appointment.patient_first_name} ${appointment.patient_last_name}</div>
-                            <div style="margin-bottom: 0.5rem;"><strong>Email:</strong> ${appointment.patient_email || 'N/A'}</div>
-                            <div style="margin-bottom: 0.5rem;"><strong>Phone:</strong> ${appointment.patient_phone || 'N/A'}</div>
-                            ${appointment.date_of_birth ? `<div style="margin-bottom: 0.5rem;"><strong>Date of Birth:</strong> ${formatDate(appointment.date_of_birth)}</div>` : ''}
-                            ${appointment.gender ? `<div style="margin-bottom: 0.5rem;"><strong>Gender:</strong> ${appointment.gender}</div>` : ''}
-                            ${appointment.address ? `<div style="margin-bottom: 0.5rem;"><strong>Address:</strong> ${appointment.address}</div>` : ''}
+                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                            <div style="margin-bottom: 0.7rem;"><strong>Name:</strong> ${appointment.patient_first_name} ${appointment.patient_last_name}</div>
+                            <div style="margin-bottom: 0.7rem;"><strong>Email:</strong> ${appointment.patient_email || 'N/A'}</div>
+                            <div style="margin-bottom: 0.7rem;"><strong>Phone:</strong> ${appointment.patient_phone || 'N/A'}</div>
                         </div>
                         
                         ${patientInfo ? `
-                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.5rem;">Booking Information</h5>
-                        <div style="background: var(--light-gray); padding: 1rem; border-radius: 8px;">
-                            ${patientInfo.first_name ? `<div style="margin-bottom: 0.5rem;"><strong>Booking Name:</strong> ${patientInfo.first_name} ${patientInfo.last_name}</div>` : ''}
-                            ${patientInfo.phone ? `<div style="margin-bottom: 0.5rem;"><strong>Booking Phone:</strong> ${patientInfo.phone}</div>` : ''}
-                            ${patientInfo.laboratory ? `<div style="margin-bottom: 0.5rem;"><strong>Laboratory Service:</strong> ${patientInfo.laboratory}</div>` : ''}
+                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.8rem; font-size: 1.1rem;">Booking Information</h5>
+                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                            ${patientInfo.first_name ? `<div style="margin-bottom: 0.7rem;"><strong>Booking Name:</strong> ${patientInfo.first_name} ${patientInfo.last_name}</div>` : ''}
+                            ${patientInfo.phone ? `<div style="margin-bottom: 0.7rem;"><strong>Booking Phone:</strong> ${patientInfo.phone}</div>` : ''}
+                            ${patientInfo.laboratory ? `<div style="margin-bottom: 0.7rem;"><strong>Laboratory Service:</strong> ${patientInfo.laboratory}</div>` : ''}
                             ${patientInfo.reference_number ? `<div><strong>Reference:</strong> ${patientInfo.reference_number}</div>` : ''}
+                        </div>
+                        ` : ''}
+                        
+                        ${payment && payment.receipt_path ? `
+                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.8rem; font-size: 1.1rem;"><i class="fas fa-image"></i> Payment Screenshot</h5>
+                        <div style="background: #f5f5f5; padding: 1rem; border-radius: 8px; text-align: center;">
+                            <img src="../../${payment.receipt_path}" alt="Payment Receipt" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer;" onclick="window.open('../../${payment.receipt_path}', '_blank')">
+                            <div style="margin-top: 0.8rem; font-size: 0.9rem;">
+                                <a href="../../${payment.receipt_path}" target="_blank" style="color: var(--primary-cyan); text-decoration: none;">
+                                    <i class="fas fa-search-plus"></i> View Full Size
+                                </a>
+                            </div>
                         </div>
                         ` : ''}
                     </div>
@@ -840,42 +849,38 @@ function viewAppointment(id) {
                         <h4 style="color: var(--primary-cyan); margin-bottom: 1rem; border-bottom: 2px solid var(--light-cyan); padding-bottom: 0.5rem;">
                             <i class="fas fa-user-md"></i> Doctor Information
                         </h4>
-                        <div style="background: var(--light-gray); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                            <div style="margin-bottom: 0.5rem;"><strong>Name:</strong> Dr. ${appointment.doctor_first_name} ${appointment.doctor_last_name}</div>
-                            <div style="margin-bottom: 0.5rem;"><strong>Specialty:</strong> ${appointment.specialty}</div>
-                            <div style="margin-bottom: 0.5rem;"><strong>License:</strong> ${appointment.license_number || 'N/A'}</div>
-                            <div style="margin-bottom: 0.5rem;"><strong>Email:</strong> ${appointment.doctor_email || 'N/A'}</div>
+                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                            <div style="margin-bottom: 0.7rem;"><strong>Name:</strong> Dr. ${appointment.doctor_first_name} ${appointment.doctor_last_name}</div>
+                            <div style="margin-bottom: 0.7rem;"><strong>Specialty:</strong> ${appointment.specialty}</div>
+                            <div style="margin-bottom: 0.7rem;"><strong>License:</strong> ${appointment.license_number || 'N/A'}</div>
+                            <div style="margin-bottom: 0.7rem;"><strong>Email:</strong> ${appointment.doctor_email || 'N/A'}</div>
                             <div><strong>Phone:</strong> ${appointment.doctor_phone || 'N/A'}</div>
                         </div>
                         
-                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.5rem;">Appointment Details</h5>
-                        <div style="background: var(--light-gray); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                            <div style="margin-bottom: 0.5rem;"><strong>Date:</strong> ${formatDate(appointment.appointment_date)}</div>
-                            <div style="margin-bottom: 0.5rem;"><strong>Time:</strong> ${formatTime(appointment.appointment_time)}</div>
-                            <div style="margin-bottom: 0.5rem;"><strong>Status:</strong> <span class="status-badge status-${appointment.status}">${appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}</span></div>
-                            <div style="margin-bottom: 0.5rem;"><strong>Consultation Fee:</strong> ₱${parseFloat(appointment.consultation_fee || 0).toFixed(2)}</div>
+                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.8rem; font-size: 1.1rem;">Appointment Details</h5>
+                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                            <div style="margin-bottom: 0.7rem;"><strong>Date:</strong> ${formatDate(appointment.appointment_date)}</div>
+                            <div style="margin-bottom: 0.7rem;"><strong>Time:</strong> ${formatTime(appointment.appointment_time)}</div>
+                            <div style="margin-bottom: 0.7rem;"><strong>Status:</strong> <span class="status-badge status-${appointment.status}">${appointment.status.toUpperCase()}</span></div>
+                            <div style="margin-bottom: 0.7rem;"><strong>Consultation Fee:</strong> ₱${parseFloat(appointment.consultation_fee || 0).toFixed(2)}</div>
                             ${appointment.reason_for_visit ? `<div><strong>Reason:</strong> ${appointment.reason_for_visit}</div>` : ''}
                         </div>
                         
                         ${payment ? `
-                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.5rem;">Payment Information</h5>
-                        <div style="background: var(--light-gray); padding: 1rem; border-radius: 8px;">
-                            <div style="margin-bottom: 0.5rem;"><strong>Amount:</strong> ₱${parseFloat(payment.amount || 0).toFixed(2)}</div>
-                            <div style="margin-bottom: 0.5rem;"><strong>Payment Method:</strong> ${payment.payment_method || 'N/A'}</div>
-                            <div style="margin-bottom: 0.5rem;"><strong>GCash Reference:</strong> ${payment.gcash_reference || 'N/A'}</div>
-                            <div style="margin-bottom: 0.5rem;"><strong>Status:</strong> ${payment.status || 'N/A'}</div>
-                            <div style="margin-bottom: 0.5rem;"><strong>Submitted:</strong> ${formatDateTime(payment.created_at)}</div>
-                            ${payment.verified_at ? `<div style="margin-bottom: 0.5rem;"><strong>Verified:</strong> ${formatDateTime(payment.verified_at)}</div>` : ''}
+                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.8rem; font-size: 1.1rem;">Payment Information</h5>
+                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px;">
+                            <div style="margin-bottom: 0.7rem;"><strong>Amount:</strong> ₱${parseFloat(payment.amount || 0).toFixed(2)}</div>
+                            <div style="margin-bottom: 0.7rem;"><strong>Payment Method:</strong> ${payment.payment_method || 'N/A'}</div>
+                            <div style="margin-bottom: 0.7rem;"><strong>GCash Reference:</strong> ${payment.gcash_reference || 'N/A'}</div>
+                            <div style="margin-bottom: 0.7rem;"><strong>Status:</strong> ${payment.status || 'N/A'}</div>
+                            <div style="margin-bottom: 0.7rem;"><strong>Submitted:</strong> ${formatDateTime(payment.created_at)}</div>
+                            ${payment.verified_at ? `<div style="margin-bottom: 0.7rem;"><strong>Verified:</strong> ${formatDateTime(payment.verified_at)}</div>` : ''}
                             ${payment.verified_by_name ? `<div><strong>Verified By:</strong> ${payment.verified_by_name} ${payment.verified_by_lastname}</div>` : ''}
-                            ${payment.receipt_path ? `<div style="margin-top: 0.5rem;"><a href="../../${payment.receipt_path}" target="_blank" class="btn btn-sm btn-primary"><i class="fas fa-file-image"></i> View Receipt</a></div>` : ''}
                         </div>
                         ` : ''}
                     </div>
                 </div>
                 
-                <div style="margin-top: 2rem; text-align: center;">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('appointmentModal')">Close</button>
-                </div>
             `;
         })
         .catch(error => {

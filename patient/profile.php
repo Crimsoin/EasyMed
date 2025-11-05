@@ -1,14 +1,13 @@
 <?php
-session_start();
 require_once '../includes/config.php';
-require_once '../includes/database.php';
 require_once '../includes/functions.php';
+require_once '../includes/database.php';
 
 $additional_css = ['patient/sidebar-patient.css', 'patient/dashboard-patient.css'];
 
 // Require login as patient
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'patient') {
-    header('Location: ' . SITE_URL . '/login.php');
+    header('Location: ' . SITE_URL . '/index.php');
     exit();
 }
 

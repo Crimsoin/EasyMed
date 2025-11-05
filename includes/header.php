@@ -149,6 +149,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <span class="close">&times;</span>
         </div>
         <div class="modal-body">
+            <!-- Alert Container for Login Modal -->
+            <div id="loginModalAlert" style="display: none; margin-bottom: 1rem;"></div>
+            
             <!-- Role Selection -->
             <div id="roleSelection">
                 <div class="role-selection">
@@ -222,6 +225,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <span class="close">&times;</span>
         </div>
         <div class="modal-body">
+            <!-- Alert Container for Register Modal -->
+            <div id="registerModalAlert" style="display: none; margin-bottom: 1rem;"></div>
+            
             <form id="registerForm">
                 <div class="form-progress">
                     <div class="progress-step active">1</div>

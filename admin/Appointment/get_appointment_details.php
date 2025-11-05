@@ -57,6 +57,11 @@ try {
         $patient_info = json_decode($appointment['patient_info'], true);
     }
 
+    // Add receipt_path to payment if receipt_file exists
+    if ($payment && !empty($payment['receipt_file'])) {
+        $payment['receipt_path'] = 'assets/uploads/payment_receipts/' . $payment['receipt_file'];
+    }
+
     // Format the response
     $response = [
         'appointment' => $appointment,

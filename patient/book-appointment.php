@@ -7,7 +7,7 @@ require_once '../includes/functions.php';
 
 // Check if user is logged in and is patient
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'patient') {
-	header('Location: ' . SITE_URL . '/login.php');
+	header('Location: ' . SITE_URL . '/index.php');
 	exit();
 }
 
@@ -285,10 +285,20 @@ unset($_SESSION['appointment_data']);
 
 <style>
 /* Modal Specific Styles */
+#appointmentModal {
+    align-items: center;
+    justify-content: center;
+}
+
+#appointmentModal[style*="display: block"] {
+    display: flex !important;
+}
+
 #appointmentModal .modal-content {
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    margin: 0;
 }
 
 #appointmentModal .modal-header {
