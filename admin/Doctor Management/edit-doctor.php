@@ -512,6 +512,12 @@ require_once '../../includes/header.php';
                 </label>
                 <small class="form-text">Uncheck to deactivate this doctor's account</small>
             </div>
+            
+            <div style="margin-top: 1.5rem; text-align: right;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
         </div>
     </div>
     
@@ -524,19 +530,9 @@ require_once '../../includes/header.php';
             <div class="form-row">
                 <div class="form-group">
                     <label for="specialty" class="form-label required">Specialty</label>
-                    <select id="specialty" name="specialty" class="form-control" required>
-                        <option value="">Select Specialty</option>
-                        <option value="General Medicine" <?php echo ($_POST['specialty'] ?? $doctor['specialty']) === 'General Medicine' ? 'selected' : ''; ?>>General Medicine</option>
-                        <option value="Cardiology" <?php echo ($_POST['specialty'] ?? $doctor['specialty']) === 'Cardiology' ? 'selected' : ''; ?>>Cardiology</option>
-                        <option value="Dermatology" <?php echo ($_POST['specialty'] ?? $doctor['specialty']) === 'Dermatology' ? 'selected' : ''; ?>>Dermatology</option>
-                        <option value="Endocrinology" <?php echo ($_POST['specialty'] ?? $doctor['specialty']) === 'Endocrinology' ? 'selected' : ''; ?>>Endocrinology</option>
-                        <option value="Gastroenterology" <?php echo ($_POST['specialty'] ?? $doctor['specialty']) === 'Gastroenterology' ? 'selected' : ''; ?>>Gastroenterology</option>
-                        <option value="Neurology" <?php echo ($_POST['specialty'] ?? $doctor['specialty']) === 'Neurology' ? 'selected' : ''; ?>>Neurology</option>
-                        <option value="Orthopedics" <?php echo ($_POST['specialty'] ?? $doctor['specialty']) === 'Orthopedics' ? 'selected' : ''; ?>>Orthopedics</option>
-                        <option value="Pediatrics" <?php echo ($_POST['specialty'] ?? $doctor['specialty']) === 'Pediatrics' ? 'selected' : ''; ?>>Pediatrics</option>
-                        <option value="Psychiatry" <?php echo ($_POST['specialty'] ?? $doctor['specialty']) === 'Psychiatry' ? 'selected' : ''; ?>>Psychiatry</option>
-                        <option value="Pulmonology" <?php echo ($_POST['specialty'] ?? $doctor['specialty']) === 'Pulmonology' ? 'selected' : ''; ?>>Pulmonology</option>
-                    </select>
+                    <input type="text" id="specialty" name="specialty" class="form-control" 
+                           value="<?php echo htmlspecialchars($_POST['specialty'] ?? $doctor['specialty']); ?>" 
+                           placeholder="e.g., General Medicine, Cardiology, Pediatrics" required>
                 </div>
                 
                 <div class="form-group">
@@ -558,6 +554,12 @@ require_once '../../includes/header.php';
                     <input type="number" id="consultation_fee" name="consultation_fee" class="form-control" 
                            min="0" step="0.01" value="<?php echo htmlspecialchars($_POST['consultation_fee'] ?? $doctor['consultation_fee']); ?>">
                 </div>
+            </div>
+            
+            <div style="margin-top: 1.5rem; text-align: right;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
             </div>
         </div>
     </div>
@@ -608,6 +610,12 @@ require_once '../../includes/header.php';
                     Available for appointments
                 </label>
                 <small class="form-text">Uncheck to make doctor unavailable for new appointments</small>
+            </div>
+            
+            <div style="margin-top: 1.5rem; text-align: right;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
             </div>
         </div>
     </div>
@@ -682,21 +690,17 @@ require_once '../../includes/header.php';
                                         style="flex: 1; width: 100%;">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <form method="POST" style="flex: 1; margin: 0;" onsubmit="return confirm('Toggle this lab offer status?');">
-                                    <input type="hidden" name="lab_offer_action" value="toggle_lab_offer">
-                                    <input type="hidden" name="offer_id" value="<?php echo $offer['id']; ?>">
-                                    <button type="submit" class="btn btn-sm <?php echo $offer['is_active'] ? 'btn-warning' : 'btn-success'; ?>" style="width: 100%;">
-                                        <i class="fas fa-<?php echo $offer['is_active'] ? 'eye-slash' : 'eye'; ?>"></i> 
-                                        <?php echo $offer['is_active'] ? 'Deactivate' : 'Activate'; ?>
-                                    </button>
-                                </form>
-                                <form method="POST" style="flex: 1; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this lab offer?');">
-                                    <input type="hidden" name="lab_offer_action" value="delete_lab_offer">
-                                    <input type="hidden" name="offer_id" value="<?php echo $offer['id']; ?>">
-                                    <button type="submit" class="btn btn-sm btn-danger" style="width: 100%;">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-sm <?php echo $offer['is_active'] ? 'btn-warning' : 'btn-success'; ?>" 
+                                        onclick="toggleLabOfferStatus(<?php echo $offer['id']; ?>)"
+                                        style="flex: 1; width: 100%;">
+                                    <i class="fas fa-<?php echo $offer['is_active'] ? 'eye-slash' : 'eye'; ?>"></i> 
+                                    <?php echo $offer['is_active'] ? 'Deactivate' : 'Activate'; ?>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        onclick="deleteLabOffer(<?php echo $offer['id']; ?>)"
+                                        style="flex: 1; width: 100%;">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -710,19 +714,21 @@ require_once '../../includes/header.php';
             <?php endif; ?>
         </div>
     </div>
-    
-    <div class="form-actions">
-        <button type="submit" class="btn btn-primary btn-lg">
-            <i class="fas fa-save"></i> Update Doctor Profile
-        </button>
-        <a href="../Doctor Management/doctors.php" class="btn btn-secondary btn-lg">
-            <i class="fas fa-times"></i> Cancel
-        </a>
-    </div>
 </form>
 
     </div>
 </div>
+
+<!-- Hidden forms for lab offer actions (outside main form) -->
+<form id="toggleLabOfferForm" method="POST" style="display: none;">
+    <input type="hidden" name="lab_offer_action" value="toggle_lab_offer">
+    <input type="hidden" name="offer_id" id="toggle_offer_id">
+</form>
+
+<form id="deleteLabOfferForm" method="POST" style="display: none;">
+    <input type="hidden" name="lab_offer_action" value="delete_lab_offer">
+    <input type="hidden" name="offer_id" id="delete_offer_id">
+</form>
 
 <!-- Lab Offer Modal -->
 <div id="labOfferModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
@@ -804,6 +810,20 @@ require_once '../../includes/header.php';
     
     function editLabOffer(offerData) {
         openLabOfferModal(true, offerData);
+    }
+    
+    function toggleLabOfferStatus(offerId) {
+        if (confirm('Toggle this lab offer status?')) {
+            document.getElementById('toggle_offer_id').value = offerId;
+            document.getElementById('toggleLabOfferForm').submit();
+        }
+    }
+    
+    function deleteLabOffer(offerId) {
+        if (confirm('Are you sure you want to delete this lab offer?')) {
+            document.getElementById('delete_offer_id').value = offerId;
+            document.getElementById('deleteLabOfferForm').submit();
+        }
     }
     
     function closeLabOfferModal() {
