@@ -64,6 +64,16 @@ $rating_data = $db->fetch("
 $avg_rating = $rating_data['avg_rating'] ? round($rating_data['avg_rating'], 1) : 0;
 $total_reviews = $rating_data['total_reviews'];
 
+// Get laboratory offers
+$lab_offers = $db->fetchAll("
+    SELECT lo.* 
+    FROM lab_offers lo
+    JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
+    JOIN doctors d ON lod.doctor_id = d.id
+    WHERE d.user_id = ?
+    ORDER BY lo.title ASC
+", [$doctor_id]);
+
 require_once '../../includes/header.php';
 ?>
 
@@ -297,6 +307,42 @@ require_once '../../includes/header.php';
                             <div class="no-appointments">
                                 <i class="fas fa-calendar-times"></i>
                                 <p>No appointments found</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Laboratory Offers -->
+                <div class="info-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-flask"></i> Laboratory Offers</h3>
+                    </div>
+                    <div class="lab-offers-list">
+                        <?php if (!empty($lab_offers)): ?>
+                            <?php foreach ($lab_offers as $offer): ?>
+                                <div class="lab-offer-item">
+                                    <div class="lab-offer-info">
+                                        <h4><?php echo htmlspecialchars($offer['title']); ?></h4>
+                                        <?php if (!empty($offer['description'])): ?>
+                                            <p class="lab-offer-description">
+                                                <?php echo htmlspecialchars($offer['description']); ?>
+                                            </p>
+                                        <?php endif; ?>
+                                        <?php if (!empty($offer['price'])): ?>
+                                            <p class="lab-offer-price">
+                                                <i class="fas fa-coins"></i> ₱<?php echo number_format($offer['price'], 2); ?>
+                                            </p>
+                                        <?php endif; ?>
+                                    </div>
+                                    <span class="lab-offer-status status-<?php echo $offer['is_active'] ? 'active' : 'inactive'; ?>">
+                                        <?php echo $offer['is_active'] ? 'Active' : 'Inactive'; ?>
+                                    </span>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="no-appointments">
+                                <i class="fas fa-flask"></i>
+                                <p>No laboratory offers added yet</p>
                             </div>
                         <?php endif; ?>
                     </div>

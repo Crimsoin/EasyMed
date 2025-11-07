@@ -299,7 +299,7 @@ $appointments = $db->fetchAll("
            pu.first_name as patient_first_name, pu.last_name as patient_last_name, pu.email as patient_email, 
            p.phone as patient_phone,
            du.first_name as doctor_first_name, du.last_name as doctor_last_name,
-           d.specialty, d.consultation_fee
+           d.id as doctor_internal_id, d.specialty, d.consultation_fee
     FROM appointments a
     LEFT JOIN patients p ON a.patient_id = p.id
     LEFT JOIN users pu ON p.user_id = pu.id
@@ -309,6 +309,31 @@ $appointments = $db->fetchAll("
     ORDER BY a.appointment_date DESC, a.appointment_time DESC
     LIMIT $per_page OFFSET $offset
 ", $params);
+
+// Calculate correct fee for each appointment
+foreach ($appointments as &$appointment) {
+    $patient_info = json_decode($appointment['patient_info'], true);
+    $purpose = $patient_info['purpose'] ?? 'consultation';
+    $laboratory_name = $patient_info['laboratory'] ?? '';
+    
+    // Default to consultation fee
+    $appointment['display_fee'] = $appointment['consultation_fee'];
+    
+    // If laboratory, try to fetch from lab_offers table
+    if ($purpose === 'laboratory' && !empty($laboratory_name) && !empty($appointment['doctor_internal_id'])) {
+        $lab_offer = $db->fetch("
+            SELECT lo.price 
+            FROM lab_offers lo
+            JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
+            WHERE lo.title = ? AND lod.doctor_id = ? AND lo.is_active = 1
+        ", [$laboratory_name, $appointment['doctor_internal_id']]);
+        
+        if ($lab_offer && !empty($lab_offer['price'])) {
+            $appointment['display_fee'] = $lab_offer['price'];
+        }
+    }
+}
+unset($appointment); // Break reference
 
 // Get total count for pagination
 $total_appointments = $db->fetch("
@@ -574,7 +599,7 @@ require_once '../../includes/header.php';
                                     </td>
 
                                     <td>
-                                        ₱<?php echo number_format($appointment['consultation_fee'], 2); ?>
+                                        ₱<?php echo number_format($appointment['display_fee'], 2); ?>
                                     </td>
                                     <td>
                                         <div class="appointment-actions">
@@ -862,7 +887,7 @@ function viewAppointment(id) {
                             <div style="margin-bottom: 0.7rem;"><strong>Date:</strong> ${formatDate(appointment.appointment_date)}</div>
                             <div style="margin-bottom: 0.7rem;"><strong>Time:</strong> ${formatTime(appointment.appointment_time)}</div>
                             <div style="margin-bottom: 0.7rem;"><strong>Status:</strong> <span class="status-badge status-${appointment.status}">${appointment.status.toUpperCase()}</span></div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Consultation Fee:</strong> ₱${parseFloat(appointment.consultation_fee || 0).toFixed(2)}</div>
+                            <div style="margin-bottom: 0.7rem;"><strong>Fee:</strong> ₱${parseFloat(appointment.display_fee || appointment.consultation_fee || 0).toFixed(2)}</div>
                             ${appointment.reason_for_visit ? `<div><strong>Reason:</strong> ${appointment.reason_for_visit}</div>` : ''}
                         </div>
                         

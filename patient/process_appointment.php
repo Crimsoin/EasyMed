@@ -27,6 +27,7 @@ try {
     $email = trim($_POST['email'] ?? '');
     $schedule_day = trim($_POST['schedule_day'] ?? '');
     $schedule_time = trim($_POST['schedule_time'] ?? '');
+    $purpose = trim($_POST['purpose'] ?? '');
     $laboratory = trim($_POST['laboratory'] ?? '');
     $patient_id = $_SESSION['user_id'];
 
@@ -45,12 +46,9 @@ try {
         $errors[] = 'Last name is required.';
     }
     
-    if (empty($phone)) {
-        $errors[] = 'Phone number is required.';
-    }
-    
-    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'Valid email address is required.';
+    // Phone and email are optional - only validate format if provided
+    if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Please enter a valid email address.';
     }
     
     if (empty($schedule_day)) {
@@ -59,6 +57,15 @@ try {
     
     if (empty($schedule_time)) {
         $errors[] = 'Please select a schedule time.';
+    }
+    
+    if (empty($purpose)) {
+        $errors[] = 'Please select the purpose of your appointment.';
+    }
+    
+    // Validate laboratory field if purpose is laboratory
+    if ($purpose === 'laboratory' && empty($laboratory)) {
+        $errors[] = 'Please select a laboratory service.';
     }
 
     if (!empty($errors)) {
@@ -163,6 +170,7 @@ try {
         'phone' => $phone,
         'email' => $email,
         'schedule_day' => $schedule_day,
+        'purpose' => $purpose,
         'laboratory' => $laboratory,
         'reference_number' => $reference_number
     ]);
@@ -173,7 +181,7 @@ try {
         'doctor_id' => $doctor_record_id,
         'appointment_date' => $appointment_date,
         'appointment_time' => $schedule_time,
-        'reason_for_visit' => $laboratory,
+        'reason_for_visit' => $purpose === 'consultation' ? 'Consultation Only' : $laboratory,
         // New appointments start as pending until approved by doctor/admin
         'status' => 'pending',
         'patient_info' => $patient_info,
@@ -197,7 +205,7 @@ try {
                 'specialty' => $doctor['specialty'],
                 'appointment_date' => formatDate($appointment_date),
                 'appointment_time' => formatTime($schedule_time),
-                'reason' => $laboratory ?: 'General consultation',
+                'reason' => $purpose === 'consultation' ? 'Consultation Only' : $laboratory,
                 'fee' => number_format($doctor['consultation_fee'], 2),
                 'reference_number' => $reference_number
             ];
@@ -213,11 +221,37 @@ try {
         // Log activity
         logActivity($patient_id, 'appointment_created', "Created appointment with Dr. {$doctor['first_name']} {$doctor['last_name']}");
         
-        // Store payment data in session for payment gateway
+        // Determine fee and fee label based on purpose
+        $fee = $doctor['consultation_fee'];
+        $fee_label = 'Consultation Fee';
+        
+        // If laboratory, get the lab offer price
+        if ($purpose === 'laboratory' && !empty($laboratory)) {
+            // Query to fetch laboratory price using doctor_record_id
+            $lab_offer = $db->fetch("
+                SELECT lo.price, lo.title, lo.id, lod.doctor_id
+                FROM lab_offers lo
+                JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
+                WHERE lo.title = ? AND lod.doctor_id = ? AND lo.is_active = 1
+            ", [$laboratory, $doctor['doctor_record_id']]);
+            
+            if ($lab_offer && isset($lab_offer['price']) && $lab_offer['price'] !== null) {
+                $fee = (float)$lab_offer['price'];
+                $fee_label = 'Laboratory Fee';
+            }
+        }
+        
+        // Clear any existing payment data
+        unset($_SESSION['payment_data']);
+        
+        // Store NEW payment data in session for payment gateway
         $_SESSION['payment_data'] = [
             'appointment_id' => $appointment_id,
             'doctor_name' => "Dr. {$doctor['first_name']} {$doctor['last_name']}",
-            'consultation_fee' => $doctor['consultation_fee'],
+            'consultation_fee' => $fee,
+            'fee_label' => $fee_label,
+            'purpose' => $purpose,
+            'laboratory' => $laboratory,
             'appointment_date' => $appointment_date,
             'appointment_time' => $schedule_time,
             'reference_number' => $reference_number

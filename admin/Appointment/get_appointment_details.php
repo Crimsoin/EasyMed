@@ -26,7 +26,7 @@ try {
                p.date_of_birth, p.gender, p.address,
                du.first_name as doctor_first_name, du.last_name as doctor_last_name,
                du.email as doctor_email, du.profile_image as doctor_image,
-               d.specialty, d.license_number, d.consultation_fee, d.phone as doctor_phone
+               d.id as doctor_internal_id, d.specialty, d.license_number, d.consultation_fee, d.phone as doctor_phone
         FROM appointments a
         LEFT JOIN patients p ON a.patient_id = p.id
         LEFT JOIN users pu ON p.user_id = pu.id
@@ -41,6 +41,31 @@ try {
         exit();
     }
 
+    // Parse patient info JSON to determine correct fee
+    $patient_info = null;
+    if ($appointment['patient_info']) {
+        $patient_info = json_decode($appointment['patient_info'], true);
+    }
+    
+    // Calculate correct fee
+    $appointment['display_fee'] = $appointment['consultation_fee'];
+    $purpose = $patient_info['purpose'] ?? 'consultation';
+    $laboratory_name = $patient_info['laboratory'] ?? '';
+    
+    // If laboratory, fetch the correct price
+    if ($purpose === 'laboratory' && !empty($laboratory_name) && !empty($appointment['doctor_internal_id'])) {
+        $lab_offer = $db->fetch("
+            SELECT lo.price 
+            FROM lab_offers lo
+            JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
+            WHERE lo.title = ? AND lod.doctor_id = ? AND lo.is_active = 1
+        ", [$laboratory_name, $appointment['doctor_internal_id']]);
+        
+        if ($lab_offer && !empty($lab_offer['price'])) {
+            $appointment['display_fee'] = $lab_offer['price'];
+        }
+    }
+
     // Get payment information if exists
     $payment = $db->fetch("
         SELECT p.*, u.first_name as verified_by_name, u.last_name as verified_by_lastname
@@ -50,12 +75,6 @@ try {
         ORDER BY p.created_at DESC
         LIMIT 1
     ", [$appointment_id]);
-
-    // Parse patient info JSON if it exists
-    $patient_info = null;
-    if ($appointment['patient_info']) {
-        $patient_info = json_decode($appointment['patient_info'], true);
-    }
 
     // Add receipt_path to payment if receipt_file exists
     if ($payment && !empty($payment['receipt_file'])) {

@@ -5,7 +5,7 @@ require_once 'includes/header.php';
 
 // Get clinic settings
 $clinic_name = getClinicSetting('clinic_name', 'EasyMed Private Clinic');
-$clinic_address = getClinicSetting('clinic_address', 'Brgy. Ngoso, Gandara Samar');
+$clinic_address = getClinicSetting('clinic_address', 'Hometown Hotel, 2R67+8W7, Gandara, Samar');
 $clinic_phone = getClinicSetting('clinic_phone', '+63 987 654 3210');
 $clinic_email = getClinicSetting('clinic_email', 'easymed.notifications@gmail.com');
 ?>
@@ -108,7 +108,7 @@ $clinic_email = getClinicSetting('clinic_email', 'easymed.notifications@gmail.co
                     <!-- Google Maps Embed -->
                     <div style="position: relative; height: 400px; border-radius: 8px; overflow: hidden; margin-bottom: 1rem;">
                         <iframe 
-                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3922.123456789!2d125.1234567!3d11.9876543!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTHCsDU5JzE1LjYiTiAxMjXCsDA3JzI0LjQiRQ!5e0!3m2!1sen!2sph!4v1629789123456!5m2!1sen!2sph&q=Gandara,+Samar,+Philippines" 
+                            src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d243.90481920368703!2d124.81474558673536!3d12.010639768410114!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sph!4v1762447521946!5m2!1sen!2sph" 
                             width="100%" 
                             height="100%" 
                             style="border:0;" 

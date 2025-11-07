@@ -479,3 +479,76 @@ input[type="number"]::-webkit-inner-spin-button {
     border-color: #22c55e;
     box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
 }
+
+/* Lab Offer Button Styles */
+.btn-sm {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    border-radius: 7px;
+    font-weight: 600;
+    box-sizing: border-box;
+}
+
+.btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+.btn-success {
+    background: #10b981;
+    color: white;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+    border: none;
+}
+
+.btn-success:hover {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.35);
+}
+
+.btn-warning {
+    background: #f59e0b;
+    color: white;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.25);
+    border: none;
+}
+
+.btn-warning:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.35);
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.25);
+    border: none;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.35);
+}
+
+/* Alert Success */
+.alert-success {
+    background: #d1fae5;
+    border-color: #6ee7b7;
+    color: #065f46;
+}
+
+/* Lab Offer Card Hover Effect */
+.lab-offer-card:hover {
+    border-color: #00bcd4 !important;
+    box-shadow: 0 4px 16px rgba(0, 188, 212, 0.15) !important;
+    transform: translateY(-2px);
+}

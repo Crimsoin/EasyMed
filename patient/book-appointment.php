@@ -177,18 +177,20 @@ unset($_SESSION['appointment_data']);
 										</div>
 									</div>
 									<div style="margin-top: 1rem; text-align: center;">
-										<?php
-										// Get laboratory offers for this doctor to include in data attribute
-										$doctor_lab_offers = $db->fetchAll("
-											SELECT lo.title 
-											FROM lab_offers lo
-											JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
-											WHERE lod.doctor_id = ? AND lo.is_active = 1
-											ORDER BY lo.title
-										", [$doctor['doctor_id']]);
-										
-										$doctor['lab_offers'] = array_column($doctor_lab_offers, 'title');
-										?>
+									<?php
+									// Get laboratory offers for this doctor to include in data attribute with prices
+									$doctor_lab_offers = $db->fetchAll("
+										SELECT lo.title, lo.price 
+										FROM lab_offers lo
+										JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
+										WHERE lod.doctor_id = ? AND lo.is_active = 1
+										ORDER BY lo.title
+									", [$doctor['doctor_id']]);
+									
+									// Store both titles and full offer data with prices
+									$doctor['lab_offers'] = array_column($doctor_lab_offers, 'title');
+									$doctor['lab_offers_data'] = $doctor_lab_offers; // Include prices
+									?>
 										<button class="btn btn-primary btn-sm" 
 											onclick="openAppointmentModal(this)" 
 											data-doctor='<?php echo json_encode($doctor, JSON_HEX_APOS | JSON_HEX_QUOT); ?>'>
@@ -227,36 +229,35 @@ unset($_SESSION['appointment_data']);
           <!-- Doctor details will be injected here -->
         </div>
         <div class="appointment-form-panel">
-          <form method="post" action="process_appointment.php" class="appointment-form-grid" style="background:#fff; padding:1.5rem; border-radius:0 0 8px 8px;">
+          <form method="post" action="process_appointment.php" class="appointment-form-grid" style="background:#fff; padding:1.5rem; border-radius:0 0 8px 8px;" novalidate>
             <input type="hidden" name="doctor_id" id="modal_doctor_id" value="">
             <div class="form-row">
-              <div class="form-group" style="flex:1; margin-right:1rem;">
+              <div class="form-group">
                 <label for="modal_first_name">First Name:</label>
                 <input type="text" name="first_name" id="modal_first_name" class="form-control">
               </div>
-              <div class="form-group" style="flex:1;">
+              <div class="form-group">
                 <label for="modal_last_name">Last Name:</label>
                 <input type="text" name="last_name" id="modal_last_name" class="form-control">
               </div>
             </div>
             <div class="form-row">
-              <div class="form-group" style="flex:1; margin-right:1rem;">
+              <div class="form-group">
                 <label for="modal_phone">Phone Number:</label>
-                <input type="text" name="phone" id="modal_phone" class="form-control">
+                <input type="text" name="phone" id="modal_phone" class="form-control" placeholder="+63 912 345 6789">
               </div>
-              <div class="form-group" style="flex:1;">
+              <div class="form-group">
                 <label for="modal_email">Email:</label>
-                <input type="email" name="email" id="modal_email" class="form-control">
-                <small style="color:#888;">example@example.com</small>
+                <input type="text" name="email" id="modal_email" class="form-control" placeholder="example@example.com">
               </div>
             </div>
             <div class="form-row">
-              <div class="form-group" style="flex:1; margin-right:1rem;">
+              <div class="form-group">
                 <label for="modal_schedule_day">Choose Schedule Day:</label>
                 <!-- Native date picker -->
                 <input type="date" name="schedule_day" id="modal_schedule_day" class="form-control" />
               </div>
-              <div class="form-group" style="flex:1;">
+              <div class="form-group">
                 <label for="modal_schedule_time">Set Time:</label>
                 <select name="schedule_time" id="modal_schedule_time" class="form-control">
                   <option value="">Select Time</option>
@@ -265,12 +266,43 @@ unset($_SESSION['appointment_data']);
               </div>
             </div>
             <div class="form-row">
-              <div class="form-group" style="flex:1;">
-                <label for="modal_laboratory">Laboratory:</label>
+              <div class="form-group">
+                <label for="modal_purpose">Purpose:</label>
+                <select name="purpose" id="modal_purpose" class="form-control" required>
+                  <option value="consultation">Consultation</option>
+                  <option value="laboratory">Laboratory</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row" id="laboratory_row" style="display: none;">
+              <div class="form-group">
+                <label for="modal_laboratory">Laboratory Service:</label>
                 <select name="laboratory" id="modal_laboratory" class="form-control">
                   <option value="">Select Laboratory Service</option>
                   <!-- Options will be populated dynamically based on selected doctor -->
                 </select>
+              </div>
+            </div>
+            <!-- Price Display Section -->
+            <div class="form-row" style="margin-top: 1rem; margin-bottom: 1rem;">
+              <div id="price_display" style="
+                width: 100%;
+                background: linear-gradient(135deg, #e3f6fc 0%, #d1f0f8 100%);
+                border: 2px solid #00b4cc;
+                border-radius: 12px;
+                padding: 1.2rem 1.5rem;
+                text-align: center;
+                box-shadow: 0 4px 10px rgba(0, 180, 204, 0.15);
+              ">
+                <div style="font-size: 0.95rem; color: #2c5563; font-weight: 600; margin-bottom: 0.3rem;">
+                  <i class="fas fa-money-bill-wave"></i> Appointment Fee
+                </div>
+                <div id="price_amount" style="font-size: 1.8rem; color: #0891a5; font-weight: 700;">
+                  ₱0.00
+                </div>
+                <div id="price_label" style="font-size: 0.85rem; color: #666; margin-top: 0.3rem;">
+                  Select purpose to see fee
+                </div>
               </div>
             </div>
             <div class="form-row">
@@ -322,7 +354,8 @@ unset($_SESSION['appointment_data']);
 .appointment-flex {
     display: flex;
     gap: 0;
-    min-height: 500px;
+    height: 700px;
+    max-height: 700px;
 }
 
 .doctor-details-panel {
@@ -443,28 +476,61 @@ unset($_SESSION['appointment_data']);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+    max-height: 690px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom scrollbar styling */
+.appointment-form-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.appointment-form-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.appointment-form-panel::-webkit-scrollbar-thumb {
+    background: #00b4cc;
+    border-radius: 10px;
+}
+
+.appointment-form-panel::-webkit-scrollbar-thumb:hover {
+    background: #0891a5;
 }
 
 .appointment-form-grid {
     display: flex;
     flex-direction: column;
-
     padding: 2rem;
     max-width: 100%;
 }
 
 .form-row {
     display: flex;
-    gap: 1.2rem;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .form-row:last-child {
-    margin-top: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0;
     justify-content: center;
+}
+
+/* Single column form rows should stretch full width */
+#laboratory_row {
+    width: 100%;
+}
+
+#laboratory_row .form-group {
+    width: 100%;
 }
 
 .form-group {
     flex: 1;
+    min-width: 0; /* Prevents flex items from overflowing */
 }
 
 .form-group label {
@@ -594,8 +660,11 @@ function openAppointmentModal(buttonElement) {
   
   document.getElementById('modalDoctorPanel').innerHTML = panelHtml;
   document.getElementById('modal_doctor_id').value = doctor.user_id;
-  // expose current doctor to calendar/time helpers
+  // expose current doctor to calendar/time helpers and price calculator
   window._currentModalDoctor = doctor;
+  
+  // Initialize price display with consultation fee
+  updatePriceDisplay('consultation');
   
   // Populate schedule days (kept for compatibility)
   populateScheduleDays(doctor.schedule_days);
@@ -806,23 +875,24 @@ function populateScheduleTimes(startTime, endTime) {
 function populateDoctorLaboratoryOffers(doctorId) {
   // Get the current doctor's lab offers from the button data
   var doctorButtons = document.querySelectorAll('button[data-doctor]');
-  var currentDoctorOffers = [];
+  var currentDoctorOffersData = [];
   
   doctorButtons.forEach(function(button) {
     var doctorData = JSON.parse(button.getAttribute('data-doctor'));
     if (doctorData.doctor_id == doctorId) {
-      currentDoctorOffers = doctorData.lab_offers || [];
+      currentDoctorOffersData = doctorData.lab_offers_data || [];
     }
   });
   
   var laboratorySelect = document.getElementById('modal_laboratory');
   laboratorySelect.innerHTML = '<option value="">Select Laboratory Service</option>';
   
-  if (currentDoctorOffers.length > 0) {
-    currentDoctorOffers.forEach(function(offer) {
+  if (currentDoctorOffersData.length > 0) {
+    currentDoctorOffersData.forEach(function(offer) {
       var option = document.createElement('option');
-      option.value = offer;
-      option.textContent = offer;
+      option.value = offer.title;
+      option.setAttribute('data-price', offer.price);
+      option.textContent = offer.title + ' - ₱' + parseFloat(offer.price).toFixed(2);
       laboratorySelect.appendChild(option);
     });
   } else {
@@ -831,6 +901,40 @@ function populateDoctorLaboratoryOffers(doctorId) {
     option.textContent = "No laboratory services available";
     option.disabled = true;
     laboratorySelect.appendChild(option);
+  }
+}
+
+// Function to update price display based on selection
+function updatePriceDisplay(purpose, laboratoryService) {
+  var priceAmount = document.getElementById('price_amount');
+  var priceLabel = document.getElementById('price_label');
+  var doctor = window._currentModalDoctor;
+  
+  if (!doctor) {
+    priceAmount.textContent = '₱0.00';
+    priceLabel.textContent = 'Doctor information not available';
+    return;
+  }
+  
+  if (purpose === 'consultation') {
+    var consultationFee = parseFloat(doctor.consultation_fee || 0);
+    priceAmount.textContent = '₱' + consultationFee.toFixed(2);
+    priceLabel.textContent = 'Consultation Fee';
+  } else if (purpose === 'laboratory') {
+    if (laboratoryService) {
+      // Get the price from the selected laboratory option
+      var labSelect = document.getElementById('modal_laboratory');
+      var selectedOption = labSelect.options[labSelect.selectedIndex];
+      var labPrice = parseFloat(selectedOption.getAttribute('data-price') || 0);
+      priceAmount.textContent = '₱' + labPrice.toFixed(2);
+      priceLabel.textContent = 'Laboratory Fee - ' + laboratoryService;
+    } else {
+      priceAmount.textContent = '₱0.00';
+      priceLabel.textContent = 'Please select a laboratory service';
+    }
+  } else {
+    priceAmount.textContent = '₱0.00';
+    priceLabel.textContent = 'Select purpose to see fee';
   }
 }
 
@@ -844,10 +948,17 @@ function prefillFormData() {
   setTimeout(function() {
     var scheduleDay = '<?php echo htmlspecialchars($appointment_data['schedule_day'] ?? ''); ?>';
     var scheduleTime = '<?php echo htmlspecialchars($appointment_data['schedule_time'] ?? ''); ?>';
+    var purpose = '<?php echo htmlspecialchars($appointment_data['purpose'] ?? ''); ?>';
     var laboratory = '<?php echo htmlspecialchars($appointment_data['laboratory'] ?? ''); ?>';
     
     if (scheduleDay) document.getElementById('modal_schedule_day').value = scheduleDay;
     if (scheduleTime) document.getElementById('modal_schedule_time').value = scheduleTime;
+    if (purpose) {
+      document.getElementById('modal_purpose').value = purpose;
+      // Trigger change event to show/hide laboratory field
+      var event = new Event('change');
+      document.getElementById('modal_purpose').dispatchEvent(event);
+    }
     if (laboratory) document.getElementById('modal_laboratory').value = laboratory;
   }, 100);
   <?php endif; ?>
@@ -889,6 +1000,50 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
+  // Handle form submission to show notification
+  var appointmentForm = document.querySelector('.appointment-form-grid');
+  if (appointmentForm) {
+    appointmentForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // Show success notification
+      showSuccessNotification();
+      
+      // Submit the form after a brief delay
+      setTimeout(function() {
+        appointmentForm.submit();
+      }, 1500);
+    });
+  }
+  
+  // Handle purpose selection to show/hide laboratory dropdown
+  var purposeSelect = document.getElementById('modal_purpose');
+  var laboratoryRow = document.getElementById('laboratory_row');
+  var laboratorySelect = document.getElementById('modal_laboratory');
+  
+  if (purposeSelect) {
+    purposeSelect.addEventListener('change', function() {
+      if (this.value === 'laboratory') {
+        laboratoryRow.style.display = 'block';
+        laboratorySelect.setAttribute('required', 'required');
+        updatePriceDisplay('laboratory', laboratorySelect.value);
+      } else {
+        laboratoryRow.style.display = 'none';
+        laboratorySelect.removeAttribute('required');
+        laboratorySelect.value = ''; // Clear selection
+        updatePriceDisplay('consultation');
+      }
+    });
+  }
+  
+  // Handle laboratory selection to update price
+  if (laboratorySelect) {
+    laboratorySelect.addEventListener('change', function() {
+      var purpose = document.getElementById('modal_purpose').value;
+      updatePriceDisplay(purpose, this.value);
+    });
+  }
+  
   // Auto-open modal if there were form errors
   <?php if (!empty($appointment_errors) && !empty($appointment_data['doctor_id'])): ?>
   var errorDoctorId = <?php echo intval($appointment_data['doctor_id']); ?>;
@@ -911,6 +1066,81 @@ function formatDisplayTime(hm) {
   var ampm = hr >= 12 ? 'PM' : 'AM';
   var displayHr = hr % 12 === 0 ? 12 : hr % 12;
   return displayHr + ':' + min + ampm;
+}
+
+// Function to show success notification
+function showSuccessNotification() {
+  // Create notification element
+  var notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 1.2rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 350px;
+    animation: slideInRight 0.3s ease-out;
+  `;
+  
+  notification.innerHTML = `
+    <i class="fas fa-check-circle" style="font-size: 1.5rem;"></i>
+    <div style="flex: 1;">
+      <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem;">
+        Appointment Request Sent!
+      </div>
+      <div style="font-size: 0.9rem; opacity: 0.95;">
+        Please Complete your Payment
+      </div>
+    </div>
+  `;
+  
+  // Add animation keyframes
+  if (!document.getElementById('notification-styles')) {
+    var style = document.createElement('style');
+    style.id = 'notification-styles';
+    style.textContent = `
+      @keyframes slideInRight {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideOutRight {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  document.body.appendChild(notification);
+  
+  // Auto remove after animation
+  setTimeout(function() {
+    notification.style.animation = 'slideOutRight 0.3s ease-in';
+    setTimeout(function() {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 300);
+  }, 1200);
 }
 </script>
 

@@ -126,24 +126,44 @@ function initializePasswordToggles() {
     document.addEventListener('click', function(e) {
         if (e.target.closest('.password-toggle')) {
             const toggle = e.target.closest('.password-toggle');
-            const inputId = toggle.getAttribute('onclick').match(/'([^']+)'/)[1];
-            togglePassword(inputId);
+            const inputId = toggle.getAttribute('data-target');
+            if (inputId) {
+                togglePassword(inputId, toggle);
+            }
         }
     });
 }
 
-function togglePassword(inputId) {
+function togglePassword(inputId, button) {
     const input = document.getElementById(inputId);
-    const icon = document.querySelector(`[onclick*="${inputId}"] i`);
     
-    if (input && icon) {
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.className = 'fas fa-eye-slash';
-        } else {
-            input.type = 'password';
-            icon.className = 'fas fa-eye';
-        }
+    if (!input) {
+        console.error('Input not found:', inputId);
+        return;
+    }
+    
+    // Find the icon - if button is provided, look inside it, otherwise search globally
+    let icon;
+    if (button && typeof button === 'object') {
+        icon = button.querySelector('i');
+    } else {
+        icon = document.querySelector(`[onclick*="${inputId}"] i`);
+    }
+    
+    if (!icon) {
+        console.error('Icon not found for input:', inputId);
+        return;
+    }
+    
+    // Toggle the password visibility
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
     }
 }
 
@@ -542,15 +562,8 @@ function validateInput(event) {
         return false;
     }
     
-    if (type === 'email' && value && !isValidEmail(value)) {
-        showValidationError(input, 'Please enter a valid email address');
-        return false;
-    }
-    
-    if (name === 'phone' && value && !isValidPhone(value)) {
-        showValidationError(input, 'Please enter a valid phone number');
-        return false;
-    }
+    // Email and phone are optional - skip validation for these fields
+    // Only validate if they have the 'required' attribute
     
     if (type === 'password' && value && value.length < 6) {
         showValidationError(input, 'Password must be at least 6 characters');

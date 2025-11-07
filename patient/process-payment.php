@@ -52,8 +52,10 @@ try {
 
     // Verify appointment belongs to current patient
     $appointment = $db->fetch("
-        SELECT a.*, p.user_id as patient_user_id, 
-               d.consultation_fee, u.first_name, u.last_name
+        SELECT a.*, p.id as patient_id, p.user_id as patient_user_id, 
+               d.id as doctor_id, d.consultation_fee, u.first_name, u.last_name,
+               JSON_EXTRACT(a.patient_info, '$.purpose') as purpose,
+               JSON_EXTRACT(a.patient_info, '$.laboratory') as laboratory
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         JOIN doctors d ON a.doctor_id = d.id
@@ -65,6 +67,25 @@ try {
         $_SESSION['payment_errors'] = ['Appointment not found or access denied.'];
         header('Location: payment-gateway.php');
         exit();
+    }
+
+    // Determine the correct fee based on appointment purpose
+    $fee = $appointment['consultation_fee'];
+    $purpose = trim($appointment['purpose'] ?? '', '"');
+    $laboratory_name = trim($appointment['laboratory'] ?? '', '"');
+    
+    // If purpose is laboratory, get the lab offer price
+    if ($purpose === 'laboratory' && !empty($laboratory_name)) {
+        $lab_offer = $db->fetch("
+            SELECT lo.price 
+            FROM lab_offers lo
+            JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
+            WHERE lo.title = ? AND lod.doctor_id = ?
+        ", [$laboratory_name, $appointment['doctor_id']]);
+        
+        if ($lab_offer && !empty($lab_offer['price'])) {
+            $fee = $lab_offer['price'];
+        }
     }
 
     // Handle file upload
@@ -102,13 +123,13 @@ try {
 
     // Insert payment record
     $payment_data = [
-        'appointment_id' => $appointment_id,
-        'patient_id' => $appointment['patient_id'],
-        'amount' => $appointment['consultation_fee'],
+        'appointment_id' => (int)$appointment_id,
+        'patient_id' => (int)$appointment['patient_id'],
+        'amount' => (float)$fee,
         'payment_method' => 'gcash',
         'gcash_reference' => $gcash_reference,
         'receipt_file' => $filename,
-        'payment_notes' => $payment_notes,
+        'payment_notes' => !empty($payment_notes) ? $payment_notes : null,
         'status' => 'pending_verification',
         'submitted_at' => date('Y-m-d H:i:s'),
         'created_at' => date('Y-m-d H:i:s'),
@@ -121,7 +142,7 @@ try {
         // Update appointment updated_at timestamp
         $db->update('appointments', [
             'updated_at' => date('Y-m-d H:i:s')
-        ], ['id' => $appointment_id]);
+        ], 'id = ?', [$appointment_id]);
 
         // Log activity
         logActivity($patient_id, 'payment_submitted', "Submitted payment for appointment #{$reference_number}");
@@ -131,14 +152,9 @@ try {
         unset($_SESSION['payment_errors']);
         
         // Set success message
-        $_SESSION['payment_success'] = [
-            'message' => 'Payment proof submitted successfully!',
-            'reference' => $reference_number,
-            'gcash_reference' => $gcash_reference,
-            'doctor' => "Dr. {$appointment['first_name']} {$appointment['last_name']}",
-            'amount' => $appointment['consultation_fee']
-        ];
+        $_SESSION['payment_success'] = 'Payment proof submitted successfully! Your payment is now pending verification.';
         
+        // Redirect to appointments page
         header('Location: appointments.php');
         exit();
     } else {

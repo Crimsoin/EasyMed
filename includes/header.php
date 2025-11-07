@@ -196,6 +196,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <span class="input-icon"><i class="fas fa-lock"></i></span>
                             <input type="password" id="loginPassword" name="password" class="form-control" 
                                    placeholder="Enter your password" required>
+                            <button type="button" class="password-toggle" data-target="loginPassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
                         </div>
                     </div>
                     
@@ -294,6 +297,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <span class="input-icon"><i class="fas fa-lock"></i></span>
                             <input type="password" id="regPassword" name="password" class="form-control" 
                                    placeholder="Enter secure password" required>
+                            <button type="button" class="password-toggle" data-target="regPassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
                         </div>
                         <small style="color: #666; font-size: 0.8rem;">
                             Password must be at least 8 characters long
@@ -308,6 +314,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <span class="input-icon"><i class="fas fa-lock"></i></span>
                             <input type="password" id="regConfirmPassword" name="confirm_password" class="form-control" 
                                    placeholder="Confirm your password" required>
+                            <button type="button" class="password-toggle" data-target="regConfirmPassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
                         </div>
                     </div>
                 </div>

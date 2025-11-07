@@ -29,9 +29,9 @@ $appointments = $db->fetchAll("
         a.id, a.appointment_date, a.appointment_time, a.reason_for_visit, 
         a.status, a.patient_info, a.notes, a.created_at,
         u.first_name as doctor_first_name, u.last_name as doctor_last_name,
-        d.specialty, d.consultation_fee,
+        d.id as doctor_internal_id, d.specialty, d.consultation_fee,
         p.id as payment_id, p.status as payment_verification_status, 
-        p.gcash_reference, p.submitted_at
+        p.gcash_reference, p.submitted_at, p.amount as payment_amount
     FROM appointments a
     JOIN doctors d ON a.doctor_id = d.id
     JOIN users u ON d.user_id = u.id
@@ -39,6 +39,38 @@ $appointments = $db->fetchAll("
     WHERE a.patient_id = ?
     ORDER BY a.appointment_date DESC, a.appointment_time DESC
 ", [$patient_record_id]);
+
+// Calculate correct fee for each appointment
+foreach ($appointments as &$appointment) {
+    $patient_info = json_decode($appointment['patient_info'], true);
+    $purpose = $patient_info['purpose'] ?? 'consultation';
+    $laboratory_name = $patient_info['laboratory'] ?? '';
+    
+    // Default to consultation fee
+    $appointment['display_fee'] = $appointment['consultation_fee'];
+    $appointment['fee_label'] = 'Consultation Fee';
+    
+    // If laboratory and payment amount exists, use that
+    if ($purpose === 'laboratory' && !empty($appointment['payment_amount'])) {
+        $appointment['display_fee'] = $appointment['payment_amount'];
+        $appointment['fee_label'] = 'Laboratory Fee';
+    }
+    // Otherwise, if laboratory, try to fetch from lab_offers table
+    elseif ($purpose === 'laboratory' && !empty($laboratory_name)) {
+        $lab_offer = $db->fetch("
+            SELECT lo.price 
+            FROM lab_offers lo
+            JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
+            WHERE lo.title = ? AND lod.doctor_id = ? AND lo.is_active = 1
+        ", [$laboratory_name, $appointment['doctor_internal_id']]);
+        
+        if ($lab_offer && !empty($lab_offer['price'])) {
+            $appointment['display_fee'] = $lab_offer['price'];
+            $appointment['fee_label'] = 'Laboratory Fee';
+        }
+    }
+}
+unset($appointment); // Break reference
 
 // Get success message if redirected from booking or payment
 $success_message = $_SESSION['appointment_success'] ?? $_SESSION['payment_success'] ?? null;
@@ -328,12 +360,17 @@ unset($_SESSION['appointment_errors']);
         
         <?php if ($success_message): ?>
             <div class="success-message">
-                <h4><?= htmlspecialchars($success_message['message']) ?></h4>
-                <p><strong>Reference:</strong> <?= htmlspecialchars($success_message['reference']) ?></p>
-                <p><strong>Doctor:</strong> <?= htmlspecialchars($success_message['doctor']) ?></p>
-                <p><strong>Date:</strong> <?= htmlspecialchars($success_message['date']) ?></p>
-                <p><strong>Time:</strong> <?= htmlspecialchars($success_message['time']) ?></p>
-                <p><strong>Day:</strong> <?= htmlspecialchars($success_message['day']) ?></p>
+                <?php if (is_array($success_message)): ?>
+                    <h4><?= htmlspecialchars($success_message['message']) ?></h4>
+                    <p><strong>Reference:</strong> <?= htmlspecialchars($success_message['reference']) ?></p>
+                    <p><strong>Doctor:</strong> <?= htmlspecialchars($success_message['doctor']) ?></p>
+                    <p><strong>Date:</strong> <?= htmlspecialchars($success_message['date']) ?></p>
+                    <p><strong>Time:</strong> <?= htmlspecialchars($success_message['time']) ?></p>
+                    <p><strong>Day:</strong> <?= htmlspecialchars($success_message['day']) ?></p>
+                <?php else: ?>
+                    <i class="fas fa-check-circle"></i>
+                    <?= htmlspecialchars($success_message) ?>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
         
@@ -395,8 +432,8 @@ unset($_SESSION['appointment_errors']);
                                         </div>
                                         <?php endif; ?>
                                         <div class="detail-row">
-                                            <div class="detail-label">Fee:</div>
-                                            <div class="detail-value">₱<?= number_format($appointment['consultation_fee'], 2) ?></div>
+                                            <div class="detail-label"><?= htmlspecialchars($appointment['fee_label']) ?>:</div>
+                                            <div class="detail-value">₱<?= number_format($appointment['display_fee'], 2) ?></div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Payment:</div>

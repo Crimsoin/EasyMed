@@ -277,6 +277,14 @@ body {
     color: var(--primary-cyan);
 }
 
+/* Add extra padding to password inputs to make room for toggle button */
+input[type="password"],
+input[type="text"]#loginPassword,
+input[type="text"]#regPassword,
+input[type="text"]#regConfirmPassword {
+    padding-right: 3rem !important;
+}
+
 .form-check {
     display: flex;
     align-items: center;
