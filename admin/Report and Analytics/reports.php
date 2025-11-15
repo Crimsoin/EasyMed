@@ -169,6 +169,17 @@ require_once '../../includes/header.php';
             
             <div class="stat-card">
                 <div class="stat-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="stat-content">
+                    <h3><?php echo $stats['appointments']['rescheduled']; ?></h3>
+                    <p>Rescheduled</p>
+                    <small><?php echo $total_appointments > 0 ? round(($stats['appointments']['rescheduled'] / $total_appointments) * 100, 1) : 0; ?>% reschedule rate</small>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
                     <i class="fas fa-user-times"></i>
                 </div>
                 <div class="stat-content">

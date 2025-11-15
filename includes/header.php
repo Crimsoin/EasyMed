@@ -50,44 +50,48 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
             
             <!-- Navigation Menu -->
-            <ul class="nav-menu">
-                <li>
-                    <a href="<?php echo SITE_URL; ?>/index.php" 
-                       class="<?php echo ($current_page === 'index.php') ? 'active' : ''; ?>">
-                        <i class="fas fa-home"></i> <span>HOME</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?php echo SITE_URL; ?>/reviews.php" 
-                       class="<?php echo ($current_page === 'reviews.php') ? 'active' : ''; ?>">
-                        <i class="fas fa-star"></i> <span>REVIEWS</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?php echo SITE_URL; ?>/about.php" 
-                       class="<?php echo ($current_page === 'about.php') ? 'active' : ''; ?>">
-                        <i class="fas fa-info-circle"></i> <span>ABOUT US</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?php echo SITE_URL; ?>/location.php" 
-                       class="<?php echo ($current_page === 'location.php') ? 'active' : ''; ?>">
-                        <i class="fas fa-map-marker-alt"></i> <span>LOCATION</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?php echo SITE_URL; ?>/doctors.php" 
-                       class="<?php echo ($current_page === 'doctors.php') ? 'active' : ''; ?>">
-                        <i class="fas fa-user-md"></i> <span>FIND DOCTORS</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?php echo SITE_URL; ?>/payment.php" 
-                       class="<?php echo ($current_page === 'payment.php') ? 'active' : ''; ?>">
-                        <i class="fas fa-credit-card"></i> <span>PAYMENT</span>
-                    </a>
-                </li>
-            </ul>
+            <?php if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'doctor')): ?>
+                <ul class="nav-menu">
+                    <li>
+                        <a href="<?php echo SITE_URL; ?>/index.php" 
+                           class="<?php echo ($current_page === 'index.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-home"></i> <span>HOME</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?php echo SITE_URL; ?>/reviews.php" 
+                           class="<?php echo ($current_page === 'reviews.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-star"></i> <span>REVIEWS</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?php echo SITE_URL; ?>/about.php" 
+                           class="<?php echo ($current_page === 'about.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-info-circle"></i> <span>ABOUT US</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?php echo SITE_URL; ?>/location.php" 
+                           class="<?php echo ($current_page === 'location.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-map-marker-alt"></i> <span>LOCATION</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?php echo SITE_URL; ?>/doctors.php" 
+                           class="<?php echo ($current_page === 'doctors.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-user-md"></i> <span>FIND DOCTORS</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?php echo SITE_URL; ?>/payment.php" 
+                           class="<?php echo ($current_page === 'payment.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-credit-card"></i> <span>PAYMENT</span>
+                        </a>
+                    </li>
+                </ul>
+            <?php else: ?>
+                <ul class="nav-menu"></ul>
+            <?php endif; ?>
             
             <!-- Authentication Section -->
             <div class="nav-auth">
@@ -149,9 +153,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <span class="close">&times;</span>
         </div>
         <div class="modal-body">
-            <!-- Alert Container for Login Modal -->
-            <div id="loginModalAlert" style="display: none; margin-bottom: 1rem;"></div>
-            
             <!-- Role Selection -->
             <div id="roleSelection">
                 <div class="role-selection">
@@ -196,10 +197,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <span class="input-icon"><i class="fas fa-lock"></i></span>
                             <input type="password" id="loginPassword" name="password" class="form-control" 
                                    placeholder="Enter your password" required>
-                            <button type="button" class="password-toggle" data-target="loginPassword">
+                            <span class="password-toggle" onclick="EasyMed.togglePassword('loginPassword')">
                                 <i class="fas fa-eye"></i>
-                            </button>
+                            </span>
                         </div>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input type="checkbox" id="rememberMe" class="form-check-input">
+                        <label for="rememberMe" class="form-check-label">Remember me</label>
                     </div>
                     
                     <div class="form-group">
@@ -211,6 +217,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <div class="auth-links">
                         <a href="#" onclick="EasyMed.goBackToRoleSelection()" class="auth-link">
                             <i class="fas fa-arrow-left"></i> Back to Role Selection
+                        </a>
+                        <span style="margin: 0 1rem; color: #ccc;">|</span>
+                        <a href="#" class="auth-link">
+                            <i class="fas fa-key"></i> Forgot Password?
                         </a>
                     </div>
                 </form>
@@ -228,9 +238,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <span class="close">&times;</span>
         </div>
         <div class="modal-body">
-            <!-- Alert Container for Register Modal -->
-            <div id="registerModalAlert" style="display: none; margin-bottom: 1rem;"></div>
-            
             <form id="registerForm">
                 <div class="form-progress">
                     <div class="progress-step active">1</div>
@@ -297,9 +304,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <span class="input-icon"><i class="fas fa-lock"></i></span>
                             <input type="password" id="regPassword" name="password" class="form-control" 
                                    placeholder="Enter secure password" required>
-                            <button type="button" class="password-toggle" data-target="regPassword">
+                            <span class="password-toggle" onclick="EasyMed.togglePassword('regPassword')">
                                 <i class="fas fa-eye"></i>
-                            </button>
+                            </span>
                         </div>
                         <small style="color: #666; font-size: 0.8rem;">
                             Password must be at least 8 characters long
@@ -314,9 +321,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <span class="input-icon"><i class="fas fa-lock"></i></span>
                             <input type="password" id="regConfirmPassword" name="confirm_password" class="form-control" 
                                    placeholder="Confirm your password" required>
-                            <button type="button" class="password-toggle" data-target="regConfirmPassword">
+                            <span class="password-toggle" onclick="EasyMed.togglePassword('regConfirmPassword')">
                                 <i class="fas fa-eye"></i>
-                            </button>
+                            </span>
                         </div>
                     </div>
                 </div>
