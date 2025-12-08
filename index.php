@@ -1,4 +1,8 @@
 <?php
+// Maintenance Mode - Uncomment the lines below to enable
+// header('Location: /maintenance.php');
+// exit();
+
 $page_title = "Home";
 $page_description = "Welcome to EasyMed - Your trusted private clinic for comprehensive healthcare services";
 require_once 'includes/header.php';
