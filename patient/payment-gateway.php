@@ -450,4 +450,5 @@ setTimeout(function() {
 }, 15 * 60 * 1000); // 15 minutes
 </script>
 
-<?php require_once '../includes/footer.php'; ?>
+</body>
+</html>

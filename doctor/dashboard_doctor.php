@@ -332,4 +332,5 @@ updateDateTime();
 setInterval(updateDateTime, 1000);
 </script>
 
-<?php require_once '../includes/footer.php'; ?>
+</body>
+</html>

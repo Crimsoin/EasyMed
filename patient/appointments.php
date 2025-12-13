@@ -513,6 +513,5 @@ unset($_SESSION['appointment_errors']);
         </div>
     </div>
 
-    <?php include '../includes/footer.php'; ?>
 </body>
 </html>

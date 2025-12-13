@@ -853,4 +853,5 @@ document.getElementById && document.addEventListener('click', function(e) {
 });
 </script>
 
-<?php require_once '../includes/footer.php'; ?>
+</body>
+</html>

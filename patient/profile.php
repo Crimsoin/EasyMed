@@ -238,6 +238,5 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
         </div>
     </div>
 
-    <?php require_once '../includes/footer.php'; ?>
 </body>
 </html>

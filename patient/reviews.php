@@ -459,8 +459,6 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
         </div>
     </div>
 
-    <?php require_once '../includes/footer.php'; ?>
-
     <script>
         // Interactive star rating
         document.addEventListener('DOMContentLoaded', function() {

@@ -524,4 +524,5 @@ require_once '../../includes/header.php';
 <!-- Patient Management JavaScript -->
 <script src="../../assets/js/admin/patient-management.js"></script>
 
-<?php require_once '../../includes/footer.php'; ?>
+</body>
+</html>

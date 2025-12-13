@@ -563,6 +563,5 @@ function getInitials($name) {
         });
     </script>
 
-    <?php require_once '../includes/footer.php'; ?>
 </body>
 </html>
