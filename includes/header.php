@@ -176,6 +176,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
             
             <!-- Login Form -->
             <div id="loginForm" style="display: none;">
+                <!-- Alert Container -->
+                <div id="loginModalAlert"></div>
+                
                 <form id="loginFormElement">
                     <div class="form-group">
                         <label for="loginUsername" class="form-label">
