@@ -744,7 +744,6 @@ require_once '../../includes/header.php';
                     <label for="status">Status</label>
                     <select name="status" id="statusSelect" class="form-control" required>
                         <option value="pending">Pending</option>
-                        <option value="rescheduled">Rescheduled</option>
                         <option value="scheduled">Scheduled</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
