@@ -61,7 +61,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <li>
                         <a href="<?php echo SITE_URL; ?>/feedbacks.php" 
                            class="<?php echo ($current_page === 'feedbacks.php') ? 'active' : ''; ?>">
-                            <i class="fas fa-star"></i> <span>REVIEWS</span>
+                            <i class="fas fa-star"></i> <span>FEEDBACKS</span>
                         </a>
                     </li>
                     <li>
