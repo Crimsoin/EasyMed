@@ -95,9 +95,6 @@ require_once '../../includes/header.php';
             <a href="../Appointment/appointments.php" class="nav-item">
                 <i class="fas fa-calendar-alt"></i> Appointments
             </a>
-            <a href="../Report and Analytics/reports.php" class="nav-item">
-                <i class="fas fa-chart-bar"></i> Reports & Analytics
-            </a>
             <a href="../Settings/settings.php" class="nav-item">
                 <i class="fas fa-cog"></i> Settings
             </a>
