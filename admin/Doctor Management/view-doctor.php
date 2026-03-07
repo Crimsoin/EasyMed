@@ -141,7 +141,7 @@ require_once '../../includes/header.php';
                     <?php if ($avg_rating > 0): ?>
                         <span class="rating-badge">
                             <i class="fas fa-star"></i>
-                            <?php echo $avg_rating; ?> (<?php echo $total_reviews; ?> reviews)
+                            <?php echo $avg_rating; ?> (<?php echo $total_reviews; ?> feedbacks)
                         </span>
                     <?php endif; ?>
                 </div>

@@ -133,7 +133,7 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
                 <a href="dashboard_patients.php" class="nav-item"> <i class="fas fa-tachometer-alt"></i> Dashboard</a>
                 <a href="book-appointment.php" class="nav-item"> <i class="fas fa-calendar-plus"></i> Book Appointment</a>
                 <a href="appointments.php" class="nav-item"> <i class="fas fa-calendar-alt"></i> My Appointments</a>
-                <a href="reviews.php" class="nav-item"> <i class="fas fa-star"></i> Feedbacks</a>
+                <a href="feedbacks.php" class="nav-item"> <i class="fas fa-star"></i> Feedbacks</a>
                 <a href="profile.php" class="nav-item active"> <i class="fas fa-user-cog"></i> My Profile</a>
             </nav>
         </div>

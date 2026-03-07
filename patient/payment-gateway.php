@@ -108,7 +108,7 @@ $gcash_number = getClinicSetting('gcash_number', '09207245610');
             <a href="appointments.php" class="nav-item">
                 <i class="fas fa-calendar-alt"></i> My Appointments
             </a>
-            <a href="reviews.php" class="nav-item">
+            <a href="feedbacks.php" class="nav-item">
                 <i class="fas fa-star"></i> Feedbacks
             </a>
             <a href="profile.php" class="nav-item">

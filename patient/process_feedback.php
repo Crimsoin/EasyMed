@@ -4,7 +4,7 @@ require_once '../includes/database.php';
 require_once '../includes/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: reviews.php');
+    header('Location: feedbacks.php');
     exit();
 }
 
@@ -25,7 +25,7 @@ if ($rating < 1 || $rating > 5) $errors[] = 'Rating must be between 1 and 5.';
 
 if (!empty($errors)) {
     $_SESSION['review_errors'] = $errors;
-    header('Location: reviews.php');
+    header('Location: feedbacks.php');
     exit();
 }
 
@@ -77,5 +77,5 @@ try {
     $_SESSION['review_errors'] = ['Failed to submit review: ' . $e->getMessage()];
 }
 
-header('Location: reviews.php');
+header('Location: feedbacks.php');
 exit();

@@ -44,7 +44,7 @@ function initializePatientManagement() {
                 `• Patient profile and medical information\n` +
                 `• All appointment history\n` +
                 `• Payment records\n` +
-                `• Reviews and ratings\n` +
+                `• Feedbacks and ratings\n` +
                 `• Account access credentials\n\n` +
                 `This action CANNOT be undone and the data CANNOT be recovered.\n\n` +
                 `Are you absolutely certain you want to proceed?`);
