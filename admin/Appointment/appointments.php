@@ -378,9 +378,6 @@ require_once '../../includes/header.php';
             <a href="../Doctor Management/doctors.php" class="nav-item">
                 <i class="fas fa-user-md"></i> Doctor Management
             </a>
-            <a href="../Appointment/appointments.php" class="nav-item active">
-                <i class="fas fa-calendar-alt"></i> Appointments
-            </a>
             <a href="../Reviews/review_admin.php" class="nav-item">
                 <i class="fas fa-star"></i> Reviews
             </a>
