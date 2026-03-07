@@ -498,7 +498,7 @@ require_once '../includes/header.php';
                         </div>
                         <div class="profile-stat">
                             <div class="stat-number"><?= number_format($doctor_info['total_reviews'] ?? 0) ?></div>
-                            <div class="stat-label">Reviews</div>
+                            <div class="stat-label">Feedbacks</div>
                         </div>
                     </div>
                 </div>

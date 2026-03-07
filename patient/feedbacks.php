@@ -39,7 +39,7 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>My Reviews - EasyMed</title>
+    <title>My Feedbacks - EasyMed</title>
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css">
     <style>
         /* Container & Grid */
@@ -364,7 +364,7 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
                     <i class="fas fa-calendar-alt"></i> My Appointments
                 </a>
                 <a href="reviews.php" class="nav-item active">
-                    <i class="fas fa-star"></i> Reviews
+                    <i class="fas fa-star"></i> Feedbacks
                 </a>
                 <a href="profile.php" class="nav-item">
                     <i class="fas fa-user-cog"></i> My Profile
@@ -374,7 +374,7 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
 
         <div class="patient-content">
             <div class="content-header">
-                <h1>My Reviews</h1>
+                <h1>My Feedbacks</h1>
                 <p>Manage and submit reviews for doctors you've visited.</p>
             </div>
 
@@ -406,8 +406,8 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
 
                     <aside>
                         <div class="review-form">
-                            <h3>Submit a Review</h3>
-                            <form action="process_review.php" method="post">
+                            <h3>Submit a Feedback</h3>
+                            <form action="process_feedback.php" method="post">
                                 <div class="form-group">
                                     <label for="doctor_id">Select Doctor</label>
                                     <select name="doctor_id" id="doctor_id" required>
@@ -443,7 +443,7 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
                                 <div class="form-actions">
                                     <button class="btn btn-primary" type="submit">
                                         <i class="fas fa-paper-plane"></i>
-                                        Submit Review
+                                        Submit Feedback
                                     </button>
                                     <a href="reviews.php" class="btn btn-secondary">
                                         <i class="fas fa-redo"></i>

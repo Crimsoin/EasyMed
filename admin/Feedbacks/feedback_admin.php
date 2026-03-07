@@ -1,6 +1,6 @@
 <?php
-$page_title = 'Manage Reviews';
-$additional_css = ['admin/sidebar.css', 'admin/review_admin.css'];
+$page_title = 'Manage Feedbacks';
+$additional_css = ['admin/sidebar.css', 'admin/feedback_admin.css'];
 require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/database_helper.php';
@@ -27,7 +27,7 @@ require_once '../../includes/header.php';
 
     <div class="admin-content">
         <div class="content-header">
-            <h1>Manage Reviews</h1>
+            <h1>Manage Feedbacks</h1>
             <p>Approve, delete or review patient feedback.</p>
         </div>
 
@@ -40,7 +40,7 @@ require_once '../../includes/header.php';
                             <th>Patient</th>
                             <th>Doctor</th>
                             <th>Rating</th>
-                            <th>Review</th>
+                            <th>Feedback</th>
                             <th>Anonymous</th>
                             <th>Approved</th>
                             <th>Created</th>
@@ -69,7 +69,7 @@ require_once '../../includes/header.php';
                             <td><?php echo $r['is_approved'] ? '<span class="pill pill-approved">Approved</span>' : '<span class="pill pill-pending">Pending</span>'; ?></td>
                             <td><?php echo date('M j, Y', strtotime($r['created_at'])); ?></td>
                             <td>
-                                <form method="post" action="process_review_admin.php" style="display:inline-block;">
+                                <form method="post" action="process_feedback_admin.php" style="display:inline-block;">
                                     <input type="hidden" name="id" value="<?php echo $r['id']; ?>">
                                     <?php if (!$r['is_approved']): ?>
                                     <button type="submit" name="action" value="approve" class="btn btn-sm btn-success">

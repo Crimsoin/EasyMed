@@ -1,5 +1,5 @@
 <?php
-$page_title = "Patient Reviews";
+$page_title = "Patient Feedbacks";
 $page_description = "Read what our patients say about their experience at EasyMed Private Clinic";
 require_once 'includes/header.php';
 
@@ -32,7 +32,7 @@ $avgRating = $db->fetch("
 <section class="hero" style="padding: 2rem 0;">
     <div class="container">
         <div class="hero-content">
-            <h1><i class="fas fa-star"></i> Patient Reviews</h1>
+            <h1><i class="fas fa-star"></i> Patient Feedbacks</h1>
             <p>See what our patients have to say about their experience with EasyMed</p>
             
             <?php if ($avgRating && $avgRating['total_reviews'] > 0): ?>
@@ -53,7 +53,7 @@ $avgRating = $db->fetch("
                         </div>
                         <div style="color: rgba(255, 255, 255, 0.9); text-align: left;">
                             <div>Average Rating</div>
-                            <div><?php echo $avgRating['total_reviews']; ?> Reviews</div>
+                            <div><?php echo $avgRating['total_reviews']; ?> Feedbacks</div>
                         </div>
                     </div>
                 </div>
@@ -113,14 +113,14 @@ $avgRating = $db->fetch("
                 <div style="font-size: 4rem; color: var(--light-cyan); margin-bottom: 1rem;">
                     <i class="fas fa-comments"></i>
                 </div>
-                <h3 style="color: var(--text-light); margin-bottom: 1rem;">No Reviews Yet</h3>
+                <h3 style="color: var(--text-light); margin-bottom: 1rem;">No Feedbacks Yet</h3>
                 <p style="color: var(--text-light);">
                     Be the first to share your experience with EasyMed Private Clinic!
                 </p>
                 <?php if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'patient'): ?>
                     <div style="margin-top: 2rem;">
-                        <a href="<?php echo SITE_URL; ?>/patient/reviews.php" class="btn btn-primary">
-                            <i class="fas fa-pen"></i> Write a Review
+                        <a href="<?php echo SITE_URL; ?>/patient/feedbacks.php" class="btn btn-primary">
+                            <i class="fas fa-pen"></i> Write Feedback
                         </a>
                     </div>
                 <?php endif; ?>
@@ -136,9 +136,9 @@ $avgRating = $db->fetch("
                 <p style="color: rgba(255, 255, 255, 0.9); margin-bottom: 2rem;">
                     Help other patients by sharing your experience with our medical team.
                 </p>
-                <a href="<?php echo SITE_URL; ?>/patient/reviews.php" 
+                <a href="<?php echo SITE_URL; ?>/patient/feedbacks.php" 
                    class="btn" style="background-color: white; color: var(--primary-cyan);">
-                    <i class="fas fa-pen"></i> Write a Review
+                    <i class="fas fa-pen"></i> Write Feedback
                 </a>
             </div>
         <?php elseif (!isset($_SESSION['user_id'])): ?>

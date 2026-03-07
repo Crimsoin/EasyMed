@@ -43,7 +43,7 @@ unset($_SESSION['appointment_data']);
 				<i class="fas fa-calendar-alt"></i> My Appointments
 			</a>
             <a href="reviews.php" class="nav-item">
-                <i class="fas fa-star"></i> Reviews
+                <i class="fas fa-star"></i> Feedbacks
             </a>
 
 			<a href="profile.php" class="nav-item">
