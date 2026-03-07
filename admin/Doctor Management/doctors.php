@@ -262,45 +262,6 @@ require_once '../../includes/header.php';
             </div>
         <?php endif; ?>
 
-        <!-- Doctor Statistics -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-total">
-                    <i class="fas fa-user-md"></i>
-                </div>
-                <div class="stat-details">
-                    <h3><?php echo $stats['total']; ?></h3>
-                    <p>Total Doctors</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-active">
-                    <i class="fas fa-user-check"></i>
-                </div>
-                <div class="stat-details">
-                    <h3><?php echo $stats['active']; ?></h3>
-                    <p>Active Doctors</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-inactive">
-                    <i class="fas fa-user-clock"></i>
-                </div>
-                <div class="stat-details">
-                    <h3><?php echo $stats['available']; ?></h3>
-                    <p>Available Now</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-filtered">
-                    <i class="fas fa-user-times"></i>
-                </div>
-                <div class="stat-details">
-                    <h3><?php echo $stats['inactive']; ?></h3>
-                    <p>Inactive</p>
-                </div>
-            </div>
-        </div>
 
         <!-- Filters -->
         <div class="filter-section">

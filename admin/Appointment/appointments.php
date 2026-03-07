@@ -411,54 +411,6 @@ require_once '../../includes/header.php';
             </div>
         <?php endif; ?>
 
-        <!-- Appointment Statistics -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-total">
-                    <i class="fas fa-calendar-alt"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?php echo $stats['total']; ?></h3>
-                    <p>Total Appointments</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-active">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?php echo $stats['pending']; ?></h3>
-                    <p>Pending</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-inactive">
-                    <i class="fas fa-calendar-alt"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?php echo $stats['rescheduled']; ?></h3>
-                    <p>Rescheduled</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-filtered">
-                    <i class="fas fa-calendar-check"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?php echo $stats['completed']; ?></h3>
-                    <p>Completed</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-filtered">
-                    <i class="fas fa-user-times"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?php echo $stats['no_show']; ?></h3>
-                    <p>No Show</p>
-                </div>
-            </div>
-        </div>
 
         <!-- Filters -->
         <div class="filter-section">

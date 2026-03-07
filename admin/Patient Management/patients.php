@@ -258,45 +258,6 @@ require_once '../../includes/header.php';
             </div>
         <?php endif; ?>
 
-        <!-- Patient Statistics -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-total">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="stat-details">
-                    <h3><?php echo $total_patients; ?></h3>
-                    <p>Total Patients</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-active">
-                    <i class="fas fa-user-check"></i>
-                </div>
-                <div class="stat-details">
-                    <h3><?php echo $active_patients; ?></h3>
-                    <p>Active Patients</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-inactive">
-                    <i class="fas fa-user-times"></i>
-                </div>
-                <div class="stat-details">
-                    <h3><?php echo $inactive_patients; ?></h3>
-                    <p>Inactive Patients</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-filtered">
-                    <i class="fas fa-filter"></i>
-                </div>
-                <div class="stat-details">
-                    <h3><?php echo count($patients); ?></h3>
-                    <p>Filtered Results</p>
-                </div>
-            </div>
-        </div>
 
         <!-- Filter Section -->
         <div class="filter-section">
