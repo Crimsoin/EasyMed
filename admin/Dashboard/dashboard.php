@@ -1192,9 +1192,6 @@ require_once '../../includes/header.php';
                 <?php endif; ?>
             </div>
         </div>
-    </div>
-</div>
-        </div>
 
         <!-- Summary Insights -->
         <div class="content-section insights-section">
