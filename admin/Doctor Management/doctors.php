@@ -511,8 +511,8 @@ require_once '../../includes/header.php';
 </div>
 
 <!-- View Schedule Modal -->
-<div id="scheduleModal" class="modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.5); overflow-y:auto;">
-    <div style="background:#fff; max-width:700px; width:92%; margin:4rem auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden;">
+<div id="scheduleModal" class="modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.5); overflow-y:auto; display:none; align-items:center; justify-content:center;">
+    <div style="background:#fff; max-width:700px; width:92%; margin:auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden;">
         <!-- Modal Header -->
         <div style="background:linear-gradient(135deg,#00bcd4,#0097a7); padding:1.5rem 2rem; display:flex; justify-content:space-between; align-items:center;">
             <div>
@@ -603,7 +603,7 @@ function viewSchedule(doctorId, name, specialty) {
     document.getElementById('scheduleModalName').textContent = 'Dr. ' + name;
     document.getElementById('scheduleModalSpecialty').textContent = specialty;
     document.getElementById('scheduleModalBody').innerHTML = '<div style="text-align:center;padding:2rem;color:#666;"><i class="fas fa-spinner fa-spin"></i> Loading schedule...</div>';
-    document.getElementById('scheduleModal').style.display = 'block';
+    document.getElementById('scheduleModal').style.display = 'flex';
 
     fetch('get_doctor_schedule.php?doctor_id=' + doctorId)
         .then(r => r.json())
