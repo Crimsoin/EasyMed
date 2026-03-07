@@ -132,7 +132,7 @@
 }
 
 .stat-icon-total {
-    background: linear-gradient(135deg, #00bcd4, #00bcd4);
+    background: linear-gradient(135deg, #2563eb, #2563eb);
 }
 
 .stat-icon-completed {
@@ -196,11 +196,11 @@
 }
 
 .section-header i {
-    color: #00bcd4;
+    color: #2563eb;
 }
 
 .view-all-link {
-    color: #00bcd4;
+    color: #2563eb;
     text-decoration: none;
     font-size: 0.875rem;
     font-weight: 500;
@@ -252,7 +252,7 @@
     padding: 1rem;
     background: #f9fafb;
     border-radius: 8px;
-    border-left: 4px solid #00bcd4;
+    border-left: 4px solid #2563eb;
 }
 
 /* Appointments List */
@@ -274,7 +274,7 @@
 }
 
 .appointment-item:hover {
-    border-left-color: #00bcd4;
+    border-left-color: #2563eb;
 }
 
 .appointment-info h4 {
@@ -371,8 +371,8 @@
 }
 
 .action-btn:hover {
-    background: #00bcd4;
-    border-color: #00bcd4;
+    background: #2563eb;
+    border-color: #2563eb;
     color: white;
     transform: translateY(-1px);
 }
@@ -606,7 +606,7 @@
 }
 
 .lab-offer-status.status-active {
-    background: #d4edda;
+    background: #dcfce7;
     color: #155724;
 }
 

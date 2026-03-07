@@ -37,8 +37,8 @@ body {
     padding: 2.5rem;
     border-radius: 12px;
     margin-bottom: 2rem;
-    box-shadow: 0 4px 20px rgba(0, 188, 212, 0.08);
-    border: 1px solid rgba(0, 188, 212, 0.1);
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.1);
     position: relative;
     overflow: hidden;
 }
@@ -111,8 +111,8 @@ body {
     background: var(--white);
     border-radius: 12px;
     padding: 2.5rem;
-    box-shadow: 0 4px 20px rgba(0, 188, 212, 0.08);
-    border: 1px solid rgba(0, 188, 212, 0.1);
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.1);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -168,7 +168,7 @@ body {
     text-align: center;
     padding: 1rem;
     border-radius: 8px;
-    background: rgba(0, 188, 212, 0.05);
+    background: rgba(37, 99, 235, 0.05);
     min-width: 100px;
 }
 
@@ -189,8 +189,8 @@ body {
 .profile-tabs {
     background: var(--white);
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 188, 212, 0.08);
-    border: 1px solid rgba(0, 188, 212, 0.1);
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.1);
     overflow: hidden;
 }
 
@@ -219,7 +219,7 @@ body {
 }
 
 .tab-btn:hover {
-    background: rgba(0, 188, 212, 0.05);
+    background: rgba(37, 99, 235, 0.05);
     color: var(--primary-cyan);
 }
 
@@ -340,7 +340,7 @@ body {
 .form-control:focus {
     outline: none;
     border-color: var(--primary-cyan);
-    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .form-control::placeholder {
@@ -380,7 +380,7 @@ textarea.form-control {
 }
 
 .checkbox-item:hover {
-    background: rgba(0, 188, 212, 0.05);
+    background: rgba(37, 99, 235, 0.05);
 }
 
 .checkbox-item input[type="checkbox"] {
@@ -431,17 +431,17 @@ textarea.form-control {
     background: var(--dark-cyan);
     border-color: var(--dark-cyan);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .btn-secondary {
-    background: rgba(0, 188, 212, 0.1);
+    background: rgba(37, 99, 235, 0.1);
     color: var(--primary-cyan);
-    border-color: rgba(0, 188, 212, 0.3);
+    border-color: rgba(37, 99, 235, 0.3);
 }
 
 .btn-secondary:hover {
-    background: rgba(0, 188, 212, 0.2);
+    background: rgba(37, 99, 235, 0.2);
     transform: translateY(-2px);
 }
 
@@ -612,14 +612,14 @@ textarea.form-control {
     background: #ffffff;
     border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.08);
-    border: 1px solid rgba(0, 188, 212, 0.1);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.1);
     transition: all 0.3s ease;
 }
 
 #lab-offers .lab-offer-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 188, 212, 0.15);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
 }
 
 #lab-offers .lab-offer-header {
@@ -682,7 +682,7 @@ textarea.form-control {
     gap: 0.5rem;
     font-size: 1.1rem;
     font-weight: 600;
-    color: #00bcd4;
+    color: #2563eb;
 }
 
 #lab-offers .lab-offer-price i {
@@ -705,13 +705,13 @@ textarea.form-control {
     padding: 4rem 2rem;
     background: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.08);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.08);
     margin-top: 1.5rem;
 }
 
 #lab-offers .empty-state i {
     font-size: 5rem;
-    color: rgba(0, 188, 212, 0.25);
+    color: rgba(37, 99, 235, 0.25);
     margin-bottom: 1.5rem;
     display: block;
 }
@@ -811,7 +811,7 @@ textarea.form-control {
 #labOfferModal .form-control:focus {
     outline: none;
     border-color: var(--primary-cyan);
-    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 #labOfferModal textarea.form-control {
@@ -859,6 +859,6 @@ textarea.form-control {
 
 #labOfferModal .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 188, 212, 0.4);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
 }
 

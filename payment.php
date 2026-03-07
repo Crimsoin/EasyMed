@@ -49,7 +49,7 @@ $gcash_qr_path = 'assets/images/Gcash-QR.png';
                     </ol>
                 </div>
                 
-                <div style="background-color: rgba(0, 188, 212, 0.1); padding: 1rem; border-radius: 8px; margin-top: 1.5rem; border-left: 4px solid var(--primary-cyan);">
+                <div style="background-color: rgba(37, 99, 235, 0.1); padding: 1rem; border-radius: 8px; margin-top: 1.5rem; border-left: 4px solid var(--primary-cyan);">
                     <p style="margin: 0; font-size: 0.9rem; color: var(--text-dark);">
                         <i class="fas fa-info-circle" style="color: var(--primary-cyan); margin-right: 0.5rem;"></i>
                         <strong>Note:</strong> Please keep your payment receipt for verification purposes.
@@ -112,7 +112,7 @@ $gcash_qr_path = 'assets/images/Gcash-QR.png';
                     </div>
                     
                     <!-- Contact Information for Payment -->
-                    <div style="background-color: rgba(0, 188, 212, 0.1); padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--primary-cyan);">
+                    <div style="background-color: rgba(37, 99, 235, 0.1); padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--primary-cyan);">
                         <h4 style="color: var(--primary-cyan); margin-bottom: 1rem;">Send Payment Proof To:</h4>
                         <div style="display: grid; gap: 0.5rem;">
                             <div style="display: flex; align-items: center;">

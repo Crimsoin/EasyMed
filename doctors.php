@@ -39,7 +39,7 @@ $doctors = $db->fetchAll("
             
             <div style="display: grid; gap: 3rem;">
                 <?php foreach ($doctors as $index => $doctor): ?>
-                    <div class="card" style="<?php echo $index % 2 === 0 ? '' : 'background: linear-gradient(135deg, rgba(0, 188, 212, 0.05), rgba(77, 208, 225, 0.05));'; ?>">
+                    <div class="card" style="<?php echo $index % 2 === 0 ? '' : 'background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(96, 165, 250, 0.05));'; ?>">
                         <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 2rem; align-items: start;">
                             <!-- Doctor Photo -->
                             <div style="text-align: center;">

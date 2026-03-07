@@ -76,7 +76,7 @@ require_once '../includes/header.php';
             <p>Manage your healthcare appointments and profile</p>
             
             <!-- Current Date and Time Display -->
-            <div class="datetime-display" style="margin-top: 1rem; padding: 1rem; background: rgba(0, 188, 212, 0.1); border-radius: 8px; border-left: 4px solid var(--primary-cyan);">
+            <div class="datetime-display" style="margin-top: 1rem; padding: 1rem; background: rgba(37, 99, 235, 0.1); border-radius: 8px; border-left: 4px solid var(--primary-cyan);">
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <div style="font-size: 2rem;">
                         <i class="fas fa-clock" style="color: var(--primary-cyan);"></i>

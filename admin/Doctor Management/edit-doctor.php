@@ -672,8 +672,8 @@ require_once '../../includes/header.php';
                                 </p>
                             <?php endif; ?>
                             <?php if (!empty($offer['price'])): ?>
-                                <div style="margin: 0 0 1.25rem 0; padding: 0.75rem 1rem; background: #f0f9ff; border-radius: 8px; border-left: 3px solid #00bcd4;">
-                                    <p style="margin: 0; color: #0891b2; font-weight: 700; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="margin: 0 0 1.25rem 0; padding: 0.75rem 1rem; background: #f0f9ff; border-radius: 8px; border-left: 3px solid #2563eb;">
+                                    <p style="margin: 0; color: #2563eb; font-weight: 700; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
                                         <i class="fas fa-coins"></i> ₱<?php echo number_format($offer['price'], 2); ?>
                                     </p>
                                 </div>

@@ -73,7 +73,7 @@
 .form-control:focus {
     outline: none;
     border-color: var(--primary-cyan);
-    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     background-color: #fafafa;
 }
 
@@ -118,12 +118,12 @@ select.form-control {
 .btn-primary {
     background: linear-gradient(135deg, var(--primary-cyan), var(--dark-cyan));
     color: white;
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 188, 212, 0.4);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
     background: linear-gradient(135deg, var(--dark-cyan), var(--primary-cyan));
 }
 

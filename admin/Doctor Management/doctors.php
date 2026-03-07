@@ -515,7 +515,7 @@ require_once '../../includes/header.php';
 <div id="scheduleModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.55); align-items:center; justify-content:center; padding:1rem;">
     <div style="background:#fff; max-width:780px; width:100%; border-radius:16px; box-shadow:0 24px 64px rgba(0,0,0,0.3); overflow:hidden; height:85vh; display:flex; flex-direction:column;">
         <!-- Modal Header -->
-        <div style="background:linear-gradient(135deg,#00bcd4,#0097a7); padding:1.25rem 1.75rem; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+        <div style="background:linear-gradient(135deg,#2563eb,#1e3a8a); padding:1.25rem 1.75rem; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
             <div>
                 <h3 id="calDoctorName" style="color:#fff; margin:0; font-size:1.2rem; font-weight:700;"></h3>
                 <p id="calDoctorSpecialty" style="color:rgba(255,255,255,0.85); margin:0.15rem 0 0; font-size:0.85rem;"></p>
@@ -524,9 +524,9 @@ require_once '../../includes/header.php';
         </div>
         <!-- Month Nav -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1.75rem;border-bottom:1px solid #e0e0e0;background:#fafafa;flex-shrink:0;">
-            <button onclick="changeCalMonth(-1)" style="background:#e0f7fa;border:none;color:#00838f;padding:0.4rem 0.9rem;border-radius:8px;cursor:pointer;font-weight:600;"><i class="fas fa-chevron-left"></i></button>
+            <button onclick="changeCalMonth(-1)" style="background:#e0f7fa;border:none;color:#2563eb;padding:0.4rem 0.9rem;border-radius:8px;cursor:pointer;font-weight:600;"><i class="fas fa-chevron-left"></i></button>
             <span id="calMonthLabel" style="font-weight:700;font-size:1.05rem;color:#333;"></span>
-            <button onclick="changeCalMonth(1)"  style="background:#e0f7fa;border:none;color:#00838f;padding:0.4rem 0.9rem;border-radius:8px;cursor:pointer;font-weight:600;"><i class="fas fa-chevron-right"></i></button>
+            <button onclick="changeCalMonth(1)"  style="background:#e0f7fa;border:none;color:#2563eb;padding:0.4rem 0.9rem;border-radius:8px;cursor:pointer;font-weight:600;"><i class="fas fa-chevron-right"></i></button>
         </div>
         <!-- Legend -->
         <div style="display:flex;gap:1rem;padding:0.6rem 1.75rem;background:#fafafa;border-bottom:1px solid #e0e0e0;flex-shrink:0;flex-wrap:wrap;">
@@ -544,7 +544,7 @@ require_once '../../includes/header.php';
         <!-- Day Detail Panel -->
         <div id="calDayDetail" style="display:none;padding:0.9rem 1.75rem;border-top:2px solid #e0f7fa;background:#f0fdfd;flex-shrink:0;max-height:200px;overflow-y:auto;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-                <strong id="calDayDetailTitle" style="color:#006064;font-size:0.95rem;"></strong>
+                <strong id="calDayDetailTitle" style="color:#1e3a8a;font-size:0.95rem;"></strong>
                 <button onclick="document.getElementById('calDayDetail').style.display='none'" style="background:none;border:none;cursor:pointer;color:#999;font-size:1.1rem;">&times;</button>
             </div>
             <div id="calDayDetailBody"></div>
@@ -553,17 +553,17 @@ require_once '../../includes/header.php';
 </div>
 
 <style>
-.btn-schedule { background:linear-gradient(135deg,#00bcd4,#0097a7); color:#fff; border:none; cursor:pointer; }
-.btn-schedule:hover { background:linear-gradient(135deg,#0097a7,#006064); transform:translateY(-1px); }
+.btn-schedule { background:linear-gradient(135deg,#2563eb,#1e3a8a); color:#fff; border:none; cursor:pointer; }
+.btn-schedule:hover { background:linear-gradient(135deg,#1e3a8a,#1e3a8a); transform:translateY(-1px); }
 .cal-grid { display:grid; grid-template-columns:repeat(7, 1fr); gap: 1px; background: #e0e0e0; border: 1px solid #e0e0e0; }
-.cal-day-name { text-align:center; font-size:0.72rem; font-weight:700; color:#00838f; padding:0.6rem 0; text-transform:uppercase; letter-spacing:0.05em; background: #fafafa; }
+.cal-day-name { text-align:center; font-size:0.72rem; font-weight:700; color:#2563eb; padding:0.6rem 0; text-transform:uppercase; letter-spacing:0.05em; background: #fafafa; }
 .cal-cell { min-height:90px; padding:0.5rem; background:#fff; position:relative; transition:background 0.15s; cursor:default; }
 .cal-cell.has-appts { cursor:pointer; }
 .cal-cell.has-appts:hover { background:#f0fdfd; }
 .cal-cell.today { background:#e0f7fa; }
 .cal-cell.empty { background:#f5f5f5; }
 .cal-date-num { font-size:0.85rem; font-weight:700; color:#444; margin-bottom:0.3rem; }
-.cal-cell.today .cal-date-num { color:#fff; background:#00bcd4; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; }
+.cal-cell.today .cal-date-num { color:#fff; background:#2563eb; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; }
 .cal-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin:1px; }
 .cal-dots { display:flex; flex-wrap:wrap; gap:2px; margin-top:2px; }
 .cal-count { font-size:0.65rem; color:#888; margin-top:2px; }

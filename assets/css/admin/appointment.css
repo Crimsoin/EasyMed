@@ -82,7 +82,7 @@
 }
 
 .alert-info {
-    background: rgba(0, 188, 212, 0.1);
+    background: rgba(37, 99, 235, 0.1);
     color: var(--dark-cyan);
     border-left-color: var(--primary-cyan);
 }
@@ -102,7 +102,7 @@
     font-weight: 500;
     margin-left: auto;
     padding: 0.5rem 1rem;
-    background: rgba(0, 188, 212, 0.05);
+    background: rgba(37, 99, 235, 0.05);
     border-radius: 20px;
 }
 
@@ -115,8 +115,8 @@
     border-radius: 12px;
     padding: 2rem;
     margin-bottom: 2rem;
-    box-shadow: 0 4px 20px rgba(0, 188, 212, 0.05);
-    border: 1px solid rgba(0, 188, 212, 0.08);
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.05);
+    border: 1px solid rgba(37, 99, 235, 0.08);
 }
 
 .filter-form {
@@ -166,7 +166,7 @@
 .form-select:focus {
     outline: none;
     border-color: var(--primary-cyan);
-    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .form-input::placeholder {
@@ -194,7 +194,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
     text-decoration: none;
     display: inline-flex;
     align-items: center;
@@ -315,7 +315,7 @@
 }
 
 .data-table th:hover {
-    background: rgba(0, 188, 212, 0.05);
+    background: rgba(37, 99, 235, 0.05);
 }
 
 .data-table th.sortable::after {
@@ -441,7 +441,7 @@
 }
 
 .btn-view {
-    background: rgba(0, 188, 212, 0.1);
+    background: rgba(37, 99, 235, 0.1);
     color: var(--primary-cyan);
 }
 
@@ -504,7 +504,7 @@
     color: var(--white);
     font-weight: 600;
     font-size: 1rem;
-    border: 2px solid rgba(0, 188, 212, 0.2);
+    border: 2px solid rgba(37, 99, 235, 0.2);
 }
 
 .user-details h4 {
@@ -668,7 +668,7 @@
 }
 
 .detail-card {
-    background: rgba(0, 188, 212, 0.05);
+    background: rgba(37, 99, 235, 0.05);
     padding: 1.5rem;
     border-radius: 8px;
     border-left: 4px solid var(--primary-cyan);

@@ -36,8 +36,8 @@ body {
     padding: 2.5rem;
     border-radius: 12px;
     margin-bottom: 2rem;
-    box-shadow: 0 4px 20px rgba(0, 188, 212, 0.08);
-    border: 1px solid rgba(0, 188, 212, 0.1);
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.1);
     position: relative;
     overflow: hidden;
 }
@@ -78,15 +78,15 @@ body {
     background: var(--white);
     border-radius: 12px;
     margin-bottom: 2rem;
-    box-shadow: 0 4px 20px rgba(0, 188, 212, 0.05);
-    border: 1px solid rgba(0, 188, 212, 0.08);
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.05);
+    border: 1px solid rgba(37, 99, 235, 0.08);
     overflow: hidden;
     transition: all 0.3s ease;
 }
 
 .content-section:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.1);
 }
 
 .section-content {
@@ -105,7 +105,7 @@ body {
     background: var(--white);
     padding: 2rem;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
     text-align: center;
     transition: all 0.3s ease;
@@ -125,7 +125,7 @@ body {
 
 .patients-stat-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 188, 212, 0.15);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
 }
 
 .stat-icon {
@@ -161,7 +161,7 @@ body {
     background: var(--white);
     padding: 1.5rem;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
     margin-bottom: 2rem;
 }
@@ -190,7 +190,7 @@ body {
 .search-input:focus {
     outline: none;
     border-color: var(--primary-cyan);
-    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .search-icon {
@@ -214,7 +214,7 @@ body {
 .filter-select:focus {
     outline: none;
     border-color: var(--primary-cyan);
-    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 /* Patients List */
@@ -228,7 +228,7 @@ body {
 .patient-card {
     background: var(--white);
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
     overflow: hidden;
     transition: all 0.3s ease;
@@ -237,11 +237,11 @@ body {
 
 .patient-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 188, 212, 0.15);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
 }
 
 .patient-header {
-    background: linear-gradient(135deg, rgba(0, 188, 212, 0.05), rgba(77, 208, 225, 0.02));
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(96, 165, 250, 0.02));
     padding: 1.5rem;
     border-bottom: 1px solid #f0f0f0;
     display: flex;
@@ -342,7 +342,7 @@ body {
 }
 
 .patient-appointments {
-    background: rgba(0, 188, 212, 0.02);
+    background: rgba(37, 99, 235, 0.02);
     padding: 1rem;
     border-radius: 8px;
     margin-bottom: 1rem;
@@ -406,17 +406,17 @@ body {
 .action-btn.primary:hover {
     background: var(--dark-cyan);
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
 }
 
 .action-btn.secondary {
-    background: rgba(0, 188, 212, 0.1);
+    background: rgba(37, 99, 235, 0.1);
     color: var(--primary-cyan);
-    border: 1px solid rgba(0, 188, 212, 0.3);
+    border: 1px solid rgba(37, 99, 235, 0.3);
 }
 
 .action-btn.secondary:hover {
-    background: rgba(0, 188, 212, 0.2);
+    background: rgba(37, 99, 235, 0.2);
     transform: translateY(-2px);
 }
 
@@ -431,7 +431,7 @@ body {
 .patient-profile-card {
     background: var(--white);
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
     overflow: hidden;
     height: fit-content;
@@ -500,7 +500,7 @@ body {
 .medical-records {
     background: var(--white);
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
 }
 
@@ -551,8 +551,8 @@ body {
 }
 
 .appointment-history-item {
-    background: rgba(0, 188, 212, 0.02);
-    border: 1px solid rgba(0, 188, 212, 0.1);
+    background: rgba(37, 99, 235, 0.02);
+    border: 1px solid rgba(37, 99, 235, 0.1);
     border-radius: 8px;
     padding: 1.5rem;
     margin-bottom: 1rem;
@@ -560,7 +560,7 @@ body {
 }
 
 .appointment-history-item:hover {
-    background: rgba(0, 188, 212, 0.05);
+    background: rgba(37, 99, 235, 0.05);
     transform: translateX(4px);
 }
 
@@ -605,7 +605,7 @@ body {
 .quick-add-patient {
     background: var(--white);
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
     padding: 2rem;
     margin-bottom: 2rem;
@@ -641,7 +641,7 @@ body {
 .quick-add-group input:focus {
     outline: none;
     border-color: var(--primary-cyan);
-    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 /* Responsive Design for Patients */
@@ -854,17 +854,17 @@ body {
 .btn-primary:hover:not(:disabled) {
     background: var(--dark-cyan);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
 }
 
 .btn-secondary {
-    background: rgba(0, 188, 212, 0.1);
+    background: rgba(37, 99, 235, 0.1);
     color: var(--primary-cyan);
-    border: 1px solid rgba(0, 188, 212, 0.3);
+    border: 1px solid rgba(37, 99, 235, 0.3);
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: rgba(0, 188, 212, 0.2);
+    background: rgba(37, 99, 235, 0.2);
     transform: translateY(-2px);
 }
 
@@ -883,7 +883,7 @@ body {
     padding: 1.5rem;
     background: var(--white);
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
 }
 

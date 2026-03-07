@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 // Add visual feedback for search
-                this.style.borderColor = '#00bcd4';
+                this.style.borderColor = '#2563eb';
                 setTimeout(() => {
                     this.style.borderColor = '';
                 }, 1000);

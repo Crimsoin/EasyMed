@@ -164,13 +164,13 @@
     background: linear-gradient(135deg, var(--primary-cyan), var(--light-cyan));
     color: white;
     border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.2);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
     transition: transform 0.3s ease;
 }
 
 .stat-item:hover {
     transform: translateY(-5px);
-    box-shadow: 0 6px 20px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
 }
 
 .stat-number {
@@ -200,14 +200,14 @@
     padding: 0.75rem;
     border-radius: 8px;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
     transition: all 0.3s ease;
 }
 
 .sidebar-toggle:hover {
     background: var(--dark-cyan);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 188, 212, 0.4);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
 }
 
 /* Sidebar Footer (optional) */
@@ -415,7 +415,7 @@
 }
 
 .appointment-card:hover {
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
     border-color: var(--primary-cyan);
 }
 
@@ -459,13 +459,13 @@
 }
 
 .status-confirmed {
-    background: #d1ecf1;
+    background: #dbeafe;
     color: #0c5460;
     border: 1px solid #bee5eb;
 }
 
 .status-completed {
-    background: #d4edda;
+    background: #dcfce7;
     color: #155724;
     border: 1px solid #c3e6cb;
 }
@@ -498,7 +498,7 @@
 
 .action-card:hover {
     border-color: var(--primary-cyan);
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
     transform: translateY(-2px);
 }
 
@@ -574,7 +574,7 @@
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
 }
 
 .btn-secondary {

@@ -102,7 +102,7 @@ $db = Database::getInstance();
                             <?php if (!empty($doctor['offers'])): ?>
                                 <div style="text-align:center; margin-bottom: 1rem;">
                                     <?php foreach ($doctor['offers'] as $offer_title): ?>
-                                        <span class="badge" style="display:inline-block; background: #e6f7f7; color: #05696b; padding: 6px 10px; border-radius: 999px; font-size: 0.85rem; margin: 0 6px 6px 0;"><?php echo htmlspecialchars($offer_title); ?></span>
+                                        <span class="badge" style="display:inline-block; background: #dbeafe; color: #1e3a8a; padding: 6px 10px; border-radius: 999px; font-size: 0.85rem; margin: 0 6px 6px 0;"><?php echo htmlspecialchars($offer_title); ?></span>
                                     <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
@@ -268,5 +268,49 @@ $db = Database::getInstance();
         </div>
     </div>
 </section>
+<!-- No Refund Policy Section -->
+<section class="section" style="background-color: #f8fafc;">
+    <div class="container">
+        <div class="card" style="max-width: 900px; margin: 0 auto; padding: 3rem; border-top: 5px solid var(--primary-cyan);">
+            <h2 class="section-title" style="margin-bottom: 0.5rem; text-align: left;">No Refund Policy – Clinic Easy Med</h2>
+            <p style="color: var(--text-light); margin-bottom: 2rem; font-weight: 600;">Effective Date: 2/22/2026</p>
+            
+            <p style="margin-bottom: 2rem; line-height: 1.6; font-size: 1.1rem;">
+                Thank you for choosing Clinic Easy Med. To ensure fairness, efficiency, and proper scheduling for all patients, we enforce a strict No Refund Policy for appointment bookings.
+            </p>
 
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+                <div>
+                    <h3 style="color: var(--primary-cyan); font-size: 1.2rem; margin-bottom: 1rem;"><i class="fas fa-check-circle"></i> All Payments Are Final</h3>
+                    <p style="color: var(--text-dark); font-size: 0.95rem; line-height: 1.5;">All appointment fees, reservation fees, and service payments made through our system are non-refundable, regardless of circumstances.</p>
+                </div>
+
+                <div>
+                    <h3 style="color: var(--primary-cyan); font-size: 1.2rem; margin-bottom: 1rem;"><i class="fas fa-user-times"></i> Missed Appointments</h3>
+                    <p style="color: var(--text-dark); font-size: 0.95rem; line-height: 1.5;">Patients who fail to attend their scheduled appointment (“no-show”) will not be eligible for any refund or credit.</p>
+                </div>
+
+                <div>
+                    <h3 style="color: var(--primary-cyan); font-size: 1.2rem; margin-bottom: 1rem;"><i class="fas fa-history"></i> Late Arrivals</h3>
+                    <p style="color: var(--text-dark); font-size: 0.95rem; line-height: 1.5;">Patients arriving late may have their appointment shortened or rescheduled at the clinic’s discretion. No refunds will be issued for shortened or missed sessions due to late arrival.</p>
+                </div>
+
+                <div>
+                    <h3 style="color: var(--primary-cyan); font-size: 1.2rem; margin-bottom: 1rem;"><i class="fas fa-calendar-alt"></i> Rescheduling Policy</h3>
+                    <p style="color: var(--text-dark); font-size: 0.95rem; line-height: 1.5;">Rescheduling may be allowed only if requested at least <strong>24 hours</strong> before the scheduled appointment. Requests made after this period will be treated as a missed appointment and are non-refundable.</p>
+                </div>
+
+                <div>
+                    <h3 style="color: var(--primary-cyan); font-size: 1.2rem; margin-bottom: 1rem;"><i class="fas fa-exclamation-triangle"></i> Cancellation by Clinic</h3>
+                    <p style="color: var(--text-dark); font-size: 0.95rem; line-height: 1.5;">If the clinic must cancel an appointment due to unforeseen circumstances, patients will be offered a free reschedule or a service credit (if applicable). Refunds will only be considered if required by law.</p>
+                </div>
+
+                <div>
+                    <h3 style="color: var(--primary-cyan); font-size: 1.2rem; margin-bottom: 1rem;"><i class="fas fa-signature"></i> Agreement to Policy</h3>
+                    <p style="color: var(--text-dark); font-size: 0.95rem; line-height: 1.5;">By booking an appointment through Clinic Easy Med, you acknowledge that you have read, understood, and agreed to this No Refund Policy.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 <?php require_once 'includes/footer.php'; ?>

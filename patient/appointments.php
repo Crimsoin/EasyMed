@@ -101,7 +101,7 @@ unset($_SESSION['appointment_errors']);
 
         /* Messages */
         .success-message {
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            background: linear-gradient(135deg, #dcfce7 0%, #c3e6cb 100%);
             color: #155724;
             padding: 20px;
             border-radius: 12px;
@@ -201,19 +201,19 @@ unset($_SESSION['appointment_errors']);
             border: 1px solid #ffeaa7;
         }
         .status-confirmed, .status-scheduled { 
-            background: linear-gradient(135deg, #d1ecf1 0%, #00cec9 100%); 
+            background: linear-gradient(135deg, #dbeafe 0%, #2563eb 100%); 
             color: #0c5460; 
-            border: 1px solid #00cec9;
+            border: 1px solid #2563eb;
         }
         .status-completed { 
-            background: linear-gradient(135deg, #d4edda 0%, #00b894 100%); 
+            background: linear-gradient(135deg, #dcfce7 0%, #22c55e 100%); 
             color: #155724; 
-            border: 1px solid #00b894;
+            border: 1px solid #22c55e;
         }
         .status-cancelled { 
-            background: linear-gradient(135deg, #f8d7da 0%, #e17055 100%); 
+            background: linear-gradient(135deg, #f8d7da 0%, #ef4444 100%); 
             color: #721c24; 
-            border: 1px solid #e17055;
+            border: 1px solid #ef4444;
         }
 
         /* Details: label/value rows (left-aligned for better reading) */
@@ -245,7 +245,7 @@ unset($_SESSION['appointment_errors']);
         /* Button */
         .btn-book-new { 
             display: inline-block; 
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); 
+            background: linear-gradient(135deg, #2563eb 0%, #22c55e 100%); 
             color: #fff; 
             padding: 14px 28px; 
             text-decoration: none; 
@@ -256,7 +256,7 @@ unset($_SESSION['appointment_errors']);
             transition: all 0.3s ease;
         }
         .btn-book-new:hover { 
-            background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+            background: linear-gradient(135deg, #22c55e 0%, #1e3a8a 100%);
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
         }
@@ -284,7 +284,7 @@ unset($_SESSION['appointment_errors']);
         .btn-primary:hover {
             background: linear-gradient(135deg, var(--dark-cyan), var(--primary-cyan));
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 188, 212, 0.3);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         }
         
         /* Payment status colors */

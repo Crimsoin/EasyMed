@@ -710,9 +710,9 @@ function showModalAlert(containerId, message, type = 'info') {
     
     // Set alert styling based on type
     const colors = {
-        success: { bg: '#d4edda', border: '#c3e6cb', text: '#155724' },
+        success: { bg: '#dcfce7', border: '#c3e6cb', text: '#155724' },
         error: { bg: '#f8d7da', border: '#f5c6cb', text: '#721c24' },
-        info: { bg: '#d1ecf1', border: '#bee5eb', text: '#0c5460' },
+        info: { bg: '#dbeafe', border: '#bee5eb', text: '#0c5460' },
         warning: { bg: '#fff3cd', border: '#ffeeba', text: '#856404' }
     };
     

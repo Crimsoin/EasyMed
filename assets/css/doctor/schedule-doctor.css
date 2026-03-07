@@ -50,7 +50,7 @@
     background: var(--white);
     padding: 2rem;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
     height: fit-content;
 }
@@ -61,8 +61,8 @@
     padding: 2.5rem;
     border-radius: 12px;
     margin-bottom: 2rem;
-    box-shadow: 0 4px 20px rgba(0, 188, 212, 0.08);
-    border: 1px solid rgba(0, 188, 212, 0.1);
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.1);
     position: relative;
     overflow: hidden;
 }
@@ -140,7 +140,7 @@
     background: var(--white);
     padding: 2rem;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
     width: 100%;
 }
@@ -198,7 +198,7 @@
 .form-group textarea:focus {
     outline: none;
     border-color: var(--primary-cyan);
-    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .checkbox-group {
@@ -229,7 +229,7 @@
 .schedule-calendar {
     background: var(--white);
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
     overflow: hidden;
 }
@@ -310,7 +310,7 @@
 }
 
 .calendar-day:hover {
-    background: rgba(0, 188, 212, 0.05);
+    background: rgba(37, 99, 235, 0.05);
 }
 
 .calendar-day.other-month {
@@ -319,11 +319,11 @@
 }
 
 .calendar-day.today {
-    background: rgba(0, 188, 212, 0.1);
+    background: rgba(37, 99, 235, 0.1);
 }
 
 .calendar-day.selected {
-    background: rgba(0, 188, 212, 0.2);
+    background: rgba(37, 99, 235, 0.2);
 }
 
 .day-number {
@@ -359,7 +359,7 @@
 .current-schedule {
     background: var(--white);
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
     overflow: hidden;
 }
@@ -441,7 +441,7 @@
     background: var(--white);
     padding: 1.5rem;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
     text-align: center;
     transition: all 0.3s ease;
@@ -449,7 +449,7 @@
 
 .schedule-stat-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.15);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.15);
 }
 
 .schedule-stat-number {
@@ -476,8 +476,8 @@
 }
 
 .time-slot {
-    background: rgba(0, 188, 212, 0.1);
-    border: 2px solid rgba(0, 188, 212, 0.3);
+    background: rgba(37, 99, 235, 0.1);
+    border: 2px solid rgba(37, 99, 235, 0.3);
     padding: 0.75rem;
     border-radius: 8px;
     text-align: center;
@@ -991,7 +991,7 @@
 }
 
 .appointment-item.scheduled {
-    border-left-color: #10b981;
+    border-left-color: #3b82f6;
     background: #d1fae5;
 }
 
@@ -1084,7 +1084,7 @@
     background: var(--white);
     padding: 2rem;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
     height: fit-content;
 }
@@ -1116,7 +1116,7 @@
 .form-group select:focus {
     outline: none;
     border-color: var(--primary-cyan);
-    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 /* Unified Button Styles - base */
@@ -1164,7 +1164,7 @@
     filter: brightness(1.05);
 }
 
-.btn-success { --btn-bg: #10b981; --btn-color: #fff; --btn-border:#10b981; }
+.btn-success { --btn-bg: #3b82f6; --btn-color: #fff; --btn-border:#3b82f6; }
 .btn-danger  { --btn-bg: #ef4444; --btn-color: #fff; --btn-border:#ef4444; }
 .btn-success:hover:not(:disabled), .btn-danger:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(0.97); }
 
@@ -1320,7 +1320,7 @@
 }
 
 .appointment-detail.scheduled {
-    border-left: 4px solid #10b981;
+    border-left: 4px solid #3b82f6;
 }
 
 .appointment-detail.completed {
@@ -1376,7 +1376,7 @@
 
 .status-scheduled {
     background: #d1fae5;
-    color: #059669;
+    color: #1e3a8a;
 }
 
 .status-completed {
@@ -1483,17 +1483,17 @@
 .btn-primary:hover:not(:disabled) {
     background: var(--dark-cyan);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
 }
 
 .btn-secondary {
-    background: rgba(0, 188, 212, 0.1);
+    background: rgba(37, 99, 235, 0.1);
     color: var(--primary-cyan);
-    border: 1px solid rgba(0, 188, 212, 0.3);
+    border: 1px solid rgba(37, 99, 235, 0.3);
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: rgba(0, 188, 212, 0.2);
+    background: rgba(37, 99, 235, 0.2);
     transform: translateY(-2px);
 }
 

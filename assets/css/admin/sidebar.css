@@ -98,14 +98,14 @@
     padding: 0.75rem;
     border-radius: 8px;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
     transition: all 0.3s ease;
 }
 
 .sidebar-toggle:hover {
     background: var(--dark-cyan);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 188, 212, 0.4);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
 }
 
 /* Sidebar Footer (optional) */
@@ -116,7 +116,7 @@
     right: 0;
     padding: 1rem 1.5rem;
     border-top: 1px solid #eee;
-    background: rgba(0, 188, 212, 0.02);
+    background: rgba(37, 99, 235, 0.02);
 }
 
 .sidebar-footer .user-info {

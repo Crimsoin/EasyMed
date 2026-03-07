@@ -553,7 +553,7 @@ require_once '../../includes/header.php';
             <p>Welcome back, <?php echo htmlspecialchars($_SESSION['first_name']); ?>! Here's your clinic overview.</p>
             
             <!-- Current Date and Time Display -->
-            <div class="datetime-display" style="margin-top: 1rem; padding: 1rem; background: rgba(0, 188, 212, 0.1); border-radius: 8px; border-left: 4px solid var(--primary-cyan);">
+            <div class="datetime-display" style="margin-top: 1rem; padding: 1rem; background: rgba(37, 99, 235, 0.1); border-radius: 8px; border-left: 4px solid var(--primary-cyan);">
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <div style="font-size: 2rem;">
                         <i class="fas fa-clock" style="color: var(--primary-cyan);"></i>
@@ -1316,7 +1316,7 @@ require_once '../../includes/header.php';
 }
 
 .status-scheduled {
-    color: #007bff;
+    color: #2563eb;
     font-weight: 500;
 }
 
@@ -1480,7 +1480,7 @@ require_once '../../includes/header.php';
 }
 
 .role-patient {
-    background: #007bff;
+    background: #2563eb;
     color: white;
 }
 
@@ -1560,7 +1560,7 @@ require_once '../../includes/header.php';
     background: var(--white);
     border-radius: 12px;
     padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
 }
 
@@ -1632,8 +1632,8 @@ require_once '../../includes/header.php';
 }
 
 .appointment-stat-item {
-    background: rgba(0, 188, 212, 0.02);
-    border: 1px solid rgba(0, 188, 212, 0.1);
+    background: rgba(37, 99, 235, 0.02);
+    border: 1px solid rgba(37, 99, 235, 0.1);
     border-radius: 12px;
     padding: 1.5rem;
     text-align: center;
@@ -1656,7 +1656,7 @@ require_once '../../includes/header.php';
 
 .appointment-stat-item:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 188, 212, 0.15);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
 }
 
 .appointment-stat-item:hover::before {
@@ -2238,7 +2238,7 @@ document.querySelectorAll('.close').forEach(closeBtn => {
     background: var(--white);
     border-radius: 12px;
     padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
     border: 1px solid #eee;
 }
 
@@ -2310,8 +2310,8 @@ document.querySelectorAll('.close').forEach(closeBtn => {
 }
 
 .appointment-stat-item {
-    background: rgba(0, 188, 212, 0.02);
-    border: 1px solid rgba(0, 188, 212, 0.1);
+    background: rgba(37, 99, 235, 0.02);
+    border: 1px solid rgba(37, 99, 235, 0.1);
     border-radius: 12px;
     padding: 1.5rem;
     text-align: center;
@@ -2334,7 +2334,7 @@ document.querySelectorAll('.close').forEach(closeBtn => {
 
 .appointment-stat-item:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 188, 212, 0.15);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
 }
 
 .appointment-stat-item:hover::before {

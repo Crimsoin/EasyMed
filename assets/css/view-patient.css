@@ -145,12 +145,12 @@
 }
 
 .info-item .role-badge.role-doctor {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: white;
 }
 
 .info-item .role-badge.role-patient {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
     color: white;
 }
 
@@ -208,7 +208,7 @@
 }
 
 .stat-icon-total {
-    background: linear-gradient(135deg, #00bcd4, #00acc1);
+    background: linear-gradient(135deg, #2563eb, #60a5fa);
 }
 
 .stat-icon-completed {
@@ -266,7 +266,7 @@
 }
 
 .section-header h2 i {
-    color: #00bcd4;
+    color: #2563eb;
 }
 
 /* Profile Content Layout */
@@ -432,7 +432,7 @@
 }
 
 .appointment-item:hover {
-    border-left-color: #00bcd4;
+    border-left-color: #2563eb;
 }
 
 .appointment-info h4 {
@@ -529,8 +529,8 @@
 }
 
 .action-btn:hover {
-    background: #00bcd4;
-    border-color: #00bcd4;
+    background: #2563eb;
+    border-color: #2563eb;
     color: white;
     transform: translateY(-1px);
 }
@@ -705,14 +705,14 @@
 
 /* Enhanced hover effects */
 .content-section:hover {
-    box-shadow: 0 16px 56px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 16px 56px rgba(37, 99, 235, 0.1);
 }
 
 /* Focus management for accessibility */
 .btn-edit:focus,
 .btn-secondary:focus,
 .nav-item:focus {
-    outline: 2px solid #00bcd4;
+    outline: 2px solid #2563eb;
     outline-offset: 2px;
 }
 

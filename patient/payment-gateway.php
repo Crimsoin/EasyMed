@@ -200,7 +200,7 @@ $gcash_number = getClinicSetting('gcash_number', '09207245610');
                              style="width: 250px; height: 250px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); object-fit: contain;">
                     </div>
                     
-                    <div style="background-color: rgba(0, 188, 212, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <div style="background-color: rgba(37, 99, 235, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                         <p style="margin: 0; font-size: 0.9rem; text-align: center;">
                             <strong>Scan QR Code or Send to GCash:</strong> <?php echo htmlspecialchars($gcash_number); ?>
                         </p>
@@ -351,7 +351,7 @@ $gcash_number = getClinicSetting('gcash_number', '09207245610');
 }
 
 .total-fee {
-    background-color: rgba(0, 188, 212, 0.1);
+    background-color: rgba(37, 99, 235, 0.1);
     border: 2px solid var(--light-cyan);
 }
 
@@ -377,7 +377,7 @@ $gcash_number = getClinicSetting('gcash_number', '09207245610');
 .form-control:focus {
     outline: none;
     border-color: var(--primary-cyan);
-    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 @media (max-width: 768px) {

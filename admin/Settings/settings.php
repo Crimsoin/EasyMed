@@ -45,7 +45,7 @@ $current_settings = [
     'max_login_attempts' => 3,
     'session_timeout' => 3600,
     'backup_frequency' => 'weekly',
-    'theme_color' => '#00bcd4',
+    'theme_color' => '#2563eb',
     'logo_url' => '',
     'favicon_url' => ''
 ];
@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'max_login_attempts' => (int)($_POST['max_login_attempts'] ?? 3),
             'session_timeout' => (int)($_POST['session_timeout'] ?? 3600),
             'backup_frequency' => trim($_POST['backup_frequency'] ?? 'weekly'),
-            'theme_color' => trim($_POST['theme_color'] ?? '#00bcd4'),
+            'theme_color' => trim($_POST['theme_color'] ?? '#2563eb'),
             'logo_url' => trim($_POST['logo_url'] ?? ''),
             'favicon_url' => trim($_POST['favicon_url'] ?? '')
         ];

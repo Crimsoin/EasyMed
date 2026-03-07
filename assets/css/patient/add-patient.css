@@ -20,12 +20,12 @@
 
 /* Content Header */
 .content-header {
-    background: linear-gradient(135deg, #00bcd4 0%, #0097a7 100%);
+    background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
     color: white;
     padding: 2.5rem;
     border-radius: 16px;
     margin-bottom: 2rem;
-    box-shadow: 0 8px 32px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 8px 32px rgba(37, 99, 235, 0.3);
     position: relative;
     overflow: hidden;
 }
@@ -72,7 +72,7 @@
 }
 
 .alert-success {
-    background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+    background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
     color: white;
     border-left: 4px solid #2e7d32;
 }
@@ -94,7 +94,7 @@
     border-radius: 20px;
     padding: 2.5rem;
     box-shadow: 0 12px 48px rgba(0, 0, 0, 0.08);
-    border: 1px solid rgba(0, 188, 212, 0.1);
+    border: 1px solid rgba(37, 99, 235, 0.1);
     position: relative;
     overflow: hidden;
 }
@@ -106,7 +106,7 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, #00bcd4 0%, #0097a7 100%);
+    background: linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%);
 }
 
 /* Form Layout */
@@ -139,7 +139,7 @@
 }
 
 .form-label i {
-    color: #00bcd4;
+    color: #2563eb;
     font-size: 1rem;
     width: 16px;
     text-align: center;
@@ -158,9 +158,9 @@
 
 .form-control:focus {
     outline: none;
-    border-color: #00bcd4;
+    border-color: #2563eb;
     background: white;
-    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     transform: translateY(-1px);
 }
 
@@ -211,14 +211,14 @@ select.form-control:focus {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #00bcd4 0%, #0097a7 100%);
+    background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
     color: white;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #0097a7 0%, #006064 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e3a8a 100%);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
 }
 
 .btn-secondary {
@@ -326,7 +326,7 @@ select.form-control:focus {
 }
 
 .form-control:valid {
-    border-color: #10b981;
+    border-color: #3b82f6;
 }
 
 /* Loading States */
@@ -343,7 +343,7 @@ select.form-control:focus {
 
 /* Focus Management */
 .form-control:focus + small {
-    color: #00bcd4;
+    color: #2563eb;
 }
 
 /* Improved Visual Hierarchy */

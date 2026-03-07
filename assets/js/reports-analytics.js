@@ -72,8 +72,8 @@ class ReportsAnalytics {
     // Cyan Color Palette
     getCyanColorPalette() {
         return [
-            '#00bcd4', '#26c6da', '#4dd0e1', '#80deea', '#b2ebf2',
-            '#0097a7', '#00acc1', '#0fb8c7', '#1dbcc8', '#2ac0ca'
+            '#2563eb', '#26c6da', '#60a5fa', '#80deea', '#b2ebf2',
+            '#1e3a8a', '#60a5fa', '#0fb8c7', '#1dbcc8', '#2ac0ca'
         ];
     }
 
@@ -123,8 +123,8 @@ class ReportsAnalytics {
                 datasets: [{
                     label: 'Total Appointments',
                     data: window.dailyTrends.total,
-                    borderColor: '#00bcd4',
-                    backgroundColor: 'rgba(0, 188, 212, 0.1)',
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
                     tension: 0.4,
                     fill: true
                 }, {
@@ -230,7 +230,7 @@ class ReportsAnalytics {
                 datasets: [{
                     label: 'Monthly Revenue',
                     data: window.monthlyRevenue.data,
-                    backgroundColor: '#00bcd4',
+                    backgroundColor: '#2563eb',
                     borderRadius: 4
                 }]
             },
@@ -298,8 +298,8 @@ class ReportsAnalytics {
                 datasets: [{
                     label: 'Revenue vs Appointments',
                     data: window.doctorPerformance.scatter,
-                    backgroundColor: 'rgba(0, 188, 212, 0.6)',
-                    borderColor: '#00bcd4',
+                    backgroundColor: 'rgba(37, 99, 235, 0.6)',
+                    borderColor: '#2563eb',
                     borderWidth: 2,
                     pointRadius: 6
                 }]
@@ -417,12 +417,12 @@ class ReportsAnalytics {
                 datasets: [{
                     label: 'Appointments',
                     data: window.weeklyStats.data,
-                    borderColor: '#00bcd4',
-                    backgroundColor: 'rgba(0, 188, 212, 0.2)',
-                    pointBackgroundColor: '#00bcd4',
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                    pointBackgroundColor: '#2563eb',
                     pointBorderColor: '#fff',
                     pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: '#00bcd4'
+                    pointHoverBorderColor: '#2563eb'
                 }]
             },
             options: {
@@ -557,7 +557,7 @@ class ReportsAnalytics {
                     type: 'bar',
                     label: 'Appointments',
                     data: window.dailyRevenue.appointments,
-                    backgroundColor: 'rgba(0, 188, 212, 0.7)',
+                    backgroundColor: 'rgba(37, 99, 235, 0.7)',
                     yAxisID: 'y1'
                 }]
             },
@@ -651,7 +651,7 @@ class ReportsAnalytics {
                     label: 'Revenue',
                     data: window.monthlyRevenue.data.slice(-6),
                     backgroundColor: this.getCyanColorPalette().slice(0, 6),
-                    borderColor: ['#00acc1', '#43a047', '#fb8c00', '#1976d2', '#7b1fa2', '#d32f2f'],
+                    borderColor: ['#60a5fa', '#43a047', '#fb8c00', '#1976d2', '#7b1fa2', '#d32f2f'],
                     borderWidth: 2,
                     borderRadius: 6
                 }]

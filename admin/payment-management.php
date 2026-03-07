@@ -109,7 +109,7 @@ unset($_SESSION['admin_message']);
         }
         
         .status-verified {
-            background: #d1ecf1;
+            background: #dbeafe;
             color: #0c5460;
         }
         
@@ -179,16 +179,16 @@ unset($_SESSION['admin_message']);
         }
         
         .btn-primary {
-            background: #007bff;
+            background: #2563eb;
             color: white;
         }
         
         .btn-primary:hover {
-            background: #0056b3;
+            background: #1e40af;
         }
         
         .receipt-link {
-            color: #007bff;
+            color: #2563eb;
             text-decoration: none;
         }
         
@@ -203,7 +203,7 @@ unset($_SESSION['admin_message']);
         }
         
         .alert-success {
-            background: #d1ecf1;
+            background: #dbeafe;
             color: #0c5460;
             border: 1px solid #b6d4ea;
         }
@@ -271,7 +271,7 @@ unset($_SESSION['admin_message']);
                             
                             <div class="detail-group">
                                 <div class="detail-label">Amount</div>
-                                <div class="detail-value" style="font-size: 1.2rem; font-weight: bold; color: #007bff;">
+                                <div class="detail-value" style="font-size: 1.2rem; font-weight: bold; color: #2563eb;">
                                     ₱<?= number_format($payment['amount'], 2) ?>
                                 </div>
                             </div>

@@ -107,7 +107,7 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
         textarea { min-height:120px; }
         .actions { display:flex; gap:12px; margin-top:12px; }
         .btn { padding:10px 16px; border-radius:8px; border:none; cursor:pointer; }
-        .btn-primary { background:#007bff; color:#fff; }
+        .btn-primary { background:#2563eb; color:#fff; }
         .success-message { background:#e6ffed; padding:12px; border-radius:8px; color:#1b5e20; margin-bottom:12px; }
         .error-message { background:#ffecec; padding:12px; border-radius:8px; color:#8b1c1c; margin-bottom:12px; }
 

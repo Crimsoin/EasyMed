@@ -139,14 +139,14 @@ unset($_SESSION['appointment_data']);
 											<?php foreach ($doctor_offers as $offer): ?>
 												<span class="offer-badge" style="
 													display: inline-block;
-													background: linear-gradient(135deg, #e3f6fc, #d1f0f8);
-													color: #0891a5;
+													background: linear-gradient(135deg, #eff6ff, #dbeafe);
+													color: #2563eb;
 													padding: 0.3rem 0.8rem;
 													border-radius: 15px;
 													font-size: 0.8rem;
 													font-weight: 600;
 													margin: 0.2rem 0.3rem 0.2rem 0;
-													border: 1px solid rgba(8, 145, 165, 0.2);
+													border: 1px solid rgba(37, 99, 235, 0.2);
 												">
 													<?php echo htmlspecialchars($offer['title']); ?>
 												</span>
@@ -218,7 +218,7 @@ unset($_SESSION['appointment_data']);
 <!-- Modal for Appointment Form -->
 <div id="appointmentModal" class="modal">
   <div class="modal-content" style="max-width: 900px; width: 90%;">
-    <div class="modal-header" style="background:#e3f6fc; border-radius:8px 8px 0 0;">
+    <div class="modal-header" style="background:#eff6ff; border-radius:8px 8px 0 0;">
       <h2 style="margin:0; font-size:1.3rem;">Appointment Request Form</h2>
       <p style="margin:0; font-size:1rem;">Submit your appointment request. The doctor will review and approve it.</p>
       <span class="close">&times;</span>
@@ -287,17 +287,17 @@ unset($_SESSION['appointment_data']);
             <div class="form-row" style="margin-top: 1rem; margin-bottom: 1rem;">
               <div id="price_display" style="
                 width: 100%;
-                background: linear-gradient(135deg, #e3f6fc 0%, #d1f0f8 100%);
-                border: 2px solid #00b4cc;
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border: 2px solid #3b82f6;
                 border-radius: 12px;
                 padding: 1.2rem 1.5rem;
                 text-align: center;
-                box-shadow: 0 4px 10px rgba(0, 180, 204, 0.15);
+                box-shadow: 0 4px 10px rgba(37, 99, 235, 0.15);
               ">
-                <div style="font-size: 0.95rem; color: #2c5563; font-weight: 600; margin-bottom: 0.3rem;">
+                <div style="font-size: 0.95rem; color: #1e3a8a; font-weight: 600; margin-bottom: 0.3rem;">
                   <i class="fas fa-money-bill-wave"></i> Appointment Fee
                 </div>
-                <div id="price_amount" style="font-size: 1.8rem; color: #0891a5; font-weight: 700;">
+                <div id="price_amount" style="font-size: 1.8rem; color: #2563eb; font-weight: 700;">
                   ₱0.00
                 </div>
                 <div id="price_label" style="font-size: 0.85rem; color: #666; margin-top: 0.3rem;">
@@ -334,14 +334,14 @@ unset($_SESSION['appointment_data']);
 }
 
 #appointmentModal .modal-header {
-    background: linear-gradient(135deg, #e3f6fc 0%, #d1f0f8 100%);
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
     border-bottom: 1px solid #e0e0e0;
     padding: 1.5rem 2rem;
     text-align: center;
 }
 
 #appointmentModal .modal-header h2 {
-    color: #2c5563;
+    color: #1e3a8a;
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
@@ -359,7 +359,7 @@ unset($_SESSION['appointment_data']);
 }
 
 .doctor-details-panel {
-    background: linear-gradient(135deg, #b3e6fa 0%, #9dd9f3 100%);
+    background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%);
     width: 300px;
     min-width: 280px;
     padding: 2rem 1.5rem;
@@ -379,7 +379,7 @@ unset($_SESSION['appointment_data']);
     right: 0;
     width: 1px;
     height: 100%;
-    background: linear-gradient(to bottom, transparent 0%, #90d0f0 20%, #90d0f0 80%, transparent 100%);
+    background: linear-gradient(to bottom, transparent 0%, #60a5fa 20%, #60a5fa 80%, transparent 100%);
 }
 
 .doctor-details-panel .avatar-wrap {
@@ -415,14 +415,14 @@ unset($_SESSION['appointment_data']);
 .doctor-details-panel .doctor-name {
     font-size: 1.3rem;
     font-weight: 700;
-    color: #1a4852;
+    color: #1e40af;
     margin-bottom: 0.4rem;
     line-height: 1.2;
 }
 
 .doctor-details-panel .doctor-specialty {
     font-size: 1.1rem;
-    color: #0891a5;
+    color: #2563eb;
     font-weight: 600;
     margin-bottom: 1.8rem;
     padding: 0.3rem 0.8rem;
@@ -444,7 +444,7 @@ unset($_SESSION['appointment_data']);
     margin-bottom: 10px;
     font-size: 0.95rem;
     font-weight: 600;
-    color: #1a4852;
+    color: #1e40af;
     padding: 0.3rem 0;
 }
 
@@ -452,14 +452,14 @@ unset($_SESSION['appointment_data']);
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #1a4852;
+    background: #1e40af;
     margin-right: 15px;
     flex-shrink: 0;
 }
 
 .doctor-details-panel .doctor-time {
     font-size: 0.9rem;
-    color: #1a4852;
+    color: #1e40af;
     font-weight: 600;
     margin-top: 0.5rem;
     background: rgba(255,255,255,0.5);
@@ -492,12 +492,12 @@ unset($_SESSION['appointment_data']);
 }
 
 .appointment-form-panel::-webkit-scrollbar-thumb {
-    background: #00b4cc;
+    background: #3b82f6;
     border-radius: 10px;
 }
 
 .appointment-form-panel::-webkit-scrollbar-thumb:hover {
-    background: #0891a5;
+    background: #2563eb;
 }
 
 .appointment-form-grid {
@@ -537,7 +537,7 @@ unset($_SESSION['appointment_data']);
     font-weight: 600;
     margin-bottom: 0.5rem;
     display: block;
-    color: #2c5563;
+    color: #1e3a8a;
     font-size: 0.95rem;
 }
 
@@ -556,8 +556,8 @@ unset($_SESSION['appointment_data']);
 .form-group input:focus, 
 .form-group select:focus {
     outline: none;
-    border-color: #00b4cc;
-    box-shadow: 0 0 0 3px rgba(0, 180, 204, 0.1);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .form-group small {
@@ -568,7 +568,7 @@ unset($_SESSION['appointment_data']);
 }
 
 .btn.btn-primary {
-    background: linear-gradient(135deg, #00b4cc 0%, #0891a5 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     border: none;
     padding: 0.9rem 2rem;
     border-radius: 8px;
@@ -577,12 +577,12 @@ unset($_SESSION['appointment_data']);
     color: white;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 15px rgba(0, 180, 204, 0.3);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
 }
 
 .btn.btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(0, 180, 204, 0.4);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
 }
 
 /* Responsive Design */
@@ -633,7 +633,7 @@ function openAppointmentModal(buttonElement) {
     if (doctor.profile_image) {
       panelHtml += '<img src="<?php echo SITE_URL; ?>/assets/images/' + doctor.profile_image + '" alt="Dr. ' + doctor.first_name + ' ' + doctor.last_name + '" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">';
     } else {
-      panelHtml += '<i class="fas fa-user-md" aria-hidden="true" style="font-size:36px; color:#01707a;"></i>';
+      panelHtml += '<i class="fas fa-user-md" aria-hidden="true" style="font-size:36px; color:#1d4ed8;"></i>';
     }
     panelHtml += '</div>';
     panelHtml += '<div class="doctor-name">Dr. ' + doctor.first_name + ' ' + doctor.last_name + '</div>';
@@ -781,7 +781,7 @@ function renderModalCalendar(scheduleDays) {
         // highlight selected
         Array.from(container.querySelectorAll('button')).forEach(function(b){ b.style.boxShadow = ''; b.style.borderColor = '#e1e5e9'; });
         this.style.boxShadow = '0 0 0 3px rgba(0,180,204,0.12)';
-        this.style.borderColor = '#00b4cc';
+        this.style.borderColor = '#3b82f6';
       }); })(dt);
     }
     ul.appendChild(btn);
@@ -1076,7 +1076,7 @@ function showSuccessNotification() {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: linear-gradient(135deg, #10b981, #059669);
+    background: linear-gradient(135deg, #3b82f6, #1e3a8a);
     color: white;
     padding: 1.2rem 1.5rem;
     border-radius: 12px;

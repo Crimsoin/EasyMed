@@ -25,7 +25,7 @@
 
 .doctor-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 188, 212, 0.2);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.2);
     border-color: var(--primary-cyan);
 }
 
@@ -288,7 +288,7 @@
 .form-control:focus {
     outline: none;
     border-color: var(--primary-cyan);
-    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .form-control:disabled {
@@ -361,8 +361,8 @@ textarea.form-control {
 
 .doctor-card input[type="radio"]:checked + .doctor-card-label {
     border-color: var(--primary-cyan);
-    background: linear-gradient(135deg, rgba(0, 188, 212, 0.05), rgba(0, 188, 212, 0.1));
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.2);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(37, 99, 235, 0.1));
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
 }
 
 .doctor-card input[type="radio"]:checked + .doctor-card-label::before {
@@ -532,7 +532,7 @@ textarea.form-control {
 }
 
 .status-pending {
-    background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+    background: linear-gradient(135deg, #ffeaa7, #f59e0b);
     color: #d63031;
 }
 
@@ -541,8 +541,8 @@ textarea.form-control {
 }
 
 .status-confirmed {
-    background: linear-gradient(135deg, #81ecec, #00cec9);
-    color: #00b894;
+    background: linear-gradient(135deg, #93c5fd, #2563eb);
+    color: #1e40af;
 }
 
 .status-confirmed::before {
@@ -550,7 +550,7 @@ textarea.form-control {
 }
 
 .status-completed {
-    background: linear-gradient(135deg, #a8e6cf, #4caf50);
+    background: linear-gradient(135deg, #dcfce7, #22c55e);
     color: #27ae60;
 }
 
@@ -559,7 +559,7 @@ textarea.form-control {
 }
 
 .status-cancelled {
-    background: linear-gradient(135deg, #fab1a0, #e17055);
+    background: linear-gradient(135deg, #fee2e2, #ef4444);
     color: #d63031;
 }
 
@@ -709,7 +709,7 @@ textarea.form-control {
 }
 
 .alert-success {
-    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    background: linear-gradient(135deg, #dcfce7, #c3e6cb);
     color: #155724;
     border-left: 4px solid var(--success);
 }

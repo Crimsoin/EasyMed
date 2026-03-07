@@ -13,14 +13,14 @@
         }
 
         :root {
-            --primary-cyan: #00bcd4;
-            --dark-cyan: #0097a7;
+            --primary-cyan: #2563eb;
+            --dark-cyan: #1e3a8a;
             --light-cyan: #e0f7fa;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #00bcd4 0%, #0097a7 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -155,7 +155,7 @@
         .contact-btn:hover {
             background: var(--dark-cyan);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 188, 212, 0.3);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         }
 
         .footer-text {

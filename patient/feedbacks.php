@@ -158,9 +158,9 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
         .form-group textarea:focus, 
         .form-group input[type="number"]:focus { 
             outline: none;
-            border-color: #00bcd4;
+            border-color: #2563eb;
             background: #fff;
-            box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.1);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
         }
         
         .form-group textarea { 
@@ -221,7 +221,7 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
             width: 20px;
             height: 20px;
             cursor: pointer;
-            accent-color: #00bcd4;
+            accent-color: #2563eb;
         }
         .checkbox-group label {
             margin: 0;
@@ -254,13 +254,13 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
             flex: 1;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #00bcd4 0%, #0097a7 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
             color: #fff;
-            box-shadow: 0 4px 14px rgba(0, 188, 212, 0.4);
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
         }
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 188, 212, 0.5);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
         }
         .btn-primary:active {
             transform: translateY(0);
@@ -277,7 +277,7 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
 
         /* Messages */
         .success-message {
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            background: linear-gradient(135deg, #dcfce7 0%, #c3e6cb 100%);
             color: #155724;
             padding: 16px 20px;
             border-radius: 12px;
@@ -363,7 +363,7 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
                 <a href="appointments.php" class="nav-item">
                     <i class="fas fa-calendar-alt"></i> My Appointments
                 </a>
-                <a href="reviews.php" class="nav-item active">
+                <a href="feedbacks.php" class="nav-item active">
                     <i class="fas fa-star"></i> Feedbacks
                 </a>
                 <a href="profile.php" class="nav-item">
@@ -445,7 +445,7 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
                                         <i class="fas fa-paper-plane"></i>
                                         Submit Feedback
                                     </button>
-                                    <a href="reviews.php" class="btn btn-secondary">
+                                    <a href="feedbacks.php" class="btn btn-secondary">
                                         <i class="fas fa-redo"></i>
                                         Clear Form
                                     </a>
