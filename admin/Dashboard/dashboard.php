@@ -1,7 +1,7 @@
 <?php
 $page_title = 'Admin Dashboard';
 $page_description = 'EasyMed Admin Dashboard - Manage your clinic system';
-$additional_css = ['admin/sidebar.css', 'admin/dashboard.css']; // Include sidebar and dashboard CSS
+$additional_css = ['admin/sidebar.css', 'admin/dashboard.css', 'admin/appointment.css']; // Include sidebar, dashboard and appointment CSS
 require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/database_helper.php';
