@@ -403,6 +403,13 @@ require_once '../../includes/header.php';
                                                class="btn-action btn-view" title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </a>
+                                            <button type="button"
+                                                    class="btn-action btn-schedule"
+                                                    title="View Schedule"
+                                                    onclick="viewSchedule(<?php echo $doctor['id']; ?>, '<?php echo htmlspecialchars($doctor['first_name'] . ' ' . $doctor['last_name']); ?>', '<?php echo htmlspecialchars($doctor['specialty']); ?>')"
+                                            >
+                                                <i class="fas fa-calendar-alt"></i>
+                                            </button>
                                             <a href="edit-doctor.php?id=<?php echo $doctor['id']; ?>" 
                                                class="btn-action btn-edit" title="Edit">
                                                 <i class="fas fa-edit"></i>
@@ -502,6 +509,162 @@ require_once '../../includes/header.php';
         </div>
     </div>
 </div>
+
+<!-- View Schedule Modal -->
+<div id="scheduleModal" class="modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.5); overflow-y:auto;">
+    <div style="background:#fff; max-width:700px; width:92%; margin:4rem auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden;">
+        <!-- Modal Header -->
+        <div style="background:linear-gradient(135deg,#00bcd4,#0097a7); padding:1.5rem 2rem; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h3 id="scheduleModalName" style="color:#fff; margin:0; font-size:1.3rem;"></h3>
+                <p id="scheduleModalSpecialty" style="color:rgba(255,255,255,0.85); margin:0.2rem 0 0; font-size:0.9rem;"></p>
+            </div>
+            <button onclick="document.getElementById('scheduleModal').style.display='none'" style="background:rgba(255,255,255,0.2); border:none; color:#fff; width:36px; height:36px; border-radius:50%; font-size:1.2rem; cursor:pointer; line-height:36px; text-align:center;">&times;</button>
+        </div>
+        <!-- Modal Body -->
+        <div style="padding:2rem;">
+            <div id="scheduleModalBody">
+                <div style="text-align:center; padding:2rem; color:#666;"><i class="fas fa-spinner fa-spin"></i> Loading schedule...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-schedule {
+    background: linear-gradient(135deg, #00bcd4, #0097a7);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+.btn-schedule:hover {
+    background: linear-gradient(135deg, #0097a7, #006064);
+    transform: translateY(-1px);
+}
+.schedule-day-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+.schedule-day-card:hover { box-shadow: 0 4px 12px rgba(0,188,212,0.15); }
+.schedule-day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.schedule-day-header.available {
+    background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+    color: #006064;
+}
+.schedule-day-header.unavailable {
+    background: #f5f5f5;
+    color: #9e9e9e;
+}
+.schedule-time-badge {
+    background: #fff;
+    border: 1.5px solid #00bcd4;
+    color: #00838f;
+    border-radius: 20px;
+    padding: 0.2rem 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+.schedule-unavailable-badge {
+    background: #fff;
+    border: 1.5px solid #bdbdbd;
+    color: #9e9e9e;
+    border-radius: 20px;
+    padding: 0.2rem 0.8rem;
+    font-size: 0.85rem;
+}
+.schedule-slot-badge {
+    font-size: 0.8rem;
+    color: #00838f;
+    background: rgba(0,188,212,0.1);
+    border-radius: 12px;
+    padding: 0.15rem 0.6rem;
+}
+.schedule-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #9e9e9e;
+}
+</style>
+
+<script>
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function viewSchedule(doctorId, name, specialty) {
+    document.getElementById('scheduleModalName').textContent = 'Dr. ' + name;
+    document.getElementById('scheduleModalSpecialty').textContent = specialty;
+    document.getElementById('scheduleModalBody').innerHTML = '<div style="text-align:center;padding:2rem;color:#666;"><i class="fas fa-spinner fa-spin"></i> Loading schedule...</div>';
+    document.getElementById('scheduleModal').style.display = 'block';
+
+    fetch('get_doctor_schedule.php?doctor_id=' + doctorId)
+        .then(r => r.json())
+        .then(data => renderSchedule(data))
+        .catch(() => {
+            document.getElementById('scheduleModalBody').innerHTML = '<div class="schedule-empty"><i class="fas fa-exclamation-triangle" style="font-size:2rem;color:#e57373;"></i><p>Failed to load schedule.</p></div>';
+        });
+}
+
+function renderSchedule(data) {
+    if (!data.schedule || data.schedule.length === 0) {
+        document.getElementById('scheduleModalBody').innerHTML = '<div class="schedule-empty"><i class="fas fa-calendar-times" style="font-size:3rem;color:#bdbdbd;margin-bottom:1rem;"></i><p style="font-size:1.1rem;">No schedule set for this doctor.</p></div>';
+        return;
+    }
+
+    // Build a map for all 7 days
+    const schedMap = {};
+    data.schedule.forEach(s => { schedMap[s.day_of_week] = s; });
+
+    let html = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">';
+    for (let d = 0; d < 7; d++) {
+        const s = schedMap[d];
+        if (s && parseInt(s.is_available)) {
+            html += `
+            <div class="schedule-day-card">
+                <div class="schedule-day-header available">
+                    <span><i class="fas fa-check-circle" style="margin-right:0.4rem;"></i>${DAY_NAMES[d]}</span>
+                    <span class="schedule-time-badge">${formatTime(s.start_time)} – ${formatTime(s.end_time)}</span>
+                </div>
+                <div style="padding:0.6rem 1.2rem; font-size:0.82rem; color:#555; background:#fafafa;">
+                    <i class="fas fa-clock" style="color:#00bcd4; margin-right:0.3rem;"></i>
+                    Slot duration: <span class="schedule-slot-badge">${s.slot_duration} min</span>
+                </div>
+            </div>`;
+        } else {
+            html += `
+            <div class="schedule-day-card">
+                <div class="schedule-day-header unavailable">
+                    <span><i class="fas fa-times-circle" style="margin-right:0.4rem;"></i>${DAY_NAMES[d]}</span>
+                    <span class="schedule-unavailable-badge">Not Available</span>
+                </div>
+            </div>`;
+        }
+    }
+    html += '</div>';
+    document.getElementById('scheduleModalBody').innerHTML = html;
+}
+
+function formatTime(t) {
+    if (!t) return 'N/A';
+    const [h, m] = t.split(':');
+    const hour = parseInt(h);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    return (hour % 12 || 12) + ':' + m + ' ' + ampm;
+}
+
+// Close on backdrop click
+document.getElementById('scheduleModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+</script>
 
 </body>
 </html>
