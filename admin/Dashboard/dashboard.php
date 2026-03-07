@@ -509,8 +509,8 @@ $total_appointments = $db->fetch("
 
 $total_pages = ceil($total_appointments / $per_page);
 
-// Get statistics
-$stats = [
+// Get appointment management statistics
+$appt_stats = [
     'total' => $db->fetch("SELECT COUNT(*) as count FROM appointments")['count'],
     'pending' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status IN ('pending', 'scheduled')")['count'],
     'rescheduled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status = 'rescheduled'")['count'],
