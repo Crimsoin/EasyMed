@@ -1,82 +1,19 @@
-# Sensitive Configuration Files
-includes/config.php
-.env
-.env.local
-.env.production
-
-# Database Files
+# Database
 database/*.sqlite
 database/*.db
-database/*.backup
-database/*.bak
-*.sql
 
-# Logs
-*.log
-logs/
-error_log
-php_errors.log
+# Uploads
+assets/uploads/payment_receipts/*.jpg
+assets/uploads/payment_receipts/*.jpeg
+assets/uploads/payment_receipts/*.png
+assets/uploads/payment_receipts/*.gif
 
-# Temporary Files
-*.tmp
-*.temp
-tmp/
-temp/
+# Environment variables
+.env
 
-# OS Generated Files
+# Composer dependencies (if any)
+vendor/
+
+# OS generated files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-Desktop.ini
-
-# IDE Files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.project
-.buildpath
-.settings/
-
-# Composer
-/vendor/
-composer.phar
-composer.lock
-
-# Node Modules (if using npm)
-node_modules/
-package-lock.json
-
-# Build Files
-/dist/
-/build/
-
-# Backup Files
-*.bak
-*.backup
-*.old
-*_old
-*_backup
-
-# Upload Directories (keep structure but not files)
-assets/uploads/*
-!assets/uploads/.htaccess
-!assets/uploads/payment_receipts/.htaccess
-
-# Git
-.git/
-.gitattributes
-
-# Documentation (optional - remove if you want to include docs)
-# *.md
-# docs/
-
-# Test Files
-test*.php
-debug*.php
-*_test.php

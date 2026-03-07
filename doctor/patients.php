@@ -118,8 +118,7 @@ $stats_sql = "
         COUNT(DISTINCT CASE WHEN a.appointment_date >= date('now') THEN p.id END) as upcoming_patients,
         COUNT(DISTINCT CASE WHEN a.appointment_date >= date('now', '-30 days') THEN p.id END) as recent_patients
     FROM patients p
-    JOIN appointments a ON a.patient_id = p.user_id
-    WHERE a.doctor_id = (SELECT id FROM doctors WHERE user_id = :doctor_id)
+    JOIN appointments a ON a.patient_id = p.id AND a.doctor_id = (SELECT id FROM doctors WHERE user_id = :doctor_id)
 ";
 
 $stats = $db->fetch($stats_sql, ['doctor_id' => $doctor_id]);
@@ -139,7 +138,7 @@ function getPatientDetails($db, $patient_id, $doctor_id) {
             MAX(a.appointment_date) as last_appointment
         FROM patients p
         JOIN users u ON p.user_id = u.id
-        LEFT JOIN appointments a ON a.patient_id = u.id AND a.doctor_id = (SELECT id FROM doctors WHERE user_id = ?)
+        LEFT JOIN appointments a ON a.patient_id = p.id AND a.doctor_id = (SELECT id FROM doctors WHERE user_id = ?)
         WHERE p.id = ?
         GROUP BY p.id
     ";
@@ -152,7 +151,7 @@ function updatePatientStatus($db, $patient_id, $status, $doctor_id) {
     $verify_sql = "
         SELECT COUNT(*) as count 
         FROM patients p
-        JOIN appointments a ON a.patient_id = p.user_id
+        JOIN appointments a ON a.patient_id = p.id
         WHERE p.id = ? AND a.doctor_id = (SELECT id FROM doctors WHERE user_id = ?)
     ";
     

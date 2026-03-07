@@ -244,32 +244,7 @@ require_once '../includes/header.php';
             </div>
         <?php endif; ?>
 
-        <!-- Schedule Statistics -->
-        <div class="content-section">
-            <div class="section-header">
-                <h2>Schedule Overview</h2>
-            </div>
-            <div class="section-content">
-                <div class="schedule-stats">
-                    <div class="schedule-stat-item">
-                        <div class="schedule-stat-number"><?php echo $stats['working_days']; ?></div>
-                        <div class="schedule-stat-label">Working Days</div>
-                    </div>
-                    <div class="schedule-stat-item">
-                        <div class="schedule-stat-number"><?php echo number_format($stats['total_hours'], 1); ?></div>
-                        <div class="schedule-stat-label">Hours/Week</div>
-                    </div>
-                    <div class="schedule-stat-item">
-                        <div class="schedule-stat-number"><?php echo $stats['breaks_this_month']; ?></div>
-                        <div class="schedule-stat-label">Breaks This Month</div>
-                    </div>
-                    <div class="schedule-stat-item">
-                        <div class="schedule-stat-number"><?php echo $stats['unavailable_days']; ?></div>
-                        <div class="schedule-stat-label">Days Off</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
 
         <!-- Set Availability Card -->
         <div class="content-section">

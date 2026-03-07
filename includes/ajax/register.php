@@ -103,7 +103,7 @@ try {
     }
     
     if (!empty($userData['phone']) && !preg_match('/^[\+]?[0-9\-\s\(\)]{10,}$/', $userData['phone'])) {
-        $errors[] = 'Invalid phone number format';
+        $errors[] = 'Invalid phone number format. Use format like +1 (555) 123-4567 or 5551234567 (minimum 10 digits)';
     }
     
     if (!empty($userData['date_of_birth']) && !isValidDate($userData['date_of_birth'])) {

@@ -85,9 +85,9 @@ $reference_number = $payment_data['reference_number'];
 require_once '../includes/header.php';
 
 // Get clinic settings
-$clinic_phone = getClinicSetting('clinic_phone', '+63-2-8123-4567');
+$clinic_phone = getClinicSetting('clinic_phone', '09207245610');
 $clinic_email = getClinicSetting('clinic_email', 'info@easymed.com');
-$gcash_number = getClinicSetting('gcash_number', '09123456789');
+$gcash_number = getClinicSetting('gcash_number', '09207245610');
 ?>
 
 <div class="patient-container">
@@ -274,7 +274,7 @@ $gcash_number = getClinicSetting('gcash_number', '09123456789');
                         <input type="file" id="payment_receipt" name="payment_receipt" 
                                accept="image/*,.pdf" required class="form-control">
                         <small style="color: var(--text-light); font-size: 0.85rem;">
-                            Accepted formats: JPG, PNG, PDF (Max 5MB)
+                            Accepted formats: JPG, PNG, PDF (Max 2MB)
                         </small>
                     </div>
                     
@@ -400,9 +400,9 @@ $gcash_number = getClinicSetting('gcash_number', '09123456789');
 document.getElementById('payment_receipt').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
-        // Check file size (5MB limit)
-        if (file.size > 5 * 1024 * 1024) {
-            alert('File size must be less than 5MB');
+        // Check file size (2MB limit)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('File size must be less than 2MB. Please compress or resize your image.');
             e.target.value = '';
             return;
         }

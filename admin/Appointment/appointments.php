@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'confirm_payment' && $appointment_id) {
         try {
             // Mark payment record as verified if a payments table exists for this appointment
-            $db->query("UPDATE payments SET status = 'verified', verified_by = ?, verified_at = " . date('Y-m-d H:i:s') . " WHERE appointment_id = ? AND status != 'verified'", [$_SESSION['user_id'], $appointment_id]);
+            $db->query("UPDATE payments SET status = 'verified', verified_by = ?, verified_at = datetime('now') WHERE appointment_id = ? AND status != 'verified'", [$_SESSION['user_id'], $appointment_id]);
 
             // Log activity
             logActivity($_SESSION['user_id'], 'confirm_payment', "Confirmed payment for appointment #$appointment_id");
@@ -902,6 +902,18 @@ function viewAppointment(id) {
                             ${payment.verified_by_name ? `<div><strong>Verified By:</strong> ${payment.verified_by_name} ${payment.verified_by_lastname}</div>` : ''}
                         </div>
                         ` : ''}
+
+                        ${payment ? (payment.status && payment.status !== 'verified' ? `
+                        <div style="margin-top: 0.8rem;">
+                            <form method="POST" onsubmit="return confirm('Are you sure you want to verify this payment?')">
+                                <input type="hidden" name="action" value="confirm_payment">
+                                <input type="hidden" name="appointment_id" value="${appointment.id}">
+                                <button type="submit" class="btn" style="background: #27ae60; color:#fff; border-radius:4px; padding:0.5rem 0.8rem;">
+                                    <i class="fas fa-check"></i> Approve Payment
+                                </button>
+                            </form>
+                        </div>
+                        ` : '') : ''}
                     </div>
                 </div>
                 

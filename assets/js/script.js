@@ -181,6 +181,9 @@ function resetMultiStepForm() {
 }
 
 function nextStep() {
+    // Clear any error messages when moving to next step
+    clearModalAlert('registerModalAlert');
+    
     if (validateCurrentStep()) {
         if (currentStep < totalSteps) {
             currentStep++;
@@ -192,6 +195,9 @@ function nextStep() {
 }
 
 function previousStep() {
+    // Clear any error messages when going back
+    clearModalAlert('registerModalAlert');
+    
     if (currentStep > 1) {
         currentStep--;
         updateFormStep();
@@ -423,6 +429,12 @@ function initializeForms() {
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
         registerForm.addEventListener('submit', handleRegistration);
+        
+        // Clear modal alert when user starts typing in the registration form
+        const registerInputs = registerForm.querySelectorAll('.form-control');
+        registerInputs.forEach(input => {
+            input.addEventListener('input', () => clearModalAlert('registerModalAlert'));
+        });
     }
     
     // Add input validation
@@ -559,6 +571,12 @@ function validateInput(event) {
     
     if (input.hasAttribute('required') && !value) {
         showValidationError(input, 'This field is required');
+        return false;
+    }
+    
+    // Phone number validation (only if value is provided)
+    if (name === 'phone' && value && !value.match(/^[\+]?[0-9\-\s\(\)]{10,}$/)) {
+        showValidationError(input, 'Invalid phone format. Use: +1 (555) 123-4567 or 5551234567');
         return false;
     }
     
@@ -726,6 +744,15 @@ function showModalAlert(containerId, message, type = 'info') {
             container.style.display = 'none';
             container.innerHTML = '';
         }, 5000);
+    }
+}
+
+// Clear modal alert
+function clearModalAlert(containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.style.display = 'none';
+        container.innerHTML = '';
     }
 }
 

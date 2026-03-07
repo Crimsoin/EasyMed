@@ -4,7 +4,7 @@ $page_description = "Payment methods and instructions for EasyMed Private Clinic
 require_once 'includes/header.php';
 
 // Get clinic settings
-$clinic_phone = getClinicSetting('clinic_phone', '+63-2-8123-4567');
+$clinic_phone = getClinicSetting('clinic_phone', '09207245610');
 $clinic_email = getClinicSetting('clinic_email', 'info@easymed.com');
 $gcash_qr_path = 'assets/images/Gcash-QR.png';
 ?>

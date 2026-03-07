@@ -333,9 +333,6 @@ require_once '../../includes/header.php';
             </div>
             <div class="table-container">
                 <div class="logs-header-controls">
-                    <button class="btn btn-danger btn-sm" onclick="clearSystemLogs()" id="clearLogsBtn">
-                        <i class="fas fa-trash-alt"></i> Clear System Logs
-                    </button>
                 </div>
                 <?php 
                 // Get recent activity logs

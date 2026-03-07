@@ -37,8 +37,35 @@ try {
         $errors[] = 'GCash reference number is required.';
     }
     
-    if (!isset($_FILES['payment_receipt']) || $_FILES['payment_receipt']['error'] !== UPLOAD_ERR_OK) {
+    // Check file upload with detailed error messages
+    if (!isset($_FILES['payment_receipt'])) {
         $errors[] = 'Payment receipt is required.';
+    } elseif ($_FILES['payment_receipt']['error'] !== UPLOAD_ERR_OK) {
+        $upload_error = $_FILES['payment_receipt']['error'];
+        switch ($upload_error) {
+            case UPLOAD_ERR_INI_SIZE:
+            case UPLOAD_ERR_FORM_SIZE:
+                $errors[] = 'The uploaded file exceeds the maximum allowed size (2MB). Please use a smaller file.';
+                break;
+            case UPLOAD_ERR_PARTIAL:
+                $errors[] = 'The file was only partially uploaded. Please try again.';
+                break;
+            case UPLOAD_ERR_NO_FILE:
+                $errors[] = 'No file was uploaded. Please select a payment receipt.';
+                break;
+            case UPLOAD_ERR_NO_TMP_DIR:
+                $errors[] = 'Server configuration error: Missing temporary folder. Please contact support.';
+                break;
+            case UPLOAD_ERR_CANT_WRITE:
+                $errors[] = 'Server error: Failed to write file to disk. Please contact support.';
+                break;
+            case UPLOAD_ERR_EXTENSION:
+                $errors[] = 'File upload was stopped by a PHP extension. Please contact support.';
+                break;
+            default:
+                $errors[] = 'An unknown error occurred during file upload. Please try again.';
+                break;
+        }
     }
 
     if (!empty($errors)) {
@@ -104,9 +131,16 @@ try {
         exit();
     }
     
-    // Check file size (5MB limit)
-    if ($file['size'] > 5 * 1024 * 1024) {
-        $_SESSION['payment_errors'] = ['File size must be less than 5MB.'];
+    // Check file size (2MB limit - matches PHP upload_max_filesize)
+    if ($file['size'] > 2 * 1024 * 1024) {
+        $_SESSION['payment_errors'] = ['File size must be less than 2MB.'];
+        header('Location: payment-gateway.php');
+        exit();
+    }
+    
+    // Additional validation: check if file was actually uploaded via HTTP POST
+    if (!is_uploaded_file($file['tmp_name'])) {
+        $_SESSION['payment_errors'] = ['Invalid file upload. Please try again.'];
         header('Location: payment-gateway.php');
         exit();
     }
@@ -115,8 +149,22 @@ try {
     $filename = 'payment_' . $appointment_id . '_' . time() . '.' . $file_extension;
     $file_path = $upload_dir . $filename;
     
+    // Attempt to move uploaded file with better error handling
     if (!move_uploaded_file($file['tmp_name'], $file_path)) {
-        $_SESSION['payment_errors'] = ['Failed to upload payment receipt. Please try again.'];
+        $error_msg = 'Failed to upload payment receipt.';
+        
+        // Check specific issues
+        if (!is_writable($upload_dir)) {
+            $error_msg .= ' Upload directory is not writable.';
+            error_log("Payment upload error: Directory $upload_dir is not writable");
+        } elseif (!file_exists($file['tmp_name'])) {
+            $error_msg .= ' Temporary file not found.';
+            error_log("Payment upload error: Temporary file {$file['tmp_name']} not found");
+        } else {
+            error_log("Payment upload error: move_uploaded_file failed for unknown reason. Tmp: {$file['tmp_name']}, Dest: $file_path");
+        }
+        
+        $_SESSION['payment_errors'] = [$error_msg . ' Please try again or contact support.'];
         header('Location: payment-gateway.php');
         exit();
     }

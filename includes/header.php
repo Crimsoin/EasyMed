@@ -221,10 +221,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <a href="#" onclick="EasyMed.goBackToRoleSelection()" class="auth-link">
                             <i class="fas fa-arrow-left"></i> Back to Role Selection
                         </a>
-                        <span style="margin: 0 1rem; color: #ccc;">|</span>
-                        <a href="#" class="auth-link">
-                            <i class="fas fa-key"></i> Forgot Password?
-                        </a>
                     </div>
                 </form>
             </div>
@@ -241,6 +237,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <span class="close">&times;</span>
         </div>
         <div class="modal-body">
+            <!-- Alert Container for Registration Errors -->
+            <div id="registerModalAlert" style="margin-bottom: 1rem;"></div>
+            
             <form id="registerForm">
                 <div class="form-progress">
                     <div class="progress-step active">1</div>
@@ -342,6 +341,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <input type="tel" id="regPhone" name="phone" class="form-control" 
                                    placeholder="+1 (555) 123-4567">
                         </div>
+                        <small style="color: #666; font-size: 0.8rem;">
+                            Format: +1 (555) 123-4567 or 5551234567 (at least 10 digits)
+                        </small>
                     </div>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
