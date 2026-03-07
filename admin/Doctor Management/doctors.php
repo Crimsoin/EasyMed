@@ -513,7 +513,7 @@ require_once '../../includes/header.php';
 
 <!-- Doctor Schedule Calendar Modal -->
 <div id="scheduleModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.55); align-items:center; justify-content:center; padding:1rem;">
-    <div style="background:#fff; max-width:780px; width:100%; border-radius:16px; box-shadow:0 24px 64px rgba(0,0,0,0.3); overflow:hidden; max-height:90vh; display:flex; flex-direction:column;">
+    <div style="background:#fff; max-width:780px; width:100%; border-radius:16px; box-shadow:0 24px 64px rgba(0,0,0,0.3); overflow:hidden; height:85vh; display:flex; flex-direction:column;">
         <!-- Modal Header -->
         <div style="background:linear-gradient(135deg,#00bcd4,#0097a7); padding:1.25rem 1.75rem; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
             <div>
@@ -538,8 +538,8 @@ require_once '../../includes/header.php';
             <span style="font-size:0.78rem;display:flex;align-items:center;gap:0.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#607d8b;display:inline-block;"></span>No Show</span>
         </div>
         <!-- Calendar Grid -->
-        <div style="padding:1rem 1.25rem;overflow-y:auto;flex:1;">
-            <div id="calGrid"></div>
+        <div style="padding:1rem 1.25rem;overflow-y:auto;flex:1;min-height:0;">
+            <div id="calGrid" style="min-height:300px;"></div>
         </div>
         <!-- Day Detail Panel -->
         <div id="calDayDetail" style="display:none;padding:0.9rem 1.75rem;border-top:2px solid #e0f7fa;background:#f0fdfd;flex-shrink:0;max-height:200px;overflow-y:auto;">
