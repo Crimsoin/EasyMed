@@ -433,7 +433,21 @@ require_once '../../includes/header.php';
                 <div class="logs-header-controls">
                 </div>
                 <?php 
-                // Get recent activity logs
+                // Set pagination variables
+                $logs_per_page = 10;
+                $current_log_page = isset($_GET['log_page']) ? max(1, (int)$_GET['log_page']) : 1;
+                $log_offset = ($current_log_page - 1) * $logs_per_page;
+
+                // Get total count for pagination
+                $total_logs_count = $db->fetch("
+                    SELECT COUNT(*) as count 
+                    FROM activity_logs al
+                    WHERE DATE(al.created_at) BETWEEN ? AND ?
+                ", [$start_date, $end_date])['count'];
+                
+                $total_log_pages = ceil($total_logs_count / $logs_per_page);
+
+                // Get recent activity logs with pagination
                 $activity_logs = $db->fetchAll("
                     SELECT 
                         al.*,
@@ -445,8 +459,8 @@ require_once '../../includes/header.php';
                     LEFT JOIN users u ON al.user_id = u.id
                     WHERE DATE(al.created_at) BETWEEN ? AND ?
                     ORDER BY al.created_at DESC
-                    LIMIT 50
-                ", [$start_date, $end_date]);
+                    LIMIT ? OFFSET ?
+                ", [$start_date, $end_date, $logs_per_page, $log_offset]);
                 ?>
 
                 <!-- Detailed Activity Log -->
@@ -523,6 +537,39 @@ require_once '../../includes/header.php';
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Logs Pagination -->
+                <?php if ($total_log_pages > 1): ?>
+                    <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #fff; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+                        <div class="pagination" style="display: flex; gap: 0.5rem;">
+                            <?php if ($current_log_page > 1): ?>
+                                <a href="?log_page=<?php echo ($current_log_page - 1); ?>" 
+                                   class="pagination-btn" style="padding: 0.5rem 1rem; background: #fff; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </a>
+                            <?php endif; ?>
+                            
+                            <?php for ($i = max(1, $current_log_page - 2); $i <= min($total_log_pages, $current_log_page + 2); $i++): ?>
+                                <a href="?log_page=<?php echo $i; ?>" 
+                                   class="pagination-btn" style="padding: 0.5rem 1rem; background: <?php echo $i === $current_log_page ? 'var(--primary-cyan)' : '#fff'; ?>; color: <?php echo $i === $current_log_page ? '#fff' : '#333'; ?>; border: 1px solid <?php echo $i === $current_log_page ? 'var(--primary-cyan)' : '#ccc'; ?>; border-radius: 4px; text-decoration: none;">
+                                    <?php echo $i; ?>
+                                </a>
+                            <?php endfor; ?>
+                            
+                            <?php if ($current_log_page < $total_log_pages): ?>
+                                <a href="?log_page=<?php echo ($current_log_page + 1); ?>" 
+                                   class="pagination-btn" style="padding: 0.5rem 1rem; background: #fff; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="pagination-info" style="color: #666; font-size: 0.9rem;">
+                            Showing <?php echo ($log_offset + 1); ?> to <?php echo min($log_offset + $logs_per_page, $total_logs_count); ?> 
+                            of <?php echo $total_logs_count; ?> logs
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
 
