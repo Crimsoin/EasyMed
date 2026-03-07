@@ -406,7 +406,7 @@ require_once '../../includes/header.php';
                                             <button type="button"
                                                     class="btn-action btn-schedule"
                                                     title="View Schedule"
-                                                    onclick="viewSchedule(<?php echo $doctor['id']; ?>, '<?php echo htmlspecialchars($doctor['first_name'] . ' ' . $doctor['last_name']); ?>', '<?php echo htmlspecialchars($doctor['specialty']); ?>')"
+                                                    onclick="viewSchedule(<?php echo $doctor['doctor_id']; ?>, '<?php echo htmlspecialchars($doctor['first_name'] . ' ' . $doctor['last_name']); ?>', '<?php echo htmlspecialchars($doctor['specialty']); ?>')"
                                             >
                                                 <i class="fas fa-calendar-alt"></i>
                                             </button>
@@ -555,15 +555,15 @@ require_once '../../includes/header.php';
 <style>
 .btn-schedule { background:linear-gradient(135deg,#00bcd4,#0097a7); color:#fff; border:none; cursor:pointer; }
 .btn-schedule:hover { background:linear-gradient(135deg,#0097a7,#006064); transform:translateY(-1px); }
-.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
-.cal-day-name { text-align:center; font-size:0.72rem; font-weight:700; color:#00838f; padding:0.4rem 0; text-transform:uppercase; letter-spacing:0.05em; }
-.cal-cell { min-height:72px; border:1px solid #e8e8e8; border-radius:8px; padding:0.35rem; background:#fff; position:relative; transition:background 0.15s; cursor:default; }
-.cal-cell.has-appts { cursor:pointer; border-color:#b2ebf2; }
-.cal-cell.has-appts:hover { background:#e0f7fa; }
-.cal-cell.today { border:2px solid #00bcd4; background:#f0fdfd; }
-.cal-cell.empty { background:#fafafa; border-color:#f0f0f0; }
-.cal-date-num { font-size:0.78rem; font-weight:700; color:#555; margin-bottom:0.2rem; }
-.cal-cell.today .cal-date-num { color:#fff; background:#00bcd4; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.72rem; }
+.cal-grid { display:grid; grid-template-columns:repeat(7, 1fr); gap: 1px; background: #e0e0e0; border: 1px solid #e0e0e0; }
+.cal-day-name { text-align:center; font-size:0.72rem; font-weight:700; color:#00838f; padding:0.6rem 0; text-transform:uppercase; letter-spacing:0.05em; background: #fafafa; }
+.cal-cell { min-height:90px; padding:0.5rem; background:#fff; position:relative; transition:background 0.15s; cursor:default; }
+.cal-cell.has-appts { cursor:pointer; }
+.cal-cell.has-appts:hover { background:#f0fdfd; }
+.cal-cell.today { background:#e0f7fa; }
+.cal-cell.empty { background:#f5f5f5; }
+.cal-date-num { font-size:0.85rem; font-weight:700; color:#444; margin-bottom:0.3rem; }
+.cal-cell.today .cal-date-num { color:#fff; background:#00bcd4; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; }
 .cal-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin:1px; }
 .cal-dots { display:flex; flex-wrap:wrap; gap:2px; margin-top:2px; }
 .cal-count { font-size:0.65rem; color:#888; margin-top:2px; }
@@ -602,7 +602,13 @@ function loadCalendar() {
     document.getElementById('calMonthLabel').textContent = _MONTHS[_calMonth-1] + ' ' + _calYear;
     fetch(`get_doctor_schedule.php?doctor_id=${_calDoctorId}&year=${_calYear}&month=${_calMonth}`)
         .then(r => r.json())
-        .then(renderCalendar)
+        .then(data => {
+            if (data.error) {
+                document.getElementById('calGrid').innerHTML = `<div style="text-align:center;padding:3rem;color:#e57373;"><i class="fas fa-exclamation-circle" style="font-size:2rem;margin-bottom:1rem;"></i><br>${data.error}</div>`;
+            } else {
+                renderCalendar(data);
+            }
+        })
         .catch(() => { document.getElementById('calGrid').innerHTML = '<div style="text-align:center;padding:2rem;color:#e57373;"><i class="fas fa-exclamation-triangle"></i> Failed to load.</div>'; });
 }
 
