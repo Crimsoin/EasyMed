@@ -123,12 +123,13 @@
 .stat-item {
     text-align: center;
     padding: 2rem 1.5rem;
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(96, 165, 250, 0.02));
+    background: linear-gradient(135deg, #2563eb, #1e40af);
     border-radius: 12px;
-    border: 1px solid rgba(37, 99, 235, 0.1);
+    border: none;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
 }
 
 .stat-item::before {
@@ -137,35 +138,31 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 3px;
-    background: linear-gradient(135deg, var(--primary-cyan), var(--light-cyan));
-    transform: scaleX(0);
-    transition: transform 0.3s ease;
+    bottom: 0;
+    background: radial-gradient(circle at top right, rgba(255,255,255,0.15), transparent);
+    pointer-events: none;
 }
 
 .stat-item:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
-}
-
-.stat-item:hover::before {
-    transform: scaleX(1);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
 }
 
 .stat-number {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--primary-cyan);
+    font-size: 2.75rem;
+    font-weight: 800;
+    color: #ffffff;
     margin-bottom: 0.5rem;
     line-height: 1;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .stat-label {
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--text-dark);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
 }
 
 /* No Data State */
@@ -234,7 +231,7 @@
 
 .timeline-time {
     flex-shrink: 0;
-    width: 80px;
+    width: 100px;
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--primary-cyan);
@@ -245,6 +242,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    white-space: nowrap;
 }
 
 .timeline-content {

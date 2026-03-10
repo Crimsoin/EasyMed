@@ -295,7 +295,7 @@ require_once '../includes/header.php';
                         <p>You have a free day! Enjoy your time off.</p>
                     </div>
                 <?php else: ?>
-                    <div class="schedule-timeline">
+                    <div class="appointments-list">
                         <?php foreach ($today_appointments as $appointment): ?>
                             <?php 
                                 $appt_json = $p_info = [];
@@ -327,31 +327,32 @@ require_once '../includes/header.php';
                                         'receipt_path' => $appointment['receipt_path'] ?? null
                                     ]), ENT_QUOTES, 'UTF-8');
                             ?>
-                            <div class="appointment-timeline-item" onclick="showAppointmentDetails(<?php echo $appt_json; ?>)" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                <div class="timeline-time">
-                                    <?php echo formatTime($appointment['appointment_time']); ?>
-                                </div>
-                                <div class="timeline-content">
+                            <div class="appointment-card" onclick="showAppointmentDetails(<?php echo $appt_json; ?>)" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                <div class="appointment-info">
                                     <div class="patient-info">
                                         <h4><?php echo htmlspecialchars($appointment['patient_first_name'] . ' ' . $appointment['patient_last_name']); ?></h4>
-                                        <?php if ($appointment['patient_phone']): ?>
-                                            <p class="contact"><i class="fas fa-phone"></i> <?php echo htmlspecialchars($appointment['patient_phone']); ?></p>
+                                    </div>
+                                    <div class="appointment-details">
+                                        <div class="date-time">
+                                            <i class="fas fa-calendar"></i>
+                                            <?php echo formatDate($appointment['appointment_date']); ?> at <?php echo formatTime($appointment['appointment_time']); ?>
+                                        </div>
+                                        <div class="reason">
+                                            <i class="fas fa-clipboard"></i>
+                                            <?php echo htmlspecialchars($appointment['reason']); ?>
+                                        </div>
+                                        <?php if (!empty($appointment['notes']) && $appointment['status'] === 'completed'): ?>
+                                        <div class="reason" style="margin-top: 5px; color: #1e40af; background: #eff6ff; padding: 8px; border-radius: 4px; border-left: 3px solid #3b82f6;">
+                                            <i class="fas fa-file-medical"></i> <strong>Findings:</strong><br>
+                                            <span style="white-space: pre-wrap; display: block; margin-top: 4px;"><?php echo htmlspecialchars($appointment['notes']); ?></span>
+                                        </div>
                                         <?php endif; ?>
                                     </div>
-                                    <div class="appointment-reason">
-                                        <strong>Reason:</strong> <?php echo htmlspecialchars($appointment['reason']); ?>
-                                    </div>
-                                    <?php if (!empty($appointment['notes']) && $appointment['status'] === 'completed'): ?>
-                                    <div class="appointment-reason" style="margin-top: 5px; color: #1e40af; background: #eff6ff; padding: 8px; border-radius: 4px; border-left: 3px solid #3b82f6;">
-                                        <strong><i class="fas fa-file-medical"></i> Findings:</strong><br>
-                                        <span style="white-space: pre-wrap; display: block; margin-top: 4px;"><?php echo htmlspecialchars($appointment['notes']); ?></span>
-                                    </div>
-                                    <?php endif; ?>
-                                    <div class="appointment-status">
-                                        <span class="status-badge status-<?php echo $appointment['status']; ?>">
-                                            <?php echo ucfirst($appointment['status']); ?>
-                                        </span>
-                                    </div>
+                                </div>
+                                <div class="appointment-status">
+                                    <span class="status-badge status-<?php echo $appointment['status']; ?>">
+                                        <?php echo ucfirst($appointment['status']); ?>
+                                    </span>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -451,45 +452,7 @@ require_once '../includes/header.php';
             </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="content-section">
-            <div class="section-header">
-                <h2>Quick Actions</h2>
-            </div>
-            <div class="section-content">
-                <div class="quick-actions">
-                    <a href="appointments.php" class="action-card">
-                        <div class="action-icon">
-                            <i class="fas fa-calendar-alt"></i>
-                        </div>
-                        <div class="action-content">
-                            <h3>Manage Appointments</h3>
-                            <p>View and manage your patient appointments</p>
-                        </div>
-                    </a>
-                    
-                    <a href="schedule.php" class="action-card">
-                        <div class="action-icon">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="action-content">
-                            <h3>Update Schedule</h3>
-                            <p>Modify your availability and working hours</p>
-                        </div>
-                    </a>
-                    
-                    <a href="patients.php" class="action-card">
-                        <div class="action-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="action-content">
-                            <h3>Patient Records</h3>
-                            <p>Access and manage your patient information</p>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </div>
+
     </div>
 </div>
 

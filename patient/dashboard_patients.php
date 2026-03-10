@@ -277,12 +277,7 @@ require_once '../includes/header.php';
                                             <?php echo htmlspecialchars($appointment['reason_for_visit']); ?>
                                         </div>
                                         <?php endif; ?>
-                                        <?php if (!empty($appointment['notes']) && $appointment['status'] === 'completed'): ?>
-                                        <div class="reason" style="margin-top: 5px; color: #1e40af; background: #eff6ff; padding: 8px; border-radius: 4px; border-left: 3px solid #3b82f6;">
-                                            <i class="fas fa-file-medical"></i> <strong>Findings:</strong><br>
-                                            <span style="white-space: pre-wrap; display: block; margin-top: 4px;"><?php echo htmlspecialchars($appointment['notes']); ?></span>
-                                        </div>
-                                        <?php endif; ?>
+
                                         <div class="fee">
                                             <i class="fas fa-coins"></i>
                                             ₱<?php echo number_format($appointment['display_fee'], 2); ?>

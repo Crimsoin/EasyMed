@@ -56,10 +56,12 @@ if ($user['role'] === 'patient') {
         $recentActivity = $db->fetchAll("
             SELECT a.*, 
                    du.first_name as doctor_first_name, du.last_name as doctor_last_name,
-                   doc.specialty
+                   doc.specialty, doc.consultation_fee,
+                   pay.amount as paid_amount
             FROM appointments a
             JOIN doctors doc ON a.doctor_id = doc.id
             JOIN users du ON doc.user_id = du.id
+            LEFT JOIN payments pay ON a.id = pay.appointment_id
             WHERE a.patient_id = ?
             ORDER BY a.appointment_date DESC, a.appointment_time DESC
             LIMIT 10", [$patientId]);
@@ -277,58 +279,52 @@ require_once '../../includes/header.php';
 
         <!-- Recent Activity -->
         <?php if (!empty($recentActivity)): ?>
-        <div class="info-section">
+        <div class="info-section history-section">
             <div class="section-header">
-                <h2><i class="fas fa-history"></i> Consultation History</h2>
-                <a href="../Appointment/appointments.php" class="view-all-link">View All</a>
+                <h2>Patient History</h2>
+                <a href="../Appointment/appointments.php" class="view-all-btn">
+                    <i class="fas fa-list-ul"></i> View All
+                </a>
             </div>
             
             <div class="appointments-list">
                 <?php foreach ($recentActivity as $activity): ?>
                 <div class="appointment-item clickable" onclick="viewAppointment(<?php echo $activity['id']; ?>)">
-                    <div class="appointment-info">
-                        <h4>
-                            <?php if ($user['role'] === 'patient'): ?>
-                                Dr. <?php echo htmlspecialchars($activity['doctor_first_name'] . ' ' . $activity['doctor_last_name']); ?>
-                            <?php else: ?>
-                                <?php echo htmlspecialchars($activity['patient_first_name'] . ' ' . $activity['patient_last_name']); ?>
-                            <?php endif; ?>
-                        </h4>
-                        <p class="appointment-date">
-                            <i class="fas fa-calendar"></i>
-                            <?php echo date('M j, Y', strtotime($activity['appointment_date'])); ?>
-                            <i class="fas fa-clock"></i>
-                            <?php echo date('g:i A', strtotime($activity['appointment_time'])); ?>
-                        </p>
-                        <?php if ($user['role'] === 'patient' && isset($activity['specialty'])): ?>
-                        <p class="appointment-reason">
-                            <strong>Specialty:</strong> <?php echo htmlspecialchars($activity['specialty']); ?>
-                        </p>
-                        <?php endif; ?>
-                        <?php if (!empty($activity['reason_for_visit'])): ?>
-                        <p class="appointment-reason">
-                            <strong>Reason:</strong> <?php echo htmlspecialchars($activity['reason_for_visit']); ?>
-                        </p>
-                        <?php endif; ?>
-                        
-                        <?php if (!empty($activity['notes']) && $activity['status'] === 'completed'): ?>
-                        <div class="appointment-reason" style="margin-top: 10px; color: #1e40af; background: #eff6ff; padding: 8px; border-radius: 4px; border-left: 3px solid #3b82f6;">
-                            <strong><i class="fas fa-file-medical"></i> Doctor's Findings:</strong><br>
-                            <span style="white-space: pre-wrap; display: block; margin-top: 4px;"><?php echo htmlspecialchars($activity['notes']); ?></span>
+                    <div class="appointment-main">
+                        <div class="doctor-brief">
+                            <h4>Dr. <?php echo htmlspecialchars($activity['doctor_first_name'] . ' ' . $activity['doctor_last_name']); ?></h4>
+                            <span class="specialty"><?php echo htmlspecialchars($activity['specialty'] ?? 'Medical Practitioner'); ?></span>
                         </div>
-                        <?php endif; ?>
+                        
+                        <div class="appointment-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span><?php echo date('F j, Y', strtotime($activity['appointment_date'])) . ' at ' . date('g:i A', strtotime($activity['appointment_time'])); ?></span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-clipboard-list"></i>
+                                <span><?php echo htmlspecialchars($activity['reason_for_visit'] ?: 'Consultation Only'); ?></span>
+                            </div>
+                            <div class="meta-item amount">
+                                <i class="fas fa-coins"></i>
+                                <span>₱<?php echo number_format($activity['paid_amount'] ?: $activity['consultation_fee'] ?: 0, 2); ?></span>
+                            </div>
+                        </div>
                     </div>
-                    <span class="appointment-status status-<?php echo $activity['status']; ?>">
-                        <?php echo ucfirst($activity['status']); ?>
-                    </span>
+                    
+                    <div class="appointment-side">
+                        <span class="status-badge status-<?php echo strtolower($activity['status']); ?>">
+                            <?php echo strtoupper($activity['status']); ?>
+                        </span>
+                    </div>
                 </div>
                 <?php endforeach; ?>
             </div>
         </div>
         <?php else: ?>
-        <div class="info-section">
+        <div class="info-section history-section">
             <div class="section-header">
-                <h2><i class="fas fa-history"></i> Consultation History</h2>
+                <h2>Patient History</h2>
             </div>
             <div class="no-appointments">
                 <i class="fas fa-calendar-times"></i>
