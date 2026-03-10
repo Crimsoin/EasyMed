@@ -23,12 +23,16 @@ try {
     $doctor_id = intval($_POST['doctor_id'] ?? 0);
     $first_name = trim($_POST['first_name'] ?? '');
     $last_name = trim($_POST['last_name'] ?? '');
-    $phone = trim($_POST['phone'] ?? '');
+    $phone_number = trim($_POST['phone_number'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $schedule_day = trim($_POST['schedule_day'] ?? '');
     $schedule_time = trim($_POST['schedule_time'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    $relationship = trim($_POST['relationship'] ?? '');
+    $illness = trim($_POST['illness'] ?? '');
     $purpose = trim($_POST['purpose'] ?? '');
     $laboratory = trim($_POST['laboratory'] ?? '');
+    $agreed_no_refund = isset($_POST['agreed_no_refund_policy']) ? 1 : 0;
     $patient_id = $_SESSION['user_id'];
 
     // Validate required fields
@@ -45,9 +49,14 @@ try {
     if (empty($last_name)) {
         $errors[] = 'Last name is required.';
     }
-    
-    // Phone and email are optional - only validate format if provided
-    if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+
+    if (empty($phone_number)) {
+        $errors[] = 'Phone number is required.';
+    }
+
+    if (empty($email)) {
+        $errors[] = 'Email address is required.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'Please enter a valid email address.';
     }
     
@@ -58,9 +67,25 @@ try {
     if (empty($schedule_time)) {
         $errors[] = 'Please select a schedule time.';
     }
+
+    if (empty($address)) {
+        $errors[] = 'Address is required.';
+    }
+
+    if (empty($relationship)) {
+        $errors[] = 'Relationship is required.';
+    }
+
+    if (empty($illness)) {
+        $errors[] = 'Illness description is required.';
+    }
     
     if (empty($purpose)) {
         $errors[] = 'Please select the purpose of your appointment.';
+    }
+
+    if ($agreed_no_refund !== 1) {
+        $errors[] = 'You must agree to the No Refund Policy to proceed.';
     }
     
     // Validate laboratory field if purpose is laboratory
@@ -164,15 +189,19 @@ try {
     $reference_number = 'APT-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
 
     // Prepare patient info JSON
-    $patient_info = json_encode([
+    $patient_info_json = json_encode([
         'first_name' => $first_name,
         'last_name' => $last_name,
-        'phone' => $phone,
+        'phone_number' => $phone_number,
         'email' => $email,
         'schedule_day' => $schedule_day,
+        'address' => $address,
+        'relationship' => $relationship,
+        'illness' => $illness,
         'purpose' => $purpose,
         'laboratory' => $laboratory,
-        'reference_number' => $reference_number
+        'reference_number' => $reference_number,
+        'agreed_no_refund_policy' => $agreed_no_refund
     ]);
 
     // Insert appointment using the correct patient and doctor record IDs
@@ -182,9 +211,18 @@ try {
         'appointment_date' => $appointment_date,
         'appointment_time' => $schedule_time,
         'reason_for_visit' => $purpose === 'consultation' ? 'Consultation Only' : $laboratory,
+        'first_name' => $first_name,
+        'last_name' => $last_name,
+        'phone_number' => $phone_number,
+        'email' => $email,
+        'address' => $address,
+        'relationship' => $relationship,
+        'illness' => $illness,
+        'purpose' => $purpose,
+        'agreed_no_refund_policy' => $agreed_no_refund,
         // New appointments start as pending until approved by doctor/admin
         'status' => 'pending',
-        'patient_info' => $patient_info,
+        'patient_info' => $patient_info_json,
         'created_at' => date('Y-m-d H:i:s'),
         'updated_at' => date('Y-m-d H:i:s')
     ];

@@ -242,12 +242,21 @@ $current_page = basename($_SERVER['PHP_SELF']);
             
             <form id="registerForm">
                 <div class="form-progress">
-                    <div class="progress-step active">1</div>
-                    <div class="progress-step">2</div>
-                    <div class="progress-step">3</div>
+                    <div class="progress-step-wrap active">
+                        <div class="progress-step">1</div>
+                        <div class="progress-step-label">Personal Info</div>
+                    </div>
+                    <div class="progress-step-wrap">
+                        <div class="progress-step">2</div>
+                        <div class="progress-step-label">Credentials</div>
+                    </div>
+                    <div class="progress-step-wrap">
+                        <div class="progress-step">3</div>
+                        <div class="progress-step-label">Details & Terms</div>
+                    </div>
                 </div>
 
-                <!-- Step 1: Basic Information -->
+                <!-- Step 1: Personal Information -->
                 <div class="form-step" id="step1">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="form-group">
@@ -257,7 +266,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <div class="input-group">
                                 <span class="input-icon"><i class="fas fa-user"></i></span>
                                 <input type="text" id="regFirstName" name="first_name" class="form-control" 
-                                       placeholder="John" required>
+                                       placeholder="Juan" required>
                             </div>
                         </div>
                         
@@ -268,11 +277,22 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <div class="input-group">
                                 <span class="input-icon"><i class="fas fa-user"></i></span>
                                 <input type="text" id="regLastName" name="last_name" class="form-control" 
-                                       placeholder="Doe" required>
+                                       placeholder="Dela Cruz" required>
                             </div>
                         </div>
                     </div>
-                    
+
+                    <div class="form-group">
+                        <label for="regPhone" class="form-label">
+                            <i class="fas fa-phone"></i> Phone Number
+                        </label>
+                        <div class="input-group">
+                            <span class="input-icon"><i class="fas fa-phone"></i></span>
+                            <input type="tel" id="regPhone" name="phone" class="form-control" 
+                                   placeholder="+63 912 345 6789" required>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label for="regEmail" class="form-label">
                             <i class="fas fa-envelope"></i> Email Address
@@ -280,10 +300,24 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <div class="input-group">
                             <span class="input-icon"><i class="fas fa-envelope"></i></span>
                             <input type="email" id="regEmail" name="email" class="form-control" 
-                                   placeholder="john.doe@example.com" required>
+                                   placeholder="juan@example.com" required>
                         </div>
                     </div>
-                    
+
+                    <div class="form-group">
+                        <label for="regAddress" class="form-label">
+                            <i class="fas fa-map-marker-alt"></i> Address
+                        </label>
+                        <div class="input-group">
+                            <span class="input-icon"><i class="fas fa-map-marker-alt"></i></span>
+                            <input type="text" id="regAddress" name="address" class="form-control" 
+                                   placeholder="Enter your complete address" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Account Credentials -->
+                <div class="form-step" id="step2" style="display: none;">
                     <div class="form-group">
                         <label for="regUsername" class="form-label">
                             <i class="fas fa-at"></i> Username
@@ -291,13 +325,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <div class="input-group">
                             <span class="input-icon"><i class="fas fa-at"></i></span>
                             <input type="text" id="regUsername" name="username" class="form-control" 
-                                   placeholder="johndoe123" required>
+                                   placeholder="juandelacruz123" required>
                         </div>
                     </div>
-                </div>
 
-                <!-- Step 2: Security -->
-                <div class="form-step" id="step2" style="display: none;">
                     <div class="form-group">
                         <label for="regPassword" class="form-label">
                             <i class="fas fa-lock"></i> Password
@@ -311,7 +342,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             </span>
                         </div>
                         <small style="color: #666; font-size: 0.8rem;">
-                            Password must be at least 8 characters long
+                            Password must be at least 6 characters long
                         </small>
                     </div>
                     
@@ -330,22 +361,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     </div>
                 </div>
 
-                <!-- Step 3: Personal Information -->
+                <!-- Step 3: Additional Details -->
                 <div class="form-step" id="step3" style="display: none;">
-                    <div class="form-group">
-                        <label for="regPhone" class="form-label">
-                            <i class="fas fa-phone"></i> Phone Number
-                        </label>
-                        <div class="input-group">
-                            <span class="input-icon"><i class="fas fa-phone"></i></span>
-                            <input type="tel" id="regPhone" name="phone" class="form-control" 
-                                   placeholder="+1 (555) 123-4567">
-                        </div>
-                        <small style="color: #666; font-size: 0.8rem;">
-                            Format: +1 (555) 123-4567 or 5551234567 (at least 10 digits)
-                        </small>
-                    </div>
-                    
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="form-group">
                             <label for="regDateOfBirth" class="form-label">

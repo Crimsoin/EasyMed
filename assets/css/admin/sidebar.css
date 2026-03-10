@@ -130,7 +130,7 @@
 .sidebar-footer .user-avatar {
     width: 32px;
     height: 32px;
-    background: linear-gradient(135deg, var(--primary-cyan), var(--light-cyan));
+    background: var(--primary-cyan);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -145,7 +145,7 @@
     .admin-sidebar {
         width: 250px;
     }
-    
+
     .admin-content {
         margin-left: 250px;
     }
@@ -157,12 +157,12 @@
         height: auto;
         position: relative;
     }
-    
+
     .admin-content {
         margin-left: 0;
         padding: 1rem;
     }
-    
+
     .sidebar-nav .nav-item {
         padding: 1.2rem 1.5rem;
         font-size: 1rem;
@@ -173,19 +173,19 @@
     .admin-sidebar {
         width: 100%;
     }
-    
+
     .sidebar-header {
         padding: 1.5rem 1rem 0.8rem;
     }
-    
+
     .sidebar-header h3 {
         font-size: 1.1rem;
     }
-    
+
     .sidebar-nav .nav-item {
         padding: 1rem 1.2rem;
     }
-    
+
     .admin-content {
         padding: 0.8rem;
     }
@@ -196,6 +196,7 @@
     from {
         transform: translateX(-100%);
     }
+
     to {
         transform: translateX(0);
     }
@@ -205,6 +206,7 @@
     from {
         transform: translateX(0);
     }
+
     to {
         transform: translateX(-100%);
     }
@@ -244,7 +246,7 @@
     .admin-sidebar {
         display: none;
     }
-    
+
     .admin-content {
         margin-left: 0;
     }

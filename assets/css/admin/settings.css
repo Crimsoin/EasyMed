@@ -330,15 +330,15 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.toggle-input:checked + .toggle-slider {
+.toggle-input:checked+.toggle-slider {
     background: linear-gradient(135deg, var(--primary-cyan), var(--light-cyan));
 }
 
-.toggle-input:checked + .toggle-slider::before {
+.toggle-input:checked+.toggle-slider::before {
     transform: translateX(30px);
 }
 
-.toggle-input:focus + .toggle-slider {
+.toggle-input:focus+.toggle-slider {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 
@@ -551,15 +551,15 @@
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 1rem;
     }
-    
+
     .system-info-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .tab-navigation {
         flex-wrap: wrap;
     }
-    
+
     .tab-button {
         flex: 1 1 calc(50% - 0.25rem);
         min-width: 150px;
@@ -571,52 +571,52 @@
         flex-direction: column;
         gap: 0.25rem;
     }
-    
+
     .tab-button {
         flex: none;
         padding: 0.75rem 1rem;
         font-size: 0.85rem;
     }
-    
+
     .form-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .checkbox-group {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .toggle-group {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
     }
-    
+
     .toggle-switch {
         margin-left: 0;
         align-self: flex-end;
     }
-    
+
     .settings-actions {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .btn-lg {
         min-width: auto;
     }
-    
+
     .color-picker-group {
         flex-direction: column;
         align-items: flex-start;
     }
-    
+
     .info-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
     }
-    
+
     .info-value {
         align-self: flex-start;
     }
@@ -627,52 +627,52 @@
         padding: 1rem;
         margin-bottom: 1rem;
     }
-    
+
     .tab-content {
         padding: 0;
     }
-    
+
     .form-grid {
         gap: 1rem;
     }
-    
+
     .form-group {
         gap: 0.4rem;
     }
-    
+
     .form-input,
     .form-select,
     .form-textarea {
         padding: 0.6rem 0.8rem;
         font-size: 0.85rem;
     }
-    
+
     .toggle-group {
         padding: 1rem;
     }
-    
+
     .checkbox-group {
         grid-template-columns: 1fr;
         gap: 0.5rem;
     }
-    
+
     .checkbox-label {
         padding: 0.4rem;
     }
-    
+
     .info-card {
         padding: 1.5rem;
     }
-    
+
     .color-preview {
         width: 40px;
         height: 40px;
     }
-    
+
     .settings-actions {
         padding: 1rem;
     }
-    
+
     .btn-lg {
         padding: 0.8rem 1.5rem;
         font-size: 0.9rem;
@@ -681,113 +681,91 @@
 
 /* Animation Keyframes */
 @keyframes fadeIn {
-    from { 
-        opacity: 0; 
-        transform: translateY(10px); 
+    from {
+        opacity: 0;
+        transform: translateY(10px);
     }
-    to { 
-        opacity: 1; 
-        transform: translateY(0); 
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
 @keyframes slideIn {
-    from { 
-        transform: translateX(-10px); 
-        opacity: 0; 
+    from {
+        transform: translateX(-10px);
+        opacity: 0;
     }
-    to { 
-        transform: translateX(0); 
-        opacity: 1; 
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
     }
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Print Styles */
 @media print {
+
     .tab-navigation,
     .settings-actions {
         display: none;
     }
-    
+
     .tab-content {
         display: block !important;
         page-break-inside: avoid;
     }
-    
+
     .content-section {
         margin-bottom: 1rem;
         page-break-inside: avoid;
     }
-    
+
     .form-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
     }
-    
+
     .form-input,
     .form-select,
     .form-textarea {
         border: 1px solid #ccc;
         background: #f9f9f9;
     }
-    
+
     .toggle-group {
         border: 1px solid #ccc;
         background: #f9f9f9;
     }
-    
+
     .info-card {
         border: 1px solid #ccc;
         page-break-inside: avoid;
     }
-    
+
     .system-info-grid {
         grid-template-columns: 1fr;
     }
 }
 
-/* Dark Mode Support (if implemented) */
-@media (prefers-color-scheme: dark) {
-    .form-input,
-    .form-select,
-    .form-textarea {
-        background: #2a2a2a;
-        border-color: #444;
-        color: #fff;
-    }
-    
-    .form-input:focus,
-    .form-select:focus,
-    .form-textarea:focus {
-        border-color: var(--primary-cyan);
-        background: #333;
-    }
-    
-    .info-card {
-        background: #2a2a2a;
-        border-color: #444;
-    }
-    
-    .info-item {
-        background: rgba(37, 99, 235, 0.1);
-    }
-    
-    .toggle-group {
-        background: rgba(37, 99, 235, 0.05);
-        border-color: #444;
-    }
-}
+
 
 /* Enhanced Accessibility */
 .form-input:focus-visible,
 .form-select:focus-visible,
 .form-textarea:focus-visible,
-.toggle-input:focus-visible + .toggle-slider,
+.toggle-input:focus-visible+.toggle-slider,
 .checkbox-label input:focus-visible {
     outline: 2px solid var(--primary-cyan);
     outline-offset: 2px;
@@ -795,6 +773,7 @@
 
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -806,17 +785,18 @@
 
 /* High Contrast Mode */
 @media (prefers-contrast: high) {
+
     .form-input,
     .form-select,
     .form-textarea {
         border-width: 3px;
     }
-    
+
     .btn-primary {
         background: var(--primary-cyan);
         border: 2px solid var(--white);
     }
-    
+
     .toggle-slider {
         border: 2px solid #000;
     }

@@ -7,7 +7,7 @@
 
 /* Statistics Grid - Appointment Management Variant */
 .stats-grid .stat-card .stat-icon.stat-icon-total {
-    background: linear-gradient(135deg, var(--primary-cyan), var(--light-cyan));
+    background: var(--primary-cyan);
 }
 
 .stats-grid .stat-card .stat-icon.stat-icon-pending {
@@ -185,7 +185,7 @@
 /* Patient Management Specific Button Styles */
 
 .btn-filter {
-    background: linear-gradient(135deg, var(--primary-cyan), var(--light-cyan));
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
     color: var(--white);
     border: none;
     border-radius: 10px;
@@ -194,7 +194,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 4px 15px rgba(30, 58, 138, 0.25);
     text-decoration: none;
     display: inline-flex;
     align-items: center;
@@ -215,7 +215,8 @@
 }
 
 .btn-filter:hover {
-    transform: scale(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(30, 58, 138, 0.35);
 }
 
 
@@ -264,17 +265,17 @@
 }
 
 .btn-add {
-    background: linear-gradient(135deg, var(--success), #66bb6a);
+    background: linear-gradient(135deg, #10b981, #059669);
     color: var(--white);
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
 .btn-add:hover {
@@ -308,9 +309,12 @@
 .data-table th {
     position: relative;
     cursor: pointer;
-    -webkit-user-select: none; /* Safari/Chrome */
-    -moz-user-select: none; /* Firefox */
-    -ms-user-select: none; /* IE10+ */
+    -webkit-user-select: none;
+    /* Safari/Chrome */
+    -moz-user-select: none;
+    /* Firefox */
+    -ms-user-select: none;
+    /* IE10+ */
     user-select: none;
 }
 
@@ -784,6 +788,11 @@
     animation: spin 1s linear infinite;
 }
 
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(359deg); }
+}
+
 
 
 .stat-card .stat-content h3,
@@ -810,18 +819,35 @@
 
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slideIn {
-    from { transform: translateY(-50px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 /* Responsive Design */
@@ -830,20 +856,20 @@
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1rem;
     }
-    
-    
+
+
     .section-actions {
         flex-direction: column;
         align-items: stretch;
         gap: 0.5rem;
     }
-    
+
     .user-avatar {
         width: 35px;
         height: 35px;
         font-size: 0.9rem;
     }
-    
+
     .appointment-detail-grid {
         grid-template-columns: 1fr;
     }
@@ -853,36 +879,36 @@
     .filter-section {
         padding: 1.5rem;
     }
-    
+
     .filter-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .action-buttons {
         flex-wrap: wrap;
     }
-    
+
     .btn-action {
         width: 30px;
         height: 30px;
         font-size: 0.8rem;
     }
-    
+
     .user-info {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
     }
-    
+
     .modal-content {
         width: 95%;
         margin: 2% auto;
     }
-    
+
     .modal-header,
     .modal-body {
         padding: 1.5rem;
@@ -893,30 +919,30 @@
     .stats-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .filter-section {
         padding: 1rem;
     }
-    
+
     .table-container {
         font-size: 0.8rem;
     }
-    
+
     .data-table th,
     .data-table td {
         padding: 0.5rem;
     }
-    
+
     .action-buttons {
         flex-direction: column;
     }
-    
+
     .user-avatar {
         width: 30px;
         height: 30px;
         font-size: 0.8rem;
     }
-    
+
     .appointment-notes {
         max-width: 150px;
     }
@@ -924,6 +950,7 @@
 
 /* Print Styles */
 @media print {
+
     .filter-section,
     .btn,
     .btn-action,
@@ -932,16 +959,16 @@
     .modal {
         display: none;
     }
-    
+
     .content-section {
         box-shadow: none;
         border: 1px solid #ddd;
     }
-    
+
     .data-table {
         font-size: 0.8rem;
     }
-    
+
     .action-buttons {
         display: none;
     }

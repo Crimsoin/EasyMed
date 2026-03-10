@@ -161,6 +161,92 @@ class EmailService {
             true
         );
     }
+
+    /**
+     * Send password reset notification to a patient or doctor
+     */
+    public function sendPasswordResetNotification($to_email, $to_name, $new_password, $role = 'patient') {
+        $subject = "Your EasyMed Account Password Has Been Reset";
+        $body    = $this->getPasswordResetTemplate($to_name, $new_password, $role);
+
+        return $this->sendEmail($to_email, $to_name, $subject, $body, true);
+    }
+
+    /**
+     * Password reset email template
+     */
+    private function getPasswordResetTemplate($name, $new_password, $role) {
+        $role_label       = ucfirst($role);
+        $login_url        = SITE_URL . '/index.php';
+        $support_email    = getEmailClinicSetting('clinic_email', 'support@easymedclinic.com');
+        $clinic_phone     = getEmailClinicSetting('clinic_phone', '+63-2-8123-4567');
+        $clinic_address   = getEmailClinicSetting('clinic_address', '123 Healthcare Street, Medical District, Manila, Philippines');
+
+        return '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Password Reset Notification</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f4f4f4; }
+                .wrapper { max-width: 620px; margin: 30px auto; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; padding: 30px 40px; text-align: center; }
+                .header h1 { margin: 0 0 5px 0; font-size: 1.8rem; }
+                .header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+                .content   { padding: 35px 40px; }
+                .alert-box { background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 15px 20px; margin: 20px 0; }
+                .alert-box p { margin: 0; color: #92400e; font-size: 0.9rem; }
+                .cred-box  { background: #f0f9ff; border: 2px dashed #2563eb; border-radius: 8px; padding: 20px 25px; margin: 20px 0; text-align: center; }
+                .cred-box .label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+                .cred-box .password { font-size: 1.6rem; font-weight: 800; color: #1e3a8a; letter-spacing: 3px; font-family: monospace; }
+                .btn { display: inline-block; background: linear-gradient(135deg, #2563eb, #0891b2); color: #fff !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 1rem; margin: 20px 0; }
+                .footer { background: #f8fafc; padding: 20px 40px; text-align: center; color: #64748b; font-size: 0.82rem; border-top: 1px solid #e2e8f0; }
+                .security-note { background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 6px; padding: 12px 18px; margin-top: 20px; }
+                .security-note p { margin: 0; color: #991b1b; font-size: 0.88rem; }
+            </style>
+        </head>
+        <body>
+            <div class="wrapper">
+                <div class="header">
+                    <h1>🏥 EasyMed Clinic</h1>
+                    <p>Secure Account Notification</p>
+                </div>
+
+                <div class="content">
+                    <p>Dear <strong>' . htmlspecialchars($name) . '</strong>,</p>
+
+                    <p>This is an automated notification to inform you that an <strong>EasyMed administrator</strong> has reset the password for your <strong>' . $role_label . '</strong> account.</p>
+
+                    <div class="cred-box">
+                        <div class="label">🔑 Your Temporary Password</div>
+                        <div class="password">' . htmlspecialchars($new_password) . '</div>
+                    </div>
+
+                    <div class="alert-box">
+                        <p>⚠️ <strong>Action Required:</strong> Please log in immediately and change this temporary password from your profile settings to secure your account.</p>
+                    </div>
+
+                    <p style="text-align:center;">
+                        <a href="' . $login_url . '" class="btn">🔐 Log In to EasyMed</a>
+                    </p>
+
+                    <div class="security-note">
+                        <p>🛡️ <strong>Did not expect this?</strong> If you did not request a password reset, please contact our support team immediately at <a href="mailto:' . $support_email . '">' . $support_email . '</a> or call us at ' . $clinic_phone . '.</p>
+                    </div>
+
+                    <p style="margin-top: 25px;">Thank you for using <strong>EasyMed Clinic</strong>.</p>
+                </div>
+
+                <div class="footer">
+                    <p>EasyMed Clinic &nbsp;|&nbsp; 📞 ' . $clinic_phone . ' &nbsp;|&nbsp; 📧 ' . $support_email . '</p>
+                    <p>' . $clinic_address . '</p>
+                    <p style="margin-top:10px; color:#94a3b8;">This is an automated security email. Please do not reply directly to this message.</p>
+                </div>
+            </div>
+        </body>
+        </html>';
+    }
     
     /**
      * Get appointment scheduled email template

@@ -22,6 +22,30 @@ $appointment_data = $_SESSION['appointment_data'] ?? [];
 unset($_SESSION['appointment_errors']);
 unset($_SESSION['appointment_success']);
 unset($_SESSION['appointment_data']);
+
+// Pre-fill user data if $appointment_data is empty (i.e. not returning from an error state)
+if (empty($appointment_data)) {
+    $db_instance = Database::getInstance();
+    $current_user_id = $_SESSION['user_id'];
+    $user_details = $db_instance->fetch("
+        SELECT u.first_name, u.last_name, u.email, 
+               COALESCE(p.phone, u.phone) as phone_number,
+               COALESCE(p.address, u.address) as address 
+        FROM users u 
+        LEFT JOIN patients p ON u.id = p.user_id 
+        WHERE u.id = ?
+    ", [$current_user_id]);
+    
+    if ($user_details) {
+        $appointment_data = [
+            'first_name' => $user_details['first_name'],
+            'last_name' => $user_details['last_name'],
+            'email' => $user_details['email'],
+            'phone_number' => $user_details['phone_number'],
+            'address' => $user_details['address']
+        ];
+    }
+}
 ?>
 
 <div class="patient-container">
@@ -218,95 +242,178 @@ unset($_SESSION['appointment_data']);
 <!-- Modal for Appointment Form -->
 <div id="appointmentModal" class="modal">
   <div class="modal-content" style="max-width: 900px; width: 90%;">
-    <div class="modal-header" style="background:#eff6ff; border-radius:8px 8px 0 0;">
+    <div class="modal-header">
       <h2 style="margin:0; font-size:1.3rem;">Appointment Request Form</h2>
       <p style="margin:0; font-size:1rem;">Submit your appointment request. The doctor will review and approve it.</p>
       <span class="close">&times;</span>
     </div>
-    <div class="modal-body" style="padding:0;">
-      <div class="appointment-flex" style="margin:0;">
+    <div class="modal-body">
+      <div class="appointment-flex">
         <div class="doctor-details-panel" id="modalDoctorPanel">
           <!-- Doctor details will be injected here -->
         </div>
         <div class="appointment-form-panel">
-          <form method="post" action="process_appointment.php" class="appointment-form-grid" style="background:#fff; padding:1.5rem; border-radius:0 0 8px 8px;" novalidate>
+          <form method="post" action="process_appointment.php" class="appointment-form-grid" novalidate>
             <input type="hidden" name="doctor_id" id="modal_doctor_id" value="">
+            <!-- Section: Patient Information -->
+            <div class="form-section-header">
+                <i class="fas fa-user-circle"></i> Patient Information
+            </div>
             <div class="form-row">
               <div class="form-group">
-                <label for="modal_first_name">First Name:</label>
-                <input type="text" name="first_name" id="modal_first_name" class="form-control">
+                <label for="modal_first_name">First Name</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-signature"></i>
+                    <input type="text" name="first_name" id="modal_first_name" class="form-control" required>
+                </div>
               </div>
               <div class="form-group">
-                <label for="modal_last_name">Last Name:</label>
-                <input type="text" name="last_name" id="modal_last_name" class="form-control">
+                <label for="modal_last_name">Last Name</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-signature"></i>
+                    <input type="text" name="last_name" id="modal_last_name" class="form-control" required>
+                </div>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label for="modal_phone">Phone Number:</label>
-                <input type="text" name="phone" id="modal_phone" class="form-control" placeholder="+63 912 345 6789">
+                <label for="modal_phone_number">Phone Number</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-phone-alt"></i>
+                    <input type="text" name="phone_number" id="modal_phone_number" class="form-control" required>
+                </div>
               </div>
               <div class="form-group">
-                <label for="modal_email">Email:</label>
-                <input type="text" name="email" id="modal_email" class="form-control" placeholder="example@example.com">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="modal_schedule_day">Choose Schedule Day:</label>
-                <!-- Native date picker -->
-                <input type="date" name="schedule_day" id="modal_schedule_day" class="form-control" />
-              </div>
-              <div class="form-group">
-                <label for="modal_schedule_time">Set Time:</label>
-                <select name="schedule_time" id="modal_schedule_time" class="form-control">
-                  <option value="">Select Time</option>
-                </select>
-                <small id="modal_time_range" style="color:#666; display:block; margin-top:0.3rem; font-size:0.9rem;"></small>
+                <label for="modal_email">Email Address</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="email" id="modal_email" class="form-control" required>
+                </div>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label for="modal_purpose">Purpose:</label>
-                <select name="purpose" id="modal_purpose" class="form-control" required>
-                  <option value="consultation">Consultation</option>
-                  <option value="laboratory">Laboratory</option>
-                </select>
+                <label for="modal_address">Complete Address</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-map-marker-alt" style="top: 1.2rem;"></i>
+                    <textarea name="address" id="modal_address" class="form-control" rows="2" required></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section: Appointment Details -->
+            <div class="form-section-header" style="margin-top: 1.5rem;">
+                <i class="fas fa-calendar-check"></i> Schedule & Purpose
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="modal_schedule_day">Appointment Date</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-calendar-day"></i>
+                    <input type="date" name="schedule_day" id="modal_schedule_day" class="form-control" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="modal_schedule_time">Preferred Time</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-clock"></i>
+                    <select name="schedule_time" id="modal_schedule_time" class="form-control" required>
+                      <option value="">Select Time Slot</option>
+                    </select>
+                </div>
+                <small id="modal_time_range" style="color:#666; display:block; margin-top:0.3rem; font-size:0.85rem; font-weight: 500;"></small>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="modal_relationship">Relationship to Patient</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-users"></i>
+                    <select name="relationship" id="modal_relationship" class="form-control" required>
+                      <option value="self">Self (My own appointment)</option>
+                      <option value="mother">Mother</option>
+                      <option value="father">Father</option>
+                      <option value="sister">Sister</option>
+                      <option value="brother">Brother</option>
+                      <option value="grandmother">Grandmother</option>
+                      <option value="grandfather">Grandfather</option>
+                      <option value="cousin">Cousin</option>
+                      <option value="uncle">Uncle</option>
+                      <option value="auntie">Auntie</option>
+                    </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="modal_illness">Reason for Visit / Illness</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-notes-medical"></i>
+                    <input type="text" name="illness" id="modal_illness" class="form-control" placeholder="e.g., Fever, Checkup" required>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="modal_purpose">Service Type</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-briefcase-medical"></i>
+                    <select name="purpose" id="modal_purpose" class="form-control" required>
+                      <option value="consultation">Medical Consultation</option>
+                      <option value="laboratory">Laboratory Service</option>
+                    </select>
+                </div>
               </div>
             </div>
             <div class="form-row" id="laboratory_row" style="display: none;">
               <div class="form-group">
-                <label for="modal_laboratory">Laboratory Service:</label>
-                <select name="laboratory" id="modal_laboratory" class="form-control">
-                  <option value="">Select Laboratory Service</option>
-                  <!-- Options will be populated dynamically based on selected doctor -->
-                </select>
+                <label for="modal_laboratory">Select Laboratory Test</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-flask"></i>
+                    <select name="laboratory" id="modal_laboratory" class="form-control">
+                      <option value="">Choose available test...</option>
+                    </select>
+                </div>
               </div>
             </div>
-            <!-- Price Display Section -->
-            <div class="form-row" style="margin-top: 1rem; margin-bottom: 1rem;">
-              <div id="price_display" style="
-                width: 100%;
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border: 2px solid #3b82f6;
-                border-radius: 12px;
-                padding: 1.2rem 1.5rem;
-                text-align: center;
-                box-shadow: 0 4px 10px rgba(37, 99, 235, 0.15);
-              ">
-                <div style="font-size: 0.95rem; color: #1e3a8a; font-weight: 600; margin-bottom: 0.3rem;">
-                  <i class="fas fa-money-bill-wave"></i> Appointment Fee
-                </div>
-                <div id="price_amount" style="font-size: 1.8rem; color: #2563eb; font-weight: 700;">
-                  ₱0.00
-                </div>
-                <div id="price_label" style="font-size: 0.85rem; color: #666; margin-top: 0.3rem;">
-                  Select purpose to see fee
-                </div>
-              </div>
+
+            <!-- Section: Policy & Payment -->
+            <div class="form-section-header" style="margin-top: 1.5rem;">
+                <i class="fas fa-file-invoice-dollar"></i> Policy & Summary
             </div>
             <div class="form-row">
-              <button type="submit" class="btn btn-primary" style="width: 200px;">SUBMIT REQUEST</button>
+                <div class="policy-agreement-box">
+                    <div class="policy-header">
+                        <i class="fas fa-info-circle"></i> No Refund Policy
+                    </div>
+                    <div class="policy-content">
+                        All payments processed through our platform are final and <strong>non-refundable</strong>. Please verify your selected schedule and doctor availability before proceeding.
+                    </div>
+                    <label class="custom-checkbox-container">
+                        <input type="checkbox" name="agreed_no_refund_policy" id="modal_no_refund" required>
+                        <span class="checkmark"></span>
+                        I have read and agree to the No Refund Policy
+                    </label>
+                </div>
+            </div>
+
+            <!-- Price Display Section -->
+            <div class="form-row">
+              <div id="price_display" class="price-receipt-card">
+                <div class="receipt-header">
+                  <span class="fee-label">TOTAL AMOUNT DUE</span>
+                </div>
+                <div id="price_amount" class="fee-amount">
+                  ₱0.00
+                </div>
+                <div id="price_label" class="fee-description">
+                  Please select a service type
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="submit_appointment_btn" class="btn btn-submit-request" disabled>
+                <i class="fas fa-paper-plane"></i> SUBMIT APPOINTMENT REQUEST
+              </button>
             </div>
           </form>
         </div>
@@ -327,297 +434,515 @@ unset($_SESSION['appointment_data']);
 }
 
 #appointmentModal .modal-content {
-    border-radius: 16px;
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    box-shadow: 0 25px 80px rgba(0,0,0,0.18);
+    border: none;
     margin: 0;
 }
 
 #appointmentModal .modal-header {
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-    border-bottom: 1px solid #e0e0e0;
-    padding: 1.5rem 2rem;
-    text-align: center;
+    background: #4a5568;
+    border-bottom: none;
+    padding: 1.5rem 2.5rem;
+    text-align: left;
+    position: relative;
+    color: white;
 }
 
 #appointmentModal .modal-header h2 {
-    color: #1e3a8a;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 #appointmentModal .modal-header p {
-    color: #666;
+    color: rgba(255, 255, 255, 0.9);
     font-size: 0.95rem;
+    margin-left: 0;
+}
+
+#appointmentModal .modal-body {
+    padding: 0;
+}
+
+#appointmentModal .close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 1.2rem;
+    font-weight: bold;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 10;
+}
+
+#appointmentModal .close:hover {
+    background: #fed7d7;
+    color: #c53030;
 }
 
 .appointment-flex {
     display: flex;
     gap: 0;
-    height: 700px;
-    max-height: 700px;
+    height: calc(100vh - 140px);
+    max-height: 800px;
+    min-height: 550px;
 }
 
 .doctor-details-panel {
-    background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%);
-    width: 300px;
-    min-width: 280px;
-    padding: 2rem 1.5rem;
+    background: radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, transparent 40%),
+                radial-gradient(circle at bottom left, rgba(255,255,255,0.05) 0%, transparent 40%),
+                linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    width: 320px;
+    min-width: 320px;
+    padding: 2.5rem 2rem;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
-    box-sizing: border-box;
-    text-align: center;
-    position: relative;
-}
-
-.doctor-details-panel::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 1px;
-    height: 100%;
-    background: linear-gradient(to bottom, transparent 0%, #60a5fa 20%, #60a5fa 80%, transparent 100%);
+    color: white;
+    min-height: 0;
 }
 
 .doctor-details-panel .avatar-wrap {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1.2rem;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-  border: 3px solid rgba(255,255,255,0.8);
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    border: 4px solid rgba(255,255,255,0.2);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    overflow: hidden;
 }
 
-/* ensure inner wrapper centers its contents */
-.doctor-details-panel .doctor-card-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
+.doctor-card-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
 }
 
 .doctor-details-panel .avatar-wrap img {
-  display: block;
-  width: 82px;
-  height: 82px;
-  object-fit: cover;
-  border-radius: 50%;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.doctor-details-panel .avatar-wrap i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: unset;
+    margin-top: 5px;
 }
 
 .doctor-details-panel .doctor-name {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: #1e40af;
-    margin-bottom: 0.4rem;
-    line-height: 1.2;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 0.25rem;
 }
 
 .doctor-details-panel .doctor-specialty {
-    font-size: 1.1rem;
-    color: #2563eb;
-    font-weight: 600;
-    margin-bottom: 1.8rem;
-    padding: 0.3rem 0.8rem;
-    background: rgba(255,255,255,0.6);
-    border-radius: 20px;
-    display: inline-block;
-}
-
-.doctor-details-panel .doctor-schedule-list {
-  list-style: none;
-  padding: 0 0 0 70px;
-  width: 100%;
-}
-
-.doctor-details-panel .doctor-schedule-list li {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    margin-bottom: 10px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #1e40af;
-    padding: 0.3rem 0;
-}
-
-.doctor-details-panel .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #1e40af;
-    margin-right: 15px;
-    flex-shrink: 0;
-}
-
-.doctor-details-panel .doctor-time {
     font-size: 0.9rem;
-    color: #1e40af;
+    color: #bfdbfe;
     font-weight: 600;
-    margin-top: 0.5rem;
-    background: rgba(255,255,255,0.5);
-    padding: 0.5rem 1rem;
-    border-radius: 15px;
-    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 2rem;
+}
+
+.doctor-info-list {
+    width: 100%;
+    list-style: none;
+    padding: 0;
+}
+
+.doctor-info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+    background: rgba(255,255,255,0.08);
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.doctor-info-item i {
+    color: #93c5fd;
+    font-size: 1.1rem;
+    margin-top: 0.2rem;
+}
+
+.doctor-info-text strong {
+    display: block;
+    font-size: 0.75rem;
+    color: #93c5fd;
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
 }
 
 .appointment-form-panel {
     flex: 1;
-    background: #fff;
-    box-sizing: border-box;
-    min-width: 400px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    max-height: 690px;
+    background: #f8fafc;
     overflow-y: auto;
-    overflow-x: hidden;
+    min-height: 0;
 }
 
-/* Custom scrollbar styling */
-.appointment-form-panel::-webkit-scrollbar {
-    width: 8px;
+.form-section-header {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #edf2f7;
 }
 
-.appointment-form-panel::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-}
-
-.appointment-form-panel::-webkit-scrollbar-thumb {
-    background: #3b82f6;
-    border-radius: 10px;
-}
-
-.appointment-form-panel::-webkit-scrollbar-thumb:hover {
-    background: #2563eb;
+.form-section-header i {
+    color: var(--primary-cyan);
+    font-size: 1.1rem;
 }
 
 .appointment-form-grid {
     display: flex;
     flex-direction: column;
     padding: 2rem;
-    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .form-row {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
+    gap: 1.5rem;
+    margin-bottom: 1.25rem;
+    width: 100%;
 }
 
 .form-row:last-child {
-    margin-top: 1.5rem;
     margin-bottom: 0;
-    justify-content: center;
-}
-
-/* Single column form rows should stretch full width */
-#laboratory_row {
-    width: 100%;
-}
-
-#laboratory_row .form-group {
-    width: 100%;
 }
 
 .form-group {
     flex: 1;
-    min-width: 0; /* Prevents flex items from overflowing */
+    min-width: 0;
+    margin-bottom: 0 !important;
 }
 
 .form-group label {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    display: block;
-    color: #1e3a8a;
-    font-size: 0.95rem;
+    font-weight: 700;
+    color: #2d3748;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
 }
 
-.form-group input, 
-.form-group select {
+.input-icon-wrapper {
+    position: relative;
     width: 100%;
-    padding: 0.8rem 1rem;
-    border-radius: 8px;
-    border: 2px solid #e1e5e9;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
+}
+
+.input-icon-wrapper i {
+    display: none;
+}
+
+.input-icon-wrapper .form-control {
+    width: 100%;
+    box-sizing: border-box;
+    padding-left: 1rem !important;
     background: #fff;
+    border: 2px solid #edf2f7;
+    height: auto;
+    min-height: 48px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    color: #1a202c;
+    transition: all 0.2s;
+}
+
+.input-icon-wrapper textarea.form-control {
+    padding-top: 0.8rem;
+}
+
+.input-icon-wrapper .form-control:focus {
+    border-color: var(--primary-cyan);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(0, 180, 204, 0.08);
+}
+
+.input-icon-wrapper .form-control:focus + i {
+    color: var(--primary-cyan);
+}
+
+.policy-agreement-box {
+    width: 100%;
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 12px;
+    padding: 1.25rem;
     box-sizing: border-box;
 }
 
-.form-group input:focus, 
-.form-group select:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+.policy-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #c53030;
+    font-weight: 800;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
 }
 
-.form-group small {
-    color: #888;
-    font-size: 0.8rem;
-    margin-top: 0.3rem;
-    display: block;
+.policy-content {
+    font-size: 0.85rem;
+    color: #742a2a;
+    line-height: 1.5;
+    margin-bottom: 1rem;
 }
 
-.btn.btn-primary {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    border: none;
-    padding: 0.9rem 2rem;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 1rem;
-    color: white;
+.custom-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    font-size: 0.9rem;
+    color: #2d3748;
+    font-weight: 600;
 }
 
-.btn.btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+.custom-checkbox-container input {
+    width: 20px;
+    height: 20px;
+    accent-color: #e53e3e;
+    cursor: pointer;
 }
 
-/* Responsive Design */
+.price-receipt-card {
+    width: 100%;
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    color: white;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid rgba(255,255,255,0.05);
+    box-sizing: border-box;
+}
+
+.receipt-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
+}
+
+.fee-label {
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.fee-amount {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #4fd1c5;
+    margin-bottom: 0.25rem;
+}
+
+.fee-description {
+    font-size: 0.9rem;
+    color: #a0aec0;
+    text-transform: capitalize;
+}
+
+.form-actions {
+    margin: 2.5rem 0 0 0 !important;
+    padding: 2rem 0 1rem 0;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    border-top: 2px dashed #edf2f7;
+    background: transparent;
+    border-radius: 0;
+    box-sizing: border-box;
+}
+
+.btn-submit-request {
+    background: linear-gradient(135deg, var(--primary-cyan) 0%, #0891b2 100%);
+    color: white;
+    border: none;
+    padding: 1.25rem 2rem;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    box-shadow: 0 10px 25px rgba(8, 145, 178, 0.4);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.btn-submit-request:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(8, 145, 178, 0.5);
+    background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+}
+
+.btn-submit-request:active {
+    transform: translateY(0);
+    box-shadow: 0 5px 15px rgba(8, 145, 178, 0.4);
+}
+
+.btn-submit-request:disabled {
+    background: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+    opacity: 0.8;
+}
+
+.btn-submit-request:disabled:hover {
+    transform: none;
+    box-shadow: none;
+    background: #e2e8f0;
+}
+
+/* Spinner Animation */
+.fa-spin {
+    animation: fa-spin 2s infinite linear;
+}
+@keyframes fa-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(359deg); }
+}
+
 @media (max-width: 768px) {
+    #appointmentModal {
+        align-items: flex-start !important;
+        padding: 0;
+    }
+
+    #appointmentModal .modal-content {
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 0 !important;
+        height: 100vh;
+        max-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    #appointmentModal .modal-header {
+        flex-shrink: 0;
+        padding: 1rem 1.25rem;
+    }
+
+    #appointmentModal .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .appointment-flex {
         flex-direction: column;
-        min-height: auto;
+        height: auto;
     }
-    
+
     .doctor-details-panel {
         width: 100%;
         min-width: auto;
-        padding: 1.5rem;
+        padding: 1.5rem 1.25rem;
     }
-    
-    .doctor-details-panel::after {
-        display: none;
+
+    .doctor-details-panel .avatar-wrap {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 1rem;
     }
-    
+
+    .doctor-details-panel .doctor-name {
+        font-size: 1.1rem;
+    }
+
+    .doctor-details-panel .doctor-specialty {
+        margin-bottom: 1rem;
+    }
+
+    .doctor-info-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .doctor-info-item {
+        margin-bottom: 0;
+        padding: 0.75rem;
+        font-size: 0.85rem;
+    }
+
     .appointment-form-panel {
-        min-width: auto;
+        overflow-y: visible;
     }
-    
+
+    .appointment-form-grid {
+        padding: 1.25rem;
+    }
+
     .form-row {
         flex-direction: column;
         gap: 1rem;
     }
-    
-    .appointment-form-grid {
-        padding: 1.5rem;
+}
+
+@media (max-width: 480px) {
+    .doctor-info-list {
+        grid-template-columns: 1fr;
     }
-    
-    #appointmentModal .modal-content {
-        margin: 1rem;
-        width: calc(100% - 2rem);
+
+    .appointment-form-grid {
+        padding: 1rem;
+    }
+
+    .form-section-header {
+        font-size: 0.8rem;
     }
 }
 </style>
@@ -626,35 +951,48 @@ unset($_SESSION['appointment_data']);
 function openAppointmentModal(buttonElement) {
   var doctor = JSON.parse(buttonElement.getAttribute('data-doctor'));
   
+  // Reset checkbox and button state for new doctor selection
+  var noRefundCheck = document.getElementById('modal_no_refund');
+  var submitBtn = document.getElementById('submit_appointment_btn');
+  if (noRefundCheck && submitBtn) {
+    noRefundCheck.checked = false;
+    submitBtn.disabled = true;
+  }
+  
   // Fill doctor details panel
   var panelHtml = '<div class="doctor-card-inner">';
   if (doctor) {
     panelHtml += '<div class="avatar-wrap">';
     if (doctor.profile_image) {
-      panelHtml += '<img src="<?php echo SITE_URL; ?>/assets/images/' + doctor.profile_image + '" alt="Dr. ' + doctor.first_name + ' ' + doctor.last_name + '" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">';
+      panelHtml += '<img src="<?php echo SITE_URL; ?>/assets/images/' + doctor.profile_image + '" alt="Dr. ' + doctor.first_name + ' ' + doctor.last_name + '">';
     } else {
-      panelHtml += '<i class="fas fa-user-md" aria-hidden="true" style="font-size:36px; color:#1d4ed8;"></i>';
+      panelHtml += '<i class="fas fa-user-md" style="font-size:48px; color:#fff;"></i>';
     }
     panelHtml += '</div>';
     panelHtml += '<div class="doctor-name">Dr. ' + doctor.first_name + ' ' + doctor.last_name + '</div>';
     panelHtml += '<div class="doctor-specialty">' + doctor.specialty + '</div>';
     
+    panelHtml += '<div class="doctor-info-list">';
+    
+    // Consultation Fee
+    panelHtml += '<div class="doctor-info-item"><i class="fas fa-money-bill-wave"></i><div class="doctor-info-text"><strong>Consultation Fee</strong>₱' + parseFloat(doctor.consultation_fee).toLocaleString(undefined, {minimumFractionDigits: 2}) + '</div></div>';
+
+    // Schedule Days
     if (doctor.schedule_days) {
-      var days = doctor.schedule_days.split(',');
-      panelHtml += '<ul class="doctor-schedule-list" aria-label="Doctor schedule days">';
-      days.forEach(function(d) {
-        panelHtml += '<li><span class="dot"></span>' + d.trim().toUpperCase() + '</li>';
-      });
-      panelHtml += '</ul>';
+      panelHtml += '<div class="doctor-info-item"><i class="fas fa-calendar-alt"></i><div class="doctor-info-text"><strong>Available Days</strong>' + doctor.schedule_days + '</div></div>';
     }
     
+    // Schedule Time
     if (doctor.schedule_time_start || doctor.schedule_time_end) {
       var dispStart = formatDisplayTime(normalizeTime(doctor.schedule_time_start));
       var dispEnd = formatDisplayTime(normalizeTime(doctor.schedule_time_end));
-      panelHtml += '<div class="doctor-time">(' + dispStart + '-' + dispEnd + ')</div>';
+      panelHtml += '<div class="doctor-info-item"><i class="fas fa-clock"></i><div class="doctor-info-text"><strong>Working Hours</strong>' + dispStart + ' - ' + dispEnd + '</div></div>';
     }
+
+    
+    panelHtml += '</div>';
   } else {
-    panelHtml += '<div style="text-align:center; color:#888;">Doctor details not found.</div>';
+    panelHtml += '<div style="text-align:center; color:#333; width: 100%;">Doctor details not found.</div>';
   }
   panelHtml += '</div>';
   
@@ -939,12 +1277,25 @@ function updatePriceDisplay(purpose, laboratoryService) {
 }
 
 function prefillFormData() {
-  <?php if (!empty($appointment_data)): ?>
   document.getElementById('modal_first_name').value = '<?php echo htmlspecialchars($appointment_data['first_name'] ?? ''); ?>';
   document.getElementById('modal_last_name').value = '<?php echo htmlspecialchars($appointment_data['last_name'] ?? ''); ?>';
-  document.getElementById('modal_phone').value = '<?php echo htmlspecialchars($appointment_data['phone'] ?? ''); ?>';
+  document.getElementById('modal_phone_number').value = '<?php echo htmlspecialchars($appointment_data['phone_number'] ?? ''); ?>';
   document.getElementById('modal_email').value = '<?php echo htmlspecialchars($appointment_data['email'] ?? ''); ?>';
+  document.getElementById('modal_address').value = '<?php echo htmlspecialchars($appointment_data['address'] ?? ''); ?>';
+  document.getElementById('modal_relationship').value = '<?php echo htmlspecialchars($appointment_data['relationship'] ?? 'self'); ?>';
+  document.getElementById('modal_illness').value = '<?php echo htmlspecialchars($appointment_data['illness'] ?? ''); ?>';
   
+  if (document.getElementById('modal_no_refund')) {
+    var checkbox = document.getElementById('modal_no_refund');
+    checkbox.checked = <?php echo isset($appointment_data['agreed_no_refund_policy']) ? 'true' : 'false'; ?>;
+    
+    // Update button state based on prefilled checkbox
+    var submitBtn = document.getElementById('submit_appointment_btn');
+    if (submitBtn) {
+      submitBtn.disabled = !checkbox.checked;
+    }
+  }
+
   setTimeout(function() {
     var scheduleDay = '<?php echo htmlspecialchars($appointment_data['schedule_day'] ?? ''); ?>';
     var scheduleTime = '<?php echo htmlspecialchars($appointment_data['schedule_time'] ?? ''); ?>';
@@ -961,7 +1312,6 @@ function prefillFormData() {
     }
     if (laboratory) document.getElementById('modal_laboratory').value = laboratory;
   }, 100);
-  <?php endif; ?>
 }
 
 function normalizeTime(time) {
@@ -1000,11 +1350,34 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
+  // Handle No Refund checkbox change to toggle submit button
+  var noRefundCheckbox = document.getElementById('modal_no_refund');
+  var submitBtn = document.getElementById('submit_appointment_btn');
+  if (noRefundCheckbox && submitBtn) {
+    noRefundCheckbox.addEventListener('change', function() {
+      submitBtn.disabled = !this.checked;
+    });
+  }
+
   // Handle form submission to show notification
   var appointmentForm = document.querySelector('.appointment-form-grid');
   if (appointmentForm) {
     appointmentForm.addEventListener('submit', function(e) {
+      if (noRefundCheckbox && !noRefundCheckbox.checked) {
+        e.preventDefault();
+        alert('Please agree to the No Refund Policy before proceeding.');
+        return false;
+      }
+      
       e.preventDefault();
+      
+      // Show loading state on button
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SUBMITTING...';
+        submitBtn.style.opacity = '0.8';
+        submitBtn.style.cursor = 'not-allowed';
+      }
       
       // Show success notification
       showSuccessNotification();

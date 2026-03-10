@@ -96,25 +96,98 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
     <title>My Profile - EasyMed</title>
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css">
     <style>
-        .profile-container { max-width: 1000px; margin: 24px auto; padding: 20px; }
-        .profile-card { background:#fff; padding:24px; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.06); }
-        .form-row { display:flex; gap:16px; flex-wrap:wrap; }
-        .form-group { flex:1 1 0; min-width:0; margin-bottom:12px; }
-        /* narrow column for shorter inputs (email, phone) */
-        .form-group--narrow { flex: 0 0 320px; }
-        label { display:block; margin-bottom:6px; font-weight:600; color:#333; }
-        input[type="text"], input[type="email"], input[type="date"], select, textarea { width:100%; padding:10px 12px; border:1px solid #e6e9ec; border-radius:8px; box-sizing:border-box; }
-        textarea { min-height:120px; }
-        .actions { display:flex; gap:12px; margin-top:12px; }
-        .btn { padding:10px 16px; border-radius:8px; border:none; cursor:pointer; }
-        .btn-primary { background:#2563eb; color:#fff; }
-        .success-message { background:#e6ffed; padding:12px; border-radius:8px; color:#1b5e20; margin-bottom:12px; }
-        .error-message { background:#ffecec; padding:12px; border-radius:8px; color:#8b1c1c; margin-bottom:12px; }
+        .profile-container { width: 100%; max-width: none; margin: 0; padding: 0; }
+        
+        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group.full-width { grid-column: span 2; }
+        
+        .section-content label { font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: block; }
+        
+        .section-content input[type="text"], 
+        .section-content input[type="email"], 
+        .section-content input[type="date"], 
+        .section-content select, 
+        .section-content textarea { 
+            width: 100%; 
+            padding: 12px 16px; 
+            border: 2px solid #edf2f7; 
+            border-radius: 12px; 
+            font-size: 1rem; 
+            font-weight: 600;
+            color: #1a202c;
+            transition: all 0.2s ease;
+            background: #f8fafc;
+        }
+        
+        .section-content input:focus, 
+        .section-content select:focus, 
+        .section-content textarea:focus { 
+            outline: none; 
+            border-color: #3b82f6; 
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        
+        .section-content textarea { min-height: 100px; resize: vertical; }
+        
+        .profile-actions-card { 
+            background: white; 
+            padding: 2rem; 
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex; 
+            justify-content: flex-end; 
+            gap: 16px; 
+            margin-top: 2rem;
+            border: 1px solid #edf2f7;
+        }
+        
+        .btn-profile-save { 
+            background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%); 
+            color: white; 
+            padding: 14px 40px; 
+            border-radius: 12px; 
+            font-weight: 800; 
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .btn-profile-save:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(37, 99, 235, 0.35); }
+        .btn-profile-save:active { transform: translateY(0); }
+        
+        .btn-profile-cancel { 
+            background: white; 
+            color: #64748b; 
+            padding: 14px 32px; 
+            border-radius: 12px; 
+            font-weight: 700; 
+            text-decoration: none;
+            border: 2px solid #edf2f7;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-profile-cancel:hover { background: #f8fafc; color: #1a202c; border-color: #cbd5e1; }
 
-        /* Responsive tweaks */
-        @media (max-width: 700px) {
-            .form-group--narrow { flex: 1 1 100%; }
-            .form-row { gap:12px; }
+        .form-feedback { margin-bottom: 2rem; }
+        .success-banner { background: #ecfdf5; border-left: 5px solid #10b981; padding: 1.25rem 1.5rem; border-radius: 12px; color: #065f46; font-weight: 700; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1); }
+        .error-banner { background: #fef2f2; border-left: 5px solid #ef4444; padding: 1.25rem 1.5rem; border-radius: 12px; color: #991b1b; font-weight: 700; flex-direction: column; align-items: flex-start; gap: 8px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1); display: flex; }
+
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .form-group.full-width { grid-column: span 1; }
+            .profile-actions-card { flex-direction: column-reverse; }
+            .btn-profile-save, .btn-profile-cancel { width: 100%; justify-content: center; }
         }
     </style>
 </head>
@@ -124,7 +197,7 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
     <div class="patient-container">
         <div class="patient-sidebar">
             <div class="sidebar-header">
-                <h3><i class="fas fa-user"></i> Patient Portal</h3>
+                <h3><i class="fas fa-user-circle"></i> Patient Portal</h3>
                 <p style="margin: 0.5rem 0 0 0; color: #ffffffff; font-size: 0.9rem; font-weight: 500;">
                     <?php echo htmlspecialchars(($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '')); ?>
                 </p>
@@ -139,100 +212,141 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
         </div>
 
         <div class="patient-content">
-            <div class="content-header"><h1>My Profile</h1><p>Update your personal and emergency contact details.</p></div>
+            <div class="content-header">
+                <h1>My Profile</h1>
+                <p>Manage your account settings and health information</p>
+            </div>
 
             <div class="profile-container">
-                <div class="profile-card">
-                    <?php if ($success): ?><div class="success-message"><?= htmlspecialchars($success) ?></div><?php endif; ?>
-                    <?php if (!empty($errors)): ?><div class="error-message"><?php foreach ($errors as $err) echo '<div>' . htmlspecialchars($err) . '</div>'; ?></div><?php endif; ?>
-
-                    <form method="post" action="profile.php">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="first_name">First Name</label>
-                                <input type="text" name="first_name" id="first_name" class="form-control" value="<?= htmlspecialchars($user['first_name'] ?? '') ?>" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="last_name">Last Name</label>
-                                <input type="text" name="last_name" id="last_name" class="form-control" value="<?= htmlspecialchars($user['last_name'] ?? '') ?>" required>
-                            </div>
+                <div class="form-feedback">
+                    <?php if ($success): ?>
+                        <div class="success-banner">
+                            <i class="fas fa-check-circle" style="font-size: 1.25rem;"></i>
+                            <?= htmlspecialchars($success) ?>
                         </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="phone">Phone</label>
-                                <input type="text" name="phone" id="phone" class="form-control" value="<?= htmlspecialchars($user['phone'] ?? '') ?>">
+                    <?php endif; ?>
+                    
+                    <?php if (!empty($errors)): ?>
+                        <div class="error-banner">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <i class="fas fa-exclamation-circle" style="font-size: 1.25rem;"></i>
+                                <span>Something went wrong:</span>
                             </div>
-
-                            <div class="form-group">
-                                <label for="date_of_birth">Date of Birth</label>
-                                <input type="date" name="date_of_birth" id="date_of_birth" class="form-control" value="<?= htmlspecialchars($user['date_of_birth'] ?? '') ?>">
-                            </div>
+                            <ul style="margin: 0; padding-left: 2rem; font-size: 0.95rem;">
+                                <?php foreach ($errors as $err) echo '<li>' . htmlspecialchars($err) . '</li>'; ?>
+                            </ul>
                         </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="gender">Gender</label>
-                                <select name="gender" id="gender" class="form-control">
-                                    <option value="">Select gender</option>
-                                    <option value="male" <?= (isset($user['gender']) && $user['gender'] === 'male') ? 'selected' : '' ?>>Male</option>
-                                    <option value="female" <?= (isset($user['gender']) && $user['gender'] === 'female') ? 'selected' : '' ?>>Female</option>
-                                    <option value="other" <?= (isset($user['gender']) && $user['gender'] === 'other') ? 'selected' : '' ?>>Other</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="blood_type">Blood Type</label>
-                                <select name="blood_type" id="blood_type" class="form-control">
-                                    <option value="">Select blood type</option>
-                                    <?php $bl = $user['blood_type'] ?? ''; $types = ['A+','A-','B+','B-','AB+','AB-','O+','O-','Unknown']; foreach ($types as $t): ?>
-                                        <option value="<?= $t ?>" <?= ($bl === $t) ? 'selected' : '' ?>><?= $t ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1 1 60%;">
-                                <label for="address">Address</label>
-                                <textarea name="address" id="address" class="form-control"><?= htmlspecialchars($user['address'] ?? '') ?></textarea>
-                            </div>
-
-                            <div class="form-group form-group--narrow">
-                                <label for="email">Email</label>
-                                <input type="email" name="email" id="email" class="form-control" value="<?= htmlspecialchars($user['email'] ?? '') ?>" required>
-                            </div>
-                        </div>
-
-                        <hr />
-                        <h3>Emergency Contact</h3>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="emergency_name">Name</label>
-                                <input type="text" name="emergency_name" id="emergency_name" class="form-control" value="<?= htmlspecialchars($user['emergency_contact_name'] ?? '') ?>">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="emergency_phone">Phone</label>
-                                <input type="text" name="emergency_phone" id="emergency_phone" class="form-control" value="<?= htmlspecialchars($user['emergency_contact_phone'] ?? '') ?>">
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="emergency_relation">Relationship</label>
-                                <input type="text" name="emergency_relation" id="emergency_relation" class="form-control" value="<?= htmlspecialchars($user['emergency_contact_relationship'] ?? '') ?>">
-                            </div>
-                        </div>
-
-                        <div class="actions">
-                            <button type="submit" class="btn btn-primary">Save Profile</button>
-                            <a href="dashboard_patients.php" class="btn">Cancel</a>
-                        </div>
-                    </form>
+                    <?php endif; ?>
                 </div>
+
+                <form method="post" action="profile.php">
+                    <!-- 1. Personal Identity -->
+                    <div class="content-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-id-card"></i> Personal Identity</h2>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="first_name">First Name</label>
+                                    <input type="text" name="first_name" id="first_name" value="<?= htmlspecialchars($user['first_name'] ?? '') ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="last_name">Last Name</label>
+                                    <input type="text" name="last_name" id="last_name" value="<?= htmlspecialchars($user['last_name'] ?? '') ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="date_of_birth">Date of Birth</label>
+                                    <input type="date" name="date_of_birth" id="date_of_birth" value="<?= htmlspecialchars($user['date_of_birth'] ?? '') ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label for="gender">Gender</label>
+                                    <select name="gender" id="gender">
+                                        <option value="">Select gender</option>
+                                        <option value="male" <?= (isset($user['gender']) && $user['gender'] === 'male') ? 'selected' : '' ?>>Male</option>
+                                        <option value="female" <?= (isset($user['gender']) && $user['gender'] === 'female') ? 'selected' : '' ?>>Female</option>
+                                        <option value="other" <?= (isset($user['gender']) && $user['gender'] === 'other') ? 'selected' : '' ?>>Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Contact Information -->
+                    <div class="content-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-address-book"></i> Contact Details</h2>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="email">Email Address</label>
+                                    <input type="email" name="email" id="email" value="<?= htmlspecialchars($user['email'] ?? '') ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Phone Number</label>
+                                    <input type="text" name="phone" id="phone" value="<?= htmlspecialchars($user['phone'] ?? '') ?>">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="address">Residential Address</label>
+                                    <textarea name="address" id="address"><?= htmlspecialchars($user['address'] ?? '') ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Health Profile -->
+                    <div class="content-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-heartbeat"></i> Health Profile</h2>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="blood_type">Blood Type</label>
+                                    <select name="blood_type" id="blood_type">
+                                        <option value="">Select blood type</option>
+                                        <?php $bl = $user['blood_type'] ?? ''; $types = ['A+','A-','B+','B-','AB+','AB-','O+','O-','Unknown']; foreach ($types as $t): ?>
+                                            <option value="<?= $t ?>" <?= ($bl === $t) ? 'selected' : '' ?>><?= $t ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Emergency Contact -->
+                    <div class="content-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-ambulance"></i> Emergency Contact</h2>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="emergency_name">Representative Name</label>
+                                    <input type="text" name="emergency_name" id="emergency_name" value="<?= htmlspecialchars($user['emergency_contact_name'] ?? '') ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label for="emergency_phone">Contact Phone</label>
+                                    <input type="text" name="emergency_phone" id="emergency_phone" value="<?= htmlspecialchars($user['emergency_contact_phone'] ?? '') ?>">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="emergency_relation">Relationship to Patient</label>
+                                    <input type="text" name="emergency_relation" id="emergency_relation" value="<?= htmlspecialchars($user['emergency_contact_relationship'] ?? '') ?>">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-actions-card">
+                        <a href="dashboard_patients.php" class="btn-profile-cancel">
+                            <i class="fas fa-times"></i> Discard
+                        </a>
+                        <button type="submit" class="btn-profile-save">
+                            <i class="fas fa-save"></i> Update Profile
+                        </button>
+                    </div>
+                </form>
             </div>
 
         </div>

@@ -1,7 +1,7 @@
 <?php
 $page_title = 'Admin Dashboard';
 $page_description = 'EasyMed Admin Dashboard - Manage your clinic system';
-$additional_css = ['admin/sidebar.css', 'admin/dashboard.css', 'admin/appointment.css']; // Include sidebar, dashboard and appointment CSS
+$additional_css = ['admin/sidebar.css', 'admin/dashboard.css', 'admin/appointment.css', 'shared-modal.css']; // Include sidebar, dashboard and appointment CSS
 require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/database_helper.php';
@@ -196,6 +196,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE a.id = ?
             ", [$appointment_id]);
             
+            // Automatically verify payment if confirmed during scheduling
+            if ($new_status === 'scheduled' && isset($_POST['verify_payment'])) {
+                $db->query("UPDATE payments SET status = 'verified', verified_by = ?, verified_at = datetime('now') WHERE appointment_id = ? AND status != 'verified'", [$_SESSION['user_id'], $appointment_id]);
+                logActivity($_SESSION['user_id'], 'confirm_payment', "Payment verified during status update for appointment #$appointment_id");
+            }
+
             $db->query("UPDATE appointments SET status = ?, updated_at = datetime('now') WHERE id = ?", 
                       [$new_status, $appointment_id]);
             
@@ -552,18 +558,71 @@ require_once '../../includes/header.php';
             <h1>Dashboard Overview</h1>
             <p>Welcome back, <?php echo htmlspecialchars($_SESSION['first_name']); ?>! Here's your clinic overview.</p>
             
-            <!-- Current Date and Time Display -->
-            <div class="datetime-display" style="margin-top: 1rem; padding: 1rem; background: rgba(37, 99, 235, 0.1); border-radius: 8px; border-left: 4px solid var(--primary-cyan);">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <div style="font-size: 2rem;">
-                        <i class="fas fa-clock" style="color: var(--primary-cyan);"></i>
+            <!-- Premium Real-time Clock Dashboard -->
+            <div class="datetime-display" style="
+                margin: 1.5rem 0; 
+                padding: 1.5rem 2rem; 
+                background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(37, 99, 235, 0.03) 100%); 
+                border-radius: 16px; 
+                border: 1px solid rgba(37, 99, 235, 0.15);
+                box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.05);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                position: relative;
+                overflow: hidden;">
+                
+                <div style="display: flex; align-items: center; gap: 1.5rem; position: relative; z-index: 1;">
+                    <div style="
+                        width: 60px; 
+                        height: 60px; 
+                        background: white; 
+                        border-radius: 14px; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center; 
+                        box-shadow: 0 8px 16px rgba(37, 99, 235, 0.1);
+                        color: var(--primary-cyan);
+                        font-size: 1.75rem;">
+                        <i class="fas fa-clock"></i>
                     </div>
                     <div>
-                        <div style="font-size: 1.2rem; font-weight: 600; color: var(--primary-cyan);" id="current-date"></div>
-                        <div style="font-size: 1rem; color: var(--text-light);" id="current-time"></div>
+                        <div style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; letter-spacing: -0.02em;" id="current-date"></div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 6px;
+                                padding: 4px 10px;
+                                background: #dcfce7;
+                                color: #166534;
+                                border-radius: 20px;
+                                font-size: 0.7rem;
+                                font-weight: 800;
+                                text-transform: uppercase;
+                                letter-spacing: 0.5px;">
+                                <span style="width: 6px; height: 6px; background: #166534; border-radius: 50%; display: inline-block; animation: pulse 2s infinite;"></span>
+                                Live System Time
+                            </span>
+                            <div style="font-size: 1.1rem; font-weight: 700; color: var(--primary-cyan); font-family: 'JetBrains Mono', 'Courier New', monospace;" id="current-time"></div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Abstract Decorative Element -->
+                <div style="position: absolute; right: -20px; top: -20px; opacity: 0.03; font-size: 8rem; pointer-events: none;">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
             </div>
+
+            <style>
+            @keyframes pulse {
+                0% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.5); opacity: 0.5; }
+                100% { transform: scale(1); opacity: 1; }
+            }
+            #current-time { transition: all 0.2s ease; }
+            </style>
         </div>
 
         <!-- Key Performance Indicators -->
@@ -646,25 +705,24 @@ require_once '../../includes/header.php';
 <!-- Appointments Overview Card -->
         <div class="content-section">
             <div class="section-header">
-                <h2><i class="fas fa-calendar-alt"></i> Appointments Overview</h2>
-                <p>Total appointments with time-based filtering</p>
+                <h2><i class="fas fa-chart-line"></i> Appointments Overview</h2>
+                <div class="date-range-info">
+                    <span id="current-period-label">Today</span>
+                    <small id="current-date-range"><?php echo date('M j, Y'); ?></small>
+                </div>
             </div>
             <div class="appointments-overview-card">
                 <div class="filter-controls">
                     <div class="filter-buttons">
                         <button class="filter-btn active" data-period="daily" onclick="filterAppointments('daily')">
-                            <i class="fas fa-calendar-day"></i> Daily
+                            Daily View
                         </button>
                         <button class="filter-btn" data-period="weekly" onclick="filterAppointments('weekly')">
-                            <i class="fas fa-calendar-week"></i> Weekly
+                            Weekly
                         </button>
                         <button class="filter-btn" data-period="monthly" onclick="filterAppointments('monthly')">
-                            <i class="fas fa-calendar"></i> Monthly
+                            Monthly
                         </button>
-                    </div>
-                    <div class="date-range-info">
-                        <span id="current-period-label">Today</span>
-                        <small id="current-date-range"><?php echo date('M j, Y'); ?></small>
                     </div>
                 </div>
                 
@@ -673,9 +731,9 @@ require_once '../../includes/header.php';
                         <div class="stat-value" id="total-appointments">
                             <?php echo $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = date('now')")['count']; ?>
                         </div>
-                        <div class="stat-label">Total Appointments</div>
+                        <div class="stat-label">Total Volume</div>
                         <div class="stat-change" id="appointments-change">
-                            <i class="fas fa-arrow-up"></i> <span>+0%</span>
+                            <i class="fas fa-minus"></i> <span>0%</span>
                         </div>
                     </div>
                     
@@ -683,9 +741,9 @@ require_once '../../includes/header.php';
                         <div class="stat-value" id="completed-appointments">
                             <?php echo $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = date('now') AND status = 'completed'")['count']; ?>
                         </div>
-                        <div class="stat-label">Completed</div>
+                        <div class="stat-label">Success Count</div>
                         <div class="stat-change" id="completed-change">
-                            <i class="fas fa-arrow-up"></i> <span>+0%</span>
+                            <i class="fas fa-minus"></i> <span>0%</span>
                         </div>
                     </div>
                     
@@ -693,9 +751,9 @@ require_once '../../includes/header.php';
                         <div class="stat-value" id="pending-appointments">
                             <?php echo $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = date('now') AND status IN ('pending', 'scheduled')")['count']; ?>
                         </div>
-                        <div class="stat-label">Pending/Scheduled</div>
+                        <div class="stat-label">Active Queue</div>
                         <div class="stat-change" id="pending-change">
-                            <i class="fas fa-arrow-up"></i> <span>+0%</span>
+                            <i class="fas fa-minus"></i> <span>0%</span>
                         </div>
                     </div>
                     
@@ -703,220 +761,14 @@ require_once '../../includes/header.php';
                         <div class="stat-value" id="cancelled-appointments">
                             <?php echo $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = date('now') AND status = 'cancelled'")['count']; ?>
                         </div>
-                        <div class="stat-label">Cancelled</div>
+                        <div class="stat-label">Loss Count</div>
                         <div class="stat-change" id="cancelled-change">
-                            <i class="fas fa-arrow-down"></i> <span>+0%</span>
+                            <i class="fas fa-minus"></i> <span>0%</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Doctor Performance -->
-        <div class="content-section">
-            <div class="section-header">
-                <h2><i class="fas fa-user-md"></i> Doctor Performance</h2>
-            </div>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Doctor</th>
-                            <th>Specialty</th>
-                            <th>Total Appointments</th>
-                            <th>Completed</th>
-                            <th>Cancelled</th>
-                            <th>No Show</th>
-                            <th>Rescheduled</th>
-                            <th>Completion Rate</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($doctor_performance as $doctor): ?>
-                        <tr>
-                            <td>
-                                <strong>Dr. <?php echo htmlspecialchars($doctor['doctor_name']); ?></strong>
-                            </td>
-                            <td>
-                                <span class="specialty-badge">
-                                    <?php echo htmlspecialchars($doctor['specialty']); ?>
-                                </span>
-                            </td>
-                            <td><strong><?php echo $doctor['total_appointments']; ?></strong></td>
-                            <td><span class="status-completed"><?php echo $doctor['completed_appointments']; ?></span></td>
-                            <td><span class="status-cancelled"><?php echo $doctor['cancelled_appointments']; ?></span></td>
-                            <td><span class="status-no-show"><?php echo $doctor['no_show_appointments']; ?></span></td>
-                            <td><span class="status-rescheduled"><?php echo $doctor['rescheduled_appointments']; ?></span></td>
-                            <td>
-                                <span class="completion-rate completion-rate-<?php echo $doctor['completion_rate'] >= 80 ? 'good' : ($doctor['completion_rate'] >= 60 ? 'average' : 'poor'); ?>">
-                                    <?php echo $doctor['completion_rate'] ?: '0'; ?>%
-                                </span>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                        
-                        <?php if (empty($doctor_performance)): ?>
-                        <tr>
-                            <td colspan="6" class="empty-state">
-                                <i class="fas fa-info-circle"></i> No appointment data available for the selected date range.
-                            </td>
-                        </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- System Logs Section -->
-        <div class="content-section">
-            <div class="section-header">
-                <h2><i class="fas fa-history"></i> System Logs - Account Activity</h2>
-                <p>Track user activities and system events</p>
-            </div>
-            <div class="table-container">
-                <div class="logs-header-controls">
-                </div>
-                <?php 
-                // Set pagination variables
-                $logs_per_page = 10;
-                $current_log_page = isset($_GET['log_page']) ? max(1, (int)$_GET['log_page']) : 1;
-                $log_offset = ($current_log_page - 1) * $logs_per_page;
-
-                // Get total count for pagination
-                $total_logs_count = $db->fetch("
-                    SELECT COUNT(*) as count 
-                    FROM activity_logs al
-                    WHERE DATE(al.created_at) BETWEEN ? AND ?
-                ", [$start_date, $end_date])['count'];
-                
-                $total_log_pages = ceil($total_logs_count / $logs_per_page);
-
-                // Get recent activity logs with pagination
-                $activity_logs = $db->fetchAll("
-                    SELECT 
-                        al.*,
-                        u.username,
-                        u.first_name,
-                        u.last_name,
-                        u.role
-                    FROM activity_logs al
-                    LEFT JOIN users u ON al.user_id = u.id
-                    WHERE DATE(al.created_at) BETWEEN ? AND ?
-                    ORDER BY al.created_at DESC
-                    LIMIT ? OFFSET ?
-                ", [$start_date, $end_date, $logs_per_page, $log_offset]);
-                ?>
-
-                <!-- Detailed Activity Log -->
-                <div class="activity-log-table">
-                    <h3>Recent Activity Log</h3>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Date & Time</th>
-                                <th>User</th>
-                                <th>Role</th>
-                                <th>Action</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($activity_logs as $log): ?>
-                            <tr>
-                                <td>
-                                    <div class="log-timestamp">
-                                        <?php echo date('M j, Y', strtotime($log['created_at'])); ?>
-                                        <br>
-                                        <small><?php echo date('g:i A', strtotime($log['created_at'])); ?></small>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="log-user">
-                                        <?php if ($log['username']): ?>
-                                            <strong><?php echo htmlspecialchars($log['first_name'] . ' ' . $log['last_name']); ?></strong>
-                                            <br>
-                                            <small>@<?php echo htmlspecialchars($log['username']); ?></small>
-                                        <?php else: ?>
-                                            <span class="text-muted">System</span>
-                                        <?php endif; ?>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="role-badge role-<?php echo $log['role']; ?>">
-                                        <?php echo ucfirst($log['role'] ?? 'System'); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="log-action">
-                                        <i class="fas fa-<?php 
-                                            echo match(strtolower($log['action'])) {
-                                                'login' => 'sign-in-alt',
-                                                'logout' => 'sign-out-alt',
-                                                'register' => 'user-plus',
-                                                'update_profile' => 'edit',
-                                                'book_appointment' => 'calendar-plus',
-                                                'cancel_appointment' => 'calendar-times',
-                                                'view_profile' => 'eye',
-                                                default => 'cog'
-                                            };
-                                        ?>"></i>
-                                        <?php echo ucfirst(str_replace('_', ' ', $log['action'])); ?>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="log-description">
-                                        <?php echo htmlspecialchars($log['description']); ?>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                            
-                            <?php if (empty($activity_logs)): ?>
-                            <tr>
-                                <td colspan="5" class="empty-state">
-                                    <i class="fas fa-info-circle"></i> No activity logs found for the selected date range.
-                                </td>
-                            </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Logs Pagination -->
-                <?php if ($total_log_pages > 1): ?>
-                    <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #fff; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
-                        <div class="pagination" style="display: flex; gap: 0.5rem;">
-                            <?php if ($current_log_page > 1): ?>
-                                <a href="?log_page=<?php echo ($current_log_page - 1); ?>" 
-                                   class="pagination-btn" style="padding: 0.5rem 1rem; background: #fff; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">
-                                    <i class="fas fa-chevron-left"></i> Previous
-                                </a>
-                            <?php endif; ?>
-                            
-                            <?php for ($i = max(1, $current_log_page - 2); $i <= min($total_log_pages, $current_log_page + 2); $i++): ?>
-                                <a href="?log_page=<?php echo $i; ?>" 
-                                   class="pagination-btn" style="padding: 0.5rem 1rem; background: <?php echo $i === $current_log_page ? 'var(--primary-cyan)' : '#fff'; ?>; color: <?php echo $i === $current_log_page ? '#fff' : '#333'; ?>; border: 1px solid <?php echo $i === $current_log_page ? 'var(--primary-cyan)' : '#ccc'; ?>; border-radius: 4px; text-decoration: none;">
-                                    <?php echo $i; ?>
-                                </a>
-                            <?php endfor; ?>
-                            
-                            <?php if ($current_log_page < $total_log_pages): ?>
-                                <a href="?log_page=<?php echo ($current_log_page + 1); ?>" 
-                                   class="pagination-btn" style="padding: 0.5rem 1rem; background: #fff; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">
-                                    Next <i class="fas fa-chevron-right"></i>
-                                </a>
-                            <?php endif; ?>
-                        </div>
-                        
-                        <div class="pagination-info" style="color: #666; font-size: 0.9rem;">
-                            Showing <?php echo ($log_offset + 1); ?> to <?php echo min($log_offset + $logs_per_page, $total_logs_count); ?> 
-                            of <?php echo $total_logs_count; ?> logs
-                        </div>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-
 
         <!-- Appointment Management -->
         <div class="content-section">
@@ -1015,139 +867,112 @@ require_once '../../includes/header.php';
         <!-- Appointments Table -->
         <div class="content-section">
             <div class="section-header">
-                <h2>All Appointments (<?php echo $total_appointments; ?>)</h2>
+                <h2><i class="fas fa-list-ul"></i> Managed Appointments (<?php echo $total_appointments; ?>)</h2>
             </div>
             
             <div class="table-container">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Patient</th>
-                            <th>Doctor</th>
-                            <th>Date & Time</th>
-                            <th>Reason</th>
-                            <th>Status</th>
-                            <th>Fee</th>
-                            <th>Actions</th>
+                            <th>Ref ID</th>
+                            <th>Patient Identity</th>
+                            <th>Clinical Expert</th>
+                            <th>Schedule</th>
+                            <th>Status Code</th>
+                            <th>Valuation</th>
+                            <th>Operations</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($appointments as $appointment): ?>
                                 <tr>
-                                    <td><?php echo $appointment['id']; ?></td>
+                                    <td><code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-family: 'JetBrains Mono', monospace;">#<?php echo str_pad($appointment['id'], 5, '0', STR_PAD_LEFT); ?></code></td>
                                     <td>
-                                        <div class="patient-info">
-                                            <strong><?php echo htmlspecialchars($appointment['patient_first_name'] . ' ' . $appointment['patient_last_name']); ?></strong>
-                                            <div class="contact-info">
-                                                <small><?php echo htmlspecialchars($appointment['patient_email']); ?></small>
-                                                <?php if ($appointment['patient_phone']): ?>
-                                                    <br><small><?php echo htmlspecialchars($appointment['patient_phone']); ?></small>
-                                                <?php endif; ?>
+                                        <div class="user-info">
+                                            <div class="doctor-avatar-initials" style="background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #2563eb;">
+                                                <?php echo strtoupper(substr($appointment['patient_first_name'], 0, 1) . substr($appointment['patient_last_name'] ?? '', 0, 1)); ?>
+                                            </div>
+                                            <div class="user-details" style="padding-left: 10px;">
+                                                <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #1e293b;"><?php echo htmlspecialchars($appointment['patient_first_name'] . ' ' . $appointment['patient_last_name']); ?></h4>
+                                                <p style="margin: 0; font-size: 0.8rem; color: #64748b;"><?php echo htmlspecialchars($appointment['patient_email']); ?></p>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="doctor-info">
-                                            <strong>Dr. <?php echo htmlspecialchars($appointment['doctor_first_name'] . ' ' . $appointment['doctor_last_name']); ?></strong>
-                                            <div class="specialty-info">
-                                                <small><?php echo htmlspecialchars($appointment['specialty']); ?></small>
+                                        <div class="user-info">
+                                            <div class="user-details" style="padding-left: 0;">
+                                                <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #1e293b;">Dr. <?php echo htmlspecialchars($appointment['doctor_first_name'] . ' ' . $appointment['doctor_last_name']); ?></h4>
+                                                <span class="specialty-badge" style="font-size: 0.7rem; padding: 0.2rem 0.5rem; margin-top: 4px;"><?php echo htmlspecialchars($appointment['specialty']); ?></span>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="datetime-info">
-                                            <strong><?php echo formatDate($appointment['appointment_date']); ?></strong>
-                                            <div><?php echo formatTime($appointment['appointment_time']); ?></div>
+                                        <div class="log-timestamp">
+                                            <strong style="color: #334155;"><?php echo date('M j, Y', strtotime($appointment['appointment_date'])); ?></strong>
+                                            <br>
+                                            <small style="color: #64748b;"><i class="far fa-clock"></i> <?php echo formatTime($appointment['appointment_time']); ?></small>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="reason-text" title="<?php echo htmlspecialchars($appointment['reason_for_visit'] ?? ''); ?>">
-                                            <?php 
-                                            $reason = $appointment['reason_for_visit'] ?? '';
-                                            echo htmlspecialchars(substr($reason, 0, 50) . (strlen($reason) > 50 ? '...' : ''));
-                                            ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge status-<?php echo htmlspecialchars($appointment['status']); ?>">
-                                            <?php echo ucfirst(htmlspecialchars($appointment['status'])); ?>
+                                        <span class="status-badge status-<?php echo htmlspecialchars($appointment['status'] ?: 'pending'); ?>">
+                                            <?php echo strtoupper(htmlspecialchars($appointment['status'] ?: 'pending')); ?>
                                         </span>
                                     </td>
 
                                     <td>
-                                        ₱<?php echo number_format($appointment['display_fee'], 2); ?>
+                                        <strong style="color: #0f172a; font-size: 0.95rem;">₱<?php echo number_format($appointment['display_fee'], 2); ?></strong>
                                     </td>
                                     <td>
                                         <div class="appointment-actions">
-                                            <button type="button" class="btn btn-sm btn-view" 
+                                            <button type="button" class="btn btn-view" 
                                                     onclick="viewAppointment(<?php echo $appointment['id']; ?>)" 
-                                                    title="View Details">
+                                                    title="View Full Profile">
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                             
-                                                <?php // Update Status - always available ?>
-                                                <button type="button" class="btn btn-sm btn-edit" 
-                                                        onclick="editAppointment(<?php echo $appointment['id']; ?>, '<?php echo $appointment['status']; ?>')" 
-                                                        title="Update Status">
-                                                    <i class="fas fa-edit"></i>
+                                            <button type="button" class="btn btn-edit" 
+                                                    onclick="editAppointment(<?php echo $appointment['id']; ?>, '<?php echo $appointment['status']; ?>')" 
+                                                    title="Modify Status">
+                                                <i class="fas fa-sliders-h"></i>
+                                            </button>
+
+                                            <?php if (in_array($appointment['status'], ['scheduled', 'rescheduled'])): ?>
+                                                <button type="button" class="btn btn-reschedule" 
+                                                        onclick="openRescheduleModal(<?php echo $appointment['id']; ?>, '<?php echo $appointment['appointment_date']; ?>', '<?php echo $appointment['appointment_time']; ?>')" 
+                                                        title="Re-schedule">
+                                                    <i class="fas fa-calendar-day"></i>
                                                 </button>
+                                            <?php endif; ?>
 
-                                                <?php // Schedule Appointment - only for pending ?>
-                                                <?php if ($appointment['status'] === 'pending'): ?>
-                                                    <form method="POST" style="display: inline;" 
-                                                          onsubmit="return confirm('Are you sure you want to schedule this appointment?')">
-                                                        <input type="hidden" name="action" value="update_status">
-                                                        <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                                        <input type="hidden" name="status" value="scheduled">
-                                                        <button type="submit" class="btn btn-primary btn-sm" title="Schedule Appointment">
-                                                            <i class="fas fa-calendar-check"></i>
-                                                        </button>
-                                                    </form>
-                                                <?php endif; ?>
-
-                                                <?php // Reschedule Appointment - only for scheduled or rescheduled ?>
-                                                <?php if (in_array($appointment['status'], ['scheduled', 'rescheduled'])): ?>
-                                                    <button type="button" class="btn btn-sm btn-reschedule" 
-                                                            onclick="openRescheduleModal(<?php echo $appointment['id']; ?>, '<?php echo $appointment['appointment_date']; ?>', '<?php echo $appointment['appointment_time']; ?>')" 
-                                                            title="Reschedule Appointment">
-                                                        <i class="fas fa-calendar-alt"></i>
+                                            <?php if (in_array($appointment['status'], ['pending', 'scheduled', 'rescheduled', 'cancelled'])): ?>
+                                                <form method="POST" style="display: inline;" 
+                                                      onsubmit="return confirm('Dismantle this appointment record?')">
+                                                    <input type="hidden" name="action" value="delete">
+                                                    <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                    <button type="submit" class="btn btn-delete" title="Terminate">
+                                                        <i class="fas fa-trash-alt"></i>
                                                     </button>
-                                                <?php endif; ?>
-
-                                                <?php // Cancel - only for pending, scheduled, rescheduled ?>
-                                                <?php if (in_array($appointment['status'], ['pending', 'scheduled', 'rescheduled'])): ?>
-                                                    <form method="POST" style="display: inline;" 
-                                                          onsubmit="return confirm('Are you sure you want to cancel this appointment?')">
-                                                        <input type="hidden" name="action" value="delete">
-                                                        <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                                        <button type="submit" class="btn btn-sm btn-delete" title="Cancel">
-                                                            <i class="fas fa-ban"></i>
-                                                        </button>
-                                                    </form>
-                                                <?php endif; ?>
+                                                </form>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
+                        <?php endforeach; ?>
                             
                             <?php if (empty($appointments)): ?>
                             <tr>
-                                <td colspan="8" class="empty-state">
-                                    <?php if ($search || $status_filter || $doctor_filter || $date_filter): ?>
-                                        <i class="fas fa-search"></i>
-                                        <h3>No appointments found</h3>
-                                        <p>
-                                            No appointments match your current filters. Try adjusting your search criteria or 
-                                            <a href="dashboard.php">clear all filters</a>.
+                                <td colspan="7" class="empty-state">
+                                    <div style="padding: 4rem; text-align: center;">
+                                        <i class="fas fa-search" style="font-size: 3.5rem; color: #cbd5e1; margin-bottom: 1.5rem; display: block;"></i>
+                                        <h3 style="color: #475569; font-weight: 700; font-size: 1.4rem; margin-bottom: 0.5rem;">No Matching Records Found</h3>
+                                        <p style="color: #94a3b8; font-size: 0.95rem; max-width: 400px; margin: 0 auto 1.5rem auto;">
+                                            We couldn't find any clinic records matching your current filter criteria.
+                                            Try adjusting your parameters or clear the workspace.
                                         </p>
-                                    <?php else: ?>
-                                        <i class="fas fa-calendar-plus"></i>
-                                        <h3>No appointments scheduled</h3>
-                                        <p>
-                                            No appointments have been scheduled yet. Appointments will appear here once they are created.
-                                        </p>
-                                    <?php endif; ?>
+                                        <a href="dashboard.php" class="btn" style="background: #eff6ff; color: #2563eb; border-radius: 12px; font-weight: 700; padding: 0.8rem 1.5rem;">
+                                            <i class="fas fa-redo"></i> Reset Workspace
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endif; ?>
@@ -1189,6 +1014,219 @@ require_once '../../includes/header.php';
                 <?php endif; ?>
             </div>
         </div>
+
+        <!-- Doctor Performance -->
+        <div class="content-section">
+            <div class="section-header">
+                <h2><i class="fas fa-medal"></i> Professional Performance Index</h2>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Professional Profile</th>
+                            <th>Clinical Domain</th>
+                            <th>Total Vol.</th>
+                            <th>Success Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($doctor_performance as $doctor): ?>
+                        <?php 
+                            $name_parts = explode(' ', $doctor['doctor_name']);
+                            $initials = (isset($name_parts[0][0]) ? $name_parts[0][0] : '') . (isset($name_parts[1][0]) ? $name_parts[1][0] : '');
+                            $completion_rate = $doctor['completion_rate'] ?: 0;
+                            $rate_class = $completion_rate >= 80 ? 'good' : ($completion_rate >= 60 ? 'average' : 'poor');
+                        ?>
+                        <tr>
+                            <td>
+                                <div class="user-info">
+                                    <div class="doctor-avatar-initials"><?php echo strtoupper($initials); ?></div>
+                                    <div class="user-details">
+                                        <h4>Dr. <?php echo htmlspecialchars($doctor['doctor_name']); ?></h4>
+                                        <p>Medical Practitioner</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="specialty-badge">
+                                    <i class="fas fa-stethoscope"></i> <?php echo htmlspecialchars($doctor['specialty']); ?>
+                                </span>
+                            </td>
+                            <td><strong><?php echo $doctor['total_appointments']; ?></strong></td>
+                            <td style="width: 200px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <span style="font-weight: 700; font-size: 0.85rem; color: #1e293b;"><?php echo $completion_rate; ?>%</span>
+                                    <span style="font-size: 0.75rem; color: #64748b;"><?php echo $doctor['completed_appointments']; ?> Completed</span>
+                                </div>
+                                <div class="performance-meter">
+                                    <div class="performance-fill fill-<?php echo $rate_class; ?>" style="width: <?php echo $completion_rate; ?>%;"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        
+                        <?php if (empty($doctor_performance)): ?>
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                <i class="fas fa-chart-bar"></i> No metrics recorded for the selected window.
+                            </td>
+                        </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- System Logs Section -->
+        <div class="content-section">
+            <div class="section-header">
+                <h2><i class="fas fa-history"></i> System Logs - Account Activity</h2>
+                <p>Track user activities and system events</p>
+            </div>
+            <div class="table-container">
+                <div class="logs-header-controls">
+                </div>
+                <?php 
+                // Set pagination variables
+                $logs_per_page = 10;
+                $current_log_page = isset($_GET['log_page']) ? max(1, (int)$_GET['log_page']) : 1;
+                $log_offset = ($current_log_page - 1) * $logs_per_page;
+
+                // Get total count for pagination
+                $total_logs_count = $db->fetch("
+                    SELECT COUNT(*) as count 
+                    FROM activity_logs al
+                    WHERE DATE(al.created_at) BETWEEN ? AND ?
+                ", [$start_date, $end_date])['count'];
+                
+                $total_log_pages = ceil($total_logs_count / $logs_per_page);
+
+                // Get recent activity logs with pagination
+                $activity_logs = $db->fetchAll("
+                    SELECT 
+                        al.*,
+                        u.username,
+                        u.first_name,
+                        u.last_name,
+                        u.role
+                    FROM activity_logs al
+                    LEFT JOIN users u ON al.user_id = u.id
+                    WHERE DATE(al.created_at) BETWEEN ? AND ?
+                    ORDER BY al.created_at DESC
+                    LIMIT ? OFFSET ?
+                ", [$start_date, $end_date, $logs_per_page, $log_offset]);
+                ?>
+
+                <!-- Detailed Activity Log -->
+                <div class="activity-log-table">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Operator</th>
+                                <th>Identity</th>
+                                <th>Operation</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($activity_logs as $log): ?>
+                            <tr>
+                                <td>
+                                    <div class="log-timestamp">
+                                        <?php echo date('M j, Y', strtotime($log['created_at'])); ?>
+                                        <br>
+                                        <small><?php echo date('g:i A', strtotime($log['created_at'])); ?></small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="log-user">
+                                        <?php if ($log['username']): ?>
+                                            <strong><?php echo htmlspecialchars($log['first_name'] . ' ' . $log['last_name']); ?></strong>
+                                            <br>
+                                            <small>@<?php echo htmlspecialchars($log['username']); ?></small>
+                                        <?php else: ?>
+                                            <span style="color: #94a3b8; font-weight: 500;">Core System</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="role-badge role-<?php echo $log['role'] ?: 'system'; ?>">
+                                        <?php echo strtoupper($log['role'] ?: 'system'); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="log-action">
+                                        <i class="fas fa-<?php 
+                                            echo match(strtolower($log['action'])) {
+                                                'login' => 'shield-alt',
+                                                'logout' => 'power-off',
+                                                'register' => 'user-plus',
+                                                'update_profile' => 'user-edit',
+                                                'book_appointment' => 'calendar-plus',
+                                                'cancel_appointment' => 'calendar-times',
+                                                'view_profile' => 'id-card',
+                                                default => 'microchip'
+                                            };
+                                        ?>"></i>
+                                        <?php echo str_replace('_', ' ', strtoupper($log['action'])); ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="log-description">
+                                        <?php echo htmlspecialchars($log['description']); ?>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                            
+                            <?php if (empty($activity_logs)): ?>
+                            <tr>
+                                <td colspan="5" class="empty-state">
+                                    <i class="fas fa-terminal"></i> No system operations recorded for this window.
+                                </td>
+                            </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Logs Pagination -->
+                <?php if ($total_log_pages > 1): ?>
+                    <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #fff; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+                        <div class="pagination" style="display: flex; gap: 0.5rem;">
+                            <?php if ($current_log_page > 1): ?>
+                                <a href="?log_page=<?php echo ($current_log_page - 1); ?>" 
+                                   class="pagination-btn" style="padding: 0.5rem 1rem; background: #fff; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </a>
+                            <?php endif; ?>
+                            
+                            <?php for ($i = max(1, $current_log_page - 2); $i <= min($total_log_pages, $current_log_page + 2); $i++): ?>
+                                <a href="?log_page=<?php echo $i; ?>" 
+                                   class="pagination-btn" style="padding: 0.5rem 1rem; background: <?php echo $i === $current_log_page ? 'var(--primary-cyan)' : '#fff'; ?>; color: <?php echo $i === $current_log_page ? '#fff' : '#333'; ?>; border: 1px solid <?php echo $i === $current_log_page ? 'var(--primary-cyan)' : '#ccc'; ?>; border-radius: 4px; text-decoration: none;">
+                                    <?php echo $i; ?>
+                                </a>
+                            <?php endfor; ?>
+                            
+                            <?php if ($current_log_page < $total_log_pages): ?>
+                                <a href="?log_page=<?php echo ($current_log_page + 1); ?>" 
+                                   class="pagination-btn" style="padding: 0.5rem 1rem; background: #fff; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="pagination-info" style="color: #666; font-size: 0.9rem;">
+                            Showing <?php echo ($log_offset + 1); ?> to <?php echo min($log_offset + $logs_per_page, $total_logs_count); ?> 
+                            of <?php echo $total_logs_count; ?> logs
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
 
         <!-- Summary Insights -->
         <div class="content-section insights-section">
@@ -1938,18 +1976,46 @@ function resetAppointmentStats() {
     });
 }
 
+// Update Live Clock
+function updateLiveClock() {
+    const dateElement = document.getElementById('current-date');
+    const timeElement = document.getElementById('current-time');
+    
+    if (!dateElement || !timeElement) return;
+    
+    const now = new Date();
+    
+    // Format Date: Weekday, Month Day, Year
+    dateElement.textContent = now.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+    
+    // Format Time: HH:MM:SS AM/PM
+    timeElement.textContent = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    });
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     updatePeriodLabel('daily');
+    updateLiveClock();
+    setInterval(updateLiveClock, 1000);
 });
 </script>
 
 <!-- Appointment Details Modal -->
 <div id="appointmentModal" class="modal">
-    <div class="modal-content" style="max-width: 1000px; width: 90%; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-content" style="max-width: 1000px; width: 95%; max-height: 90vh; overflow-y: auto;">
         <div class="modal-header">
-            <h3>Appointment Details</h3>
-            <span class="close">&times;</span>
+            <h3><i class="fas fa-file-medical"></i> Appointment Overview</h3>
+            <span class="close" onclick="document.getElementById('appointmentModal').style.display='none'"><i class="fas fa-times"></i></span>
         </div>
         <div class="modal-body" id="appointmentDetails">
             <!-- Content will be loaded via JavaScript -->
@@ -1961,28 +2027,30 @@ document.addEventListener('DOMContentLoaded', function() {
 <div id="statusModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Update Appointment Status</h3>
-            <span class="close">&times;</span>
+            <h3><i class="fas fa-sliders-h"></i> Update Appointment Status</h3>
+            <span class="close-modal" onclick="closeModal('statusModal')"><i class="fas fa-times"></i></span>
         </div>
         <div class="modal-body">
             <form id="statusForm" method="POST">
                 <input type="hidden" name="action" value="update_status">
                 <input type="hidden" name="appointment_id" id="statusAppointmentId">
                 
-                <div class="form-group">
-                    <label for="status">Status</label>
-                    <select name="status" id="statusSelect" class="form-control" required>
-                        <option value="pending">Pending</option>
-                        <option value="scheduled">Scheduled</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                        <option value="no_show">No Show</option>
-                    </select>
+                <div class="modal-section">
+                    <div class="form-group">
+                        <label for="statusSelect" class="form-label" style="font-weight: 600; color: #475569;">Status</label>
+                        <select name="status" id="statusSelect" class="form-control" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; color: #1e293b; background-color: #f8fafc;" required>
+                            <option value="pending">Pending</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="no_show">No Show</option>
+                        </select>
+                    </div>
                 </div>
                 
-                <div class="modal-actions">
-                    <button type="submit" class="btn btn-primary">Update Status</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('statusModal')">Cancel</button>
+                <div class="modal-footer" style="padding: 1.5rem 2rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 1rem; border-radius: 0 0 12px 12px;">
+                    <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('statusModal')">Cancel</button>
+                    <button type="submit" class="modal-btn modal-btn-primary">Update Status</button>
                 </div>
             </form>
         </div>
@@ -1993,47 +2061,49 @@ document.addEventListener('DOMContentLoaded', function() {
 <div id="rescheduleModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Reschedule Appointment</h3>
-            <span class="close">&times;</span>
+            <h3><i class="fas fa-calendar-alt"></i> Reschedule Appointment</h3>
+            <span class="close-modal" onclick="closeModal('rescheduleModal')"><i class="fas fa-times"></i></span>
         </div>
         <div class="modal-body">
             <form id="rescheduleForm" method="POST">
                 <input type="hidden" name="action" value="reschedule">
                 <input type="hidden" name="appointment_id" id="rescheduleAppointmentId">
                 
-                <div class="form-group">
-                    <label for="appointment_date">New Date</label>
-                    <input type="date" name="appointment_date" id="rescheduleDate" class="form-control" required 
-                           min="<?php echo date('Y-m-d'); ?>">
+                <div class="modal-section" style="display: grid; gap: 1.5rem; border-bottom: none;">
+                    <div class="form-group">
+                        <label for="rescheduleDate" class="form-label" style="font-weight: 600; color: #475569;">New Date</label>
+                        <input type="date" name="appointment_date" id="rescheduleDate" class="form-control" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; color: #1e293b; background-color: #f8fafc;" required 
+                               min="<?php echo date('Y-m-d'); ?>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rescheduleTime" class="form-label" style="font-weight: 600; color: #475569;">New Time</label>
+                        <select name="appointment_time" id="rescheduleTime" class="form-control" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; color: #1e293b; background-color: #f8fafc;" required>
+                            <option value="">Select Time</option>
+                            <option value="09:00:00">9:00 AM</option>
+                            <option value="09:30:00">9:30 AM</option>
+                            <option value="10:00:00">10:00 AM</option>
+                            <option value="10:30:00">10:30 AM</option>
+                            <option value="11:00:00">11:00 AM</option>
+                            <option value="11:30:00">11:30 AM</option>
+                            <option value="12:00:00">12:00 PM</option>
+                            <option value="12:30:00">12:30 PM</option>
+                            <option value="13:00:00">1:00 PM</option>
+                            <option value="13:30:00">1:30 PM</option>
+                            <option value="14:00:00">2:00 PM</option>
+                            <option value="14:30:00">2:30 PM</option>
+                            <option value="15:00:00">3:00 PM</option>
+                            <option value="15:30:00">3:30 PM</option>
+                            <option value="16:00:00">4:00 PM</option>
+                            <option value="16:30:00">4:30 PM</option>
+                            <option value="17:00:00">5:00 PM</option>
+                        </select>
+                    </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="appointment_time">New Time</label>
-                    <select name="appointment_time" id="rescheduleTime" class="form-control" required>
-                        <option value="">Select Time</option>
-                        <option value="09:00:00">9:00 AM</option>
-                        <option value="09:30:00">9:30 AM</option>
-                        <option value="10:00:00">10:00 AM</option>
-                        <option value="10:30:00">10:30 AM</option>
-                        <option value="11:00:00">11:00 AM</option>
-                        <option value="11:30:00">11:30 AM</option>
-                        <option value="12:00:00">12:00 PM</option>
-                        <option value="12:30:00">12:30 PM</option>
-                        <option value="13:00:00">1:00 PM</option>
-                        <option value="13:30:00">1:30 PM</option>
-                        <option value="14:00:00">2:00 PM</option>
-                        <option value="14:30:00">2:30 PM</option>
-                        <option value="15:00:00">3:00 PM</option>
-                        <option value="15:30:00">3:30 PM</option>
-                        <option value="16:00:00">4:00 PM</option>
-                        <option value="16:30:00">4:30 PM</option>
-                        <option value="17:00:00">5:00 PM</option>
-                    </select>
-                </div>
-                
-                <div class="modal-actions">
-                    <button type="submit" class="btn btn-primary">Reschedule Appointment</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('rescheduleModal')">Cancel</button>
+                <div class="modal-footer" style="padding: 1.5rem 2rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 1rem; border-radius: 0 0 12px 12px;">
+                    <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('rescheduleModal')">Cancel</button>
+                    <button type="submit" class="modal-btn modal-btn-primary">Reschedule Appointment</button>
                 </div>
             </form>
         </div>
@@ -2063,90 +2133,195 @@ function viewAppointment(id) {
             const payment = data.payment;
             const patientInfo = data.patient_info;
             
+            const initials = (appointment.patient_first_name[0] + (appointment.patient_last_name ? appointment.patient_last_name[0] : '')).toUpperCase();
+            
             detailsDiv.innerHTML = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                    <div>
-                        <h4 style="color: var(--primary-cyan); margin-bottom: 1rem; border-bottom: 2px solid var(--light-cyan); padding-bottom: 0.5rem;">
-                            <i class="fas fa-user"></i> Patient Information
-                        </h4>
-                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                            <div style="margin-bottom: 0.7rem;"><strong>Name:</strong> ${appointment.patient_first_name} ${appointment.patient_last_name}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Email:</strong> ${appointment.patient_email || 'N/A'}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Phone:</strong> ${appointment.patient_phone || 'N/A'}</div>
+                <div class="appointment-details-premium" style="background: #fdfdfd; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                    
+                    <!-- 1. Patient Hero Banner -->
+                    <div style="background: white; border-bottom: 1px solid #edf2f7; padding: 32px 40px; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 24px;">
+                            <div style="width: 72px; height: 72px; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.75rem; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.15);">
+                                ${initials}
+                            </div>
+                            <div>
+                                <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; margin: 0; letter-spacing: -0.04em;">${appointment.first_name || (appointment.patient_first_name + ' ' + appointment.patient_last_name)} ${appointment.last_name || ''}</h1>
+                                <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
+                                    <span style="color: #64748b; font-size: 0.95rem; font-weight: 600;">ID: <span style="color: #2563eb; font-weight: 700;">#APT-${appointment.id.toString().padStart(5, '0')}</span></span>
+                                    <span style="width: 4px; height: 4px; background: #cbd5e1; border-radius: 50%;"></span>
+                                    <span class="status-badge status-${appointment.status}" style="font-size: 0.8rem; padding: 4px 12px; border-radius: 6px; font-weight: 800; letter-spacing: 0.05em;">${appointment.status.toUpperCase()}</span>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+
+                    <div style="padding: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px;">
                         
-                        ${patientInfo ? `
-                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.8rem; font-size: 1.1rem;">Booking Information</h5>
-                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                            ${patientInfo.first_name ? `<div style="margin-bottom: 0.7rem;"><strong>Booking Name:</strong> ${patientInfo.first_name} ${patientInfo.last_name}</div>` : ''}
-                            ${patientInfo.phone ? `<div style="margin-bottom: 0.7rem;"><strong>Booking Phone:</strong> ${patientInfo.phone}</div>` : ''}
-                            ${patientInfo.laboratory ? `<div style="margin-bottom: 0.7rem;"><strong>Laboratory Service:</strong> ${patientInfo.laboratory}</div>` : ''}
-                            ${patientInfo.reference_number ? `<div><strong>Reference:</strong> ${patientInfo.reference_number}</div>` : ''}
+                        <!-- 2. Appointment Schedule Card -->
+                        <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-calendar-alt" style="color: white; font-size: 0.9rem;"></i> Core Schedule
+                            </h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Date</label>
+                                    <div style="font-size: 1rem; font-weight: 600; color: #1e293b;">${formatDate(appointment.appointment_date)}</div>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Time Slot</label>
+                                    <div style="font-size: 1rem; font-weight: 600; color: #1e293b;">${formatTime(appointment.appointment_time)}</div>
+                                </div>
+                                <div style="grid-column: span 2;">
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Service Requested</label>
+                                    <div style="font-size: 1rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-stethoscope" style="color: #cbd5e1; font-size: 0.9rem;"></i>
+                                        ${appointment.purpose === 'consultation' ? 'Medical Consultation' : appointment.reason_for_visit}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        ` : ''}
-                        
+
+                        <!-- 3. Expert Consultation Card -->
+                        <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-user-md" style="color: white; font-size: 0.9rem;"></i> Medical Expert
+                            </h3>
+                            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                                <div style="width: 52px; height: 52px; background: #f8fafc; border: 1px solid #e2e8f0; color: #2563eb; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+                                    ${appointment.doctor_first_name[0]}${appointment.doctor_last_name[0]}
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">Dr. ${appointment.doctor_first_name} ${appointment.doctor_last_name}</div>
+                                    <div style="font-size: 0.85rem; font-weight: 600; color: #2563eb; text-transform: uppercase; letter-spacing: 0.05em;">${appointment.specialty}</div>
+                                </div>
+                            </div>
+                            <div style="padding-top: 16px; border-top: 1px dashed #e2e8f0; display: flex; justify-content: space-between;">
+                                <div>
+                                    <label style="display: block; font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">License</label>
+                                    <span style="font-size: 0.9rem; font-weight: 600; color: #1e293b;">${appointment.license_number || 'N/A'}</span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <label style="display: block; font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Professional Fee</label>
+                                    <span style="font-size: 1rem; font-weight: 800; color: #0f172a;">₱${parseFloat(appointment.display_fee || appointment.consultation_fee || 0).toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Patient Profile Card -->
+                        <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-info-circle" style="color: white; font-size: 0.9rem;"></i> Information Details
+                            </h3>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;">
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Relationship</label>
+                                    <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b; text-transform: capitalize;">${appointment.relationship || 'Self'}</div>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Age Group</label>
+                                    <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b;">${calculateAge(appointment.date_of_birth)} Years</div>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Gender</label>
+                                    <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b; text-transform: capitalize;">${appointment.gender || 'N/A'}</div>
+                                </div>
+                                <div style="grid-column: span 3; padding-top: 16px; border-top: 1px solid #f1f5f9; display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 32px;">
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Email Address</label>
+                                        <div style="font-size: 0.9rem; color: #475569;">${appointment.email || appointment.patient_email || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Phone Contact</label>
+                                        <div style="font-size: 0.9rem; color: #475569;">${appointment.phone_number || appointment.patient_phone || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Home Address</label>
+                                        <div style="font-size: 0.9rem; color: #475569; line-height: 1.5;">${appointment.address || 'N/A'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Transaction Summary Card -->
+                        <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-receipt" style="color: white; font-size: 0.9rem;"></i> Payment Summary
+                            </h3>
+                            <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                    <span style="font-weight: 700; color: #64748b; font-size: 0.8rem; text-transform: uppercase;">Amount Recieved</span>
+                                    <span style="font-size: 1.5rem; font-weight: 900; color: #059669;">₱${payment ? parseFloat(payment.amount).toFixed(2) : '0.00'}</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+                                    <div>
+                                        <label style="display: block; font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Status</label>
+                                        <span class="status-badge status-${payment ? payment.status : 'pending'}" style="font-weight: 800; font-size: 0.75rem;">${payment ? payment.status.toUpperCase() : 'PENDING'}</span>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <label style="display: block; font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">GCash Ref</label>
+                                        <span style="font-size: 0.95rem; font-weight: 700; color: #2563eb; font-family: monospace;">${payment ? payment.gcash_reference : 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. Proof of Payment (Half Width) -->
                         ${payment && payment.receipt_path ? `
-                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.8rem; font-size: 1.1rem;"><i class="fas fa-image"></i> Payment Screenshot</h5>
-                        <div style="background: #f5f5f5; padding: 1rem; border-radius: 8px; text-align: center;">
-                            <img src="../../${payment.receipt_path}" alt="Payment Receipt" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer;" onclick="window.open('../../${payment.receipt_path}', '_blank')">
-                            <div style="margin-top: 0.8rem; font-size: 0.9rem;">
-                                <a href="../../${payment.receipt_path}" target="_blank" style="color: var(--primary-cyan); text-decoration: none;">
-                                    <i class="fas fa-search-plus"></i> View Full Size
-                                </a>
+                        <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;">
+                                <i class="fas fa-search-dollar" style="color: white; margin-right: 10px;"></i> Evidence of Transaction
+                            </h3>
+                            <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 32px; text-align: center;">
+                                <img src="../../${payment.receipt_path}" alt="Receipt" style="max-width: 100%; max-height: 500px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); cursor: pointer;" onclick="window.open('../../${payment.receipt_path}', '_blank')">
                             </div>
                         </div>
                         ` : ''}
-                    </div>
-                    
-                    <div>
-                        <h4 style="color: var(--primary-cyan); margin-bottom: 1rem; border-bottom: 2px solid var(--light-cyan); padding-bottom: 0.5rem;">
-                            <i class="fas fa-user-md"></i> Doctor Information
-                        </h4>
-                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                            <div style="margin-bottom: 0.7rem;"><strong>Name:</strong> Dr. ${appointment.doctor_first_name} ${appointment.doctor_last_name}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Specialty:</strong> ${appointment.specialty}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>License:</strong> ${appointment.license_number || 'N/A'}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Email:</strong> ${appointment.doctor_email || 'N/A'}</div>
-                            <div><strong>Phone:</strong> ${appointment.doctor_phone || 'N/A'}</div>
-                        </div>
-                        
-                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.8rem; font-size: 1.1rem;">Appointment Details</h5>
-                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                            <div style="margin-bottom: 0.7rem;"><strong>Date:</strong> ${formatDate(appointment.appointment_date)}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Time:</strong> ${formatTime(appointment.appointment_time)}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Status:</strong> <span class="status-badge status-${appointment.status}">${appointment.status.toUpperCase()}</span></div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Fee:</strong> ₱${parseFloat(appointment.display_fee || appointment.consultation_fee || 0).toFixed(2)}</div>
-                            ${appointment.reason_for_visit ? `<div><strong>Reason:</strong> ${appointment.reason_for_visit}</div>` : ''}
-                        </div>
-                        
-                        ${payment ? `
-                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.8rem; font-size: 1.1rem;">Payment Information</h5>
-                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px;">
-                            <div style="margin-bottom: 0.7rem;"><strong>Amount:</strong> ₱${parseFloat(payment.amount || 0).toFixed(2)}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Payment Method:</strong> ${payment.payment_method || 'N/A'}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>GCash Reference:</strong> ${payment.gcash_reference || 'N/A'}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Status:</strong> ${payment.status || 'N/A'}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Submitted:</strong> ${formatDateTime(payment.created_at)}</div>
-                            ${payment.verified_at ? `<div style="margin-bottom: 0.7rem;"><strong>Verified:</strong> ${formatDateTime(payment.verified_at)}</div>` : ''}
-                            ${payment.verified_by_name ? `<div><strong>Verified By:</strong> ${payment.verified_by_name} ${payment.verified_by_lastname}</div>` : ''}
-                        </div>
-                        ` : ''}
 
-                        ${payment ? (payment.status && payment.status !== 'verified' ? `
-                        <div style="margin-top: 0.8rem;">
-                            <form method="POST" onsubmit="return confirm('Are you sure you want to verify this payment?')">
-                                <input type="hidden" name="action" value="confirm_payment">
-                                <input type="hidden" name="appointment_id" value="${appointment.id}">
-                                <button type="submit" class="btn" style="background: #27ae60; color:#fff; border-radius:4px; padding:0.5rem 0.8rem;">
-                                    <i class="fas fa-check"></i> Approve Payment
-                                </button>
-                            </form>
+                        <!-- 7. Observations Card (Full Width) -->
+                        <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-file-medical-alt" style="color: white; font-size: 0.9rem;"></i> Clinical Records
+                            </h3>
+                            <div style="display: flex; flex-direction: column; gap: 20px;">
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Reason for Visit</label>
+                                    <div style="font-size: 0.95rem; color: #1e293b; font-weight: 500; line-height: 1.5;">${appointment.illness || 'General Consultation'}</div>
+                                </div>
+                                <div style="background: #eff6ff; border: 1px solid #dbeafe; border-radius: 12px; padding: 16px;">
+                                    <label style="display: block; font-size: 0.75rem; color: #2563eb; font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">Doctor's Findings</label>
+                                    <div style="font-size: 0.95rem; color: #1e40af; line-height: 1.6; font-weight: 600; font-style: italic;">
+                                        ${appointment.notes || '"No records available yet."'}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        ` : '') : ''}
+
+                    </div> <!-- End of Card Grid -->
+
+                    <!-- Modal Actions Footer -->
+                    ${appointment.status === 'pending' ? `
+                    <div style="margin-top: 32px; padding: 24px 40px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; background: #f8fafc; border-radius: 0 0 20px 20px;">
+                        <form method="POST" style="display: flex; align-items: center; gap: 24px;" onsubmit="return confirm('Confirm marking this appointment as Scheduled?')">
+                            <input type="hidden" name="action" value="update_status">
+                            <input type="hidden" name="appointment_id" value="${appointment.id}">
+                            <input type="hidden" name="status" value="scheduled">
+                            
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 18px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer;">
+                                <input type="checkbox" id="verify_payment" name="verify_payment" value="1" style="width: 18px; height: 18px; cursor: pointer;" 
+                                    onchange="this.form.querySelector('button').disabled = !this.checked; this.form.querySelector('button').style.opacity = this.checked ? '1' : '0.5'; this.form.querySelector('button').style.cursor = this.checked ? 'pointer' : 'not-allowed';">
+                                <label for="verify_payment" style="font-size: 0.9rem; font-weight: 700; color: #475569; cursor: pointer; user-select: none;">Payment Verified</label>
+                            </div>
+
+                            <button type="submit" class="modal-btn" 
+                                disabled style="opacity: 0.5; cursor: not-allowed; padding: 12px 28px; font-size: 0.95rem; font-weight: 800; border-radius: 12px; display: flex; align-items: center; gap: 10px; border: none; background: #2563eb; color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15); transition: all 0.2s;">
+                                <i class="fas fa-calendar-check"></i> Mark Scheduled
+                            </button>
+                        </form>
                     </div>
+                    ` : ''}
                 </div>
-                
             `;
+
         })
         .catch(error => {
             console.error('Error fetching appointment details:', error);
@@ -2173,6 +2348,18 @@ function formatTime(timeString) {
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
+}
+
+function calculateAge(dateOfBirth) {
+    if (!dateOfBirth) return 'N/A';
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
 }
 
 function formatDateTime(dateTimeString) {
@@ -2227,618 +2414,6 @@ document.querySelectorAll('.close').forEach(closeBtn => {
         this.closest('.modal').style.display = 'none';
     }
 });
-</script>
-
-</body>
-</html>
-
-<style>
-/* Appointments Overview Card Styles */
-.appointments-overview-card {
-    background: var(--white);
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
-    border: 1px solid #eee;
-}
-
-.filter-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.filter-buttons {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.filter-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border: 2px solid #eee;
-    border-radius: 8px;
-    background: var(--white);
-    color: var(--text-dark);
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.filter-btn:hover {
-    border-color: var(--primary-cyan);
-    color: var(--primary-cyan);
-    transform: translateY(-2px);
-}
-
-.filter-btn.active {
-    background: var(--primary-cyan);
-    border-color: var(--primary-cyan);
-    color: var(--white);
-}
-
-.filter-btn i {
-    font-size: 0.8rem;
-}
-
-.date-range-info {
-    text-align: right;
-}
-
-.date-range-info span {
-    display: block;
-    font-weight: 600;
-    color: var(--text-dark);
-    font-size: 1.1rem;
-}
-
-.date-range-info small {
-    color: var(--text-light);
-    font-size: 0.85rem;
-}
-
-.appointments-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-}
-
-.appointment-stat-item {
-    background: rgba(37, 99, 235, 0.02);
-    border: 1px solid rgba(37, 99, 235, 0.1);
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-align: center;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.appointment-stat-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(135deg, var(--primary-cyan), var(--light-cyan));
-    transform: scaleX(0);
-    transition: transform 0.3s ease;
-}
-
-.appointment-stat-item:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
-}
-
-.appointment-stat-item:hover::before {
-    transform: scaleX(1);
-}
-
-.stat-value {
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: var(--primary-cyan);
-    margin-bottom: 0.5rem;
-    line-height: 1;
-}
-
-.stat-label {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--text-dark);
-    margin-bottom: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.stat-change {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
-.stat-change.positive {
-    color: #28a745;
-}
-
-.stat-change.negative {
-    color: #dc3545;
-}
-
-.stat-change.neutral {
-    color: #6c757d;
-}
-
-.stat-change i {
-    font-size: 0.7rem;
-}
-
-/* Responsive styles for appointments overview */
-@media (max-width: 768px) {
-    .filter-controls {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: stretch;
-    }
-    
-    .filter-buttons {
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-    
-    .filter-btn {
-        flex: 1;
-        min-width: 100px;
-    }
-    
-    .date-range-info {
-        text-align: center;
-    }
-    
-    .appointments-stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
-    }
-    
-    .appointment-stat-item {
-        padding: 1rem;
-    }
-    
-    .stat-value {
-        font-size: 1.8rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .appointments-overview-card {
-        padding: 1rem;
-    }
-    
-    .filter-btn {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.8rem;
-    }
-    
-    .appointments-stats-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-    }
-    
-    .stat-value {
-        font-size: 1.5rem;
-    }
-    
-    .stat-label {
-        font-size: 0.8rem;
-    }
-}
-</style>
-
-<script>
-function clearSystemLogs() {
-    if (confirm('Are you sure you want to clear all system logs? This action cannot be undone.')) {
-        const btn = document.getElementById('clearLogsBtn');
-        const originalText = btn.innerHTML;
-        
-        // Disable button and show loading
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing...';
-        
-        // Send AJAX request to clear logs
-        fetch('clear_logs.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ action: 'clear_logs' })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('System logs cleared successfully!');
-                // Reload the page to show updated data
-                window.location.reload();
-            } else {
-                alert('Error clearing logs: ' + (data.message || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while clearing logs.');
-        })
-        .finally(() => {
-            // Re-enable button
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        });
-    }
-}
-
-// Appointments Overview Functions
-let currentPeriod = 'daily';
-
-function filterAppointments(period) {
-    currentPeriod = period;
-    
-    // Update active button
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`[data-period="${period}"]`).classList.add('active');
-    
-    // Update period label and date range
-    updatePeriodLabel(period);
-    
-    // Fetch and update data
-    fetchAppointmentData(period);
-}
-
-function updatePeriodLabel(period) {
-    const label = document.getElementById('current-period-label');
-    const dateRange = document.getElementById('current-date-range');
-    
-    const now = new Date();
-    
-    switch(period) {
-        case 'daily':
-            label.textContent = 'Today';
-            dateRange.textContent = now.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-            });
-            break;
-        case 'weekly':
-            const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-            const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-            label.textContent = 'This Week';
-            dateRange.textContent = `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-            break;
-        case 'monthly':
-            label.textContent = 'This Month';
-            dateRange.textContent = now.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long' 
-            });
-            break;
-    }
-}
-
-function fetchAppointmentData(period) {
-    // Show loading state
-    const statValues = document.querySelectorAll('.stat-value');
-    statValues.forEach(val => {
-        val.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    });
-    
-    // Send AJAX request
-    fetch('get_appointment_stats.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ period: period })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            updateAppointmentStats(data.stats, data.changes);
-        } else {
-            console.error('Error fetching appointment data:', data.message);
-            // Reset to default values on error
-            resetAppointmentStats();
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        resetAppointmentStats();
-    });
-}
-
-function updateAppointmentStats(stats, changes) {
-    // Update stat values
-    document.getElementById('total-appointments').textContent = stats.total || 0;
-    document.getElementById('completed-appointments').textContent = stats.completed || 0;
-    document.getElementById('pending-appointments').textContent = stats.pending || 0;
-    document.getElementById('cancelled-appointments').textContent = stats.cancelled || 0;
-    
-    // Update change indicators
-    updateChangeIndicator('appointments-change', changes.total || 0);
-    updateChangeIndicator('completed-change', changes.completed || 0);
-    updateChangeIndicator('pending-change', changes.pending || 0);
-    updateChangeIndicator('cancelled-change', changes.cancelled || 0);
-}
-
-function updateChangeIndicator(elementId, change) {
-    const element = document.getElementById(elementId);
-    const icon = element.querySelector('i');
-    const span = element.querySelector('span');
-    
-    const changeValue = Math.abs(change);
-    const changeText = changeValue === 0 ? '0%' : `${change > 0 ? '+' : ''}${change}%`;
-    
-    span.textContent = changeText;
-    
-    // Update classes and icons
-    element.className = 'stat-change';
-    if (change > 0) {
-        element.classList.add('positive');
-        icon.className = 'fas fa-arrow-up';
-    } else if (change < 0) {
-        element.classList.add('negative');
-        icon.className = 'fas fa-arrow-down';
-    } else {
-        element.classList.add('neutral');
-        icon.className = 'fas fa-minus';
-    }
-}
-
-function resetAppointmentStats() {
-    document.getElementById('total-appointments').textContent = '0';
-    document.getElementById('completed-appointments').textContent = '0';
-    document.getElementById('pending-appointments').textContent = '0';
-    document.getElementById('cancelled-appointments').textContent = '0';
-    
-    // Reset change indicators
-    document.querySelectorAll('.stat-change span').forEach(span => {
-        span.textContent = '+0%';
-    });
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    updatePeriodLabel('daily');
-});
-</script>
-
-</body>
-</html>
-</style>
-
-<script>
-function clearSystemLogs() {
-    if (confirm('Are you sure you want to clear all system logs? This action cannot be undone.')) {
-        const btn = document.getElementById('clearLogsBtn');
-        const originalText = btn.innerHTML;
-        
-        // Disable button and show loading
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing...';
-        
-        // Send AJAX request to clear logs
-        fetch('clear_logs.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ action: 'clear_logs' })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('System logs cleared successfully!');
-                // Reload the page to show updated data
-                window.location.reload();
-            } else {
-                alert('Error clearing logs: ' + (data.message || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while clearing logs.');
-        })
-        .finally(() => {
-            // Re-enable button
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        });
-    }
-}
-// Appointments Overview Functions
-let currentPeriod = 'daily';
-
-function filterAppointments(period) {
-    currentPeriod = period;
-    
-    // Update active button
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`[data-period="${period}"]`).classList.add('active');
-    
-    // Update period label and date range
-    updatePeriodLabel(period);
-    
-    // Fetch and update data
-    fetchAppointmentData(period);
-}
-
-function updatePeriodLabel(period) {
-    const label = document.getElementById('current-period-label');
-    const dateRange = document.getElementById('current-date-range');
-    
-    const now = new Date();
-    
-    switch(period) {
-        case 'daily':
-            label.textContent = 'Today';
-            dateRange.textContent = now.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-            });
-            break;
-        case 'weekly':
-            const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-            const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-            label.textContent = 'This Week';
-            dateRange.textContent = `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-            break;
-        case 'monthly':
-            label.textContent = 'This Month';
-            dateRange.textContent = now.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long' 
-            });
-            break;
-    }
-}
-
-function fetchAppointmentData(period) {
-    // Show loading state
-    const statValues = document.querySelectorAll('.stat-value');
-    statValues.forEach(val => {
-        val.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    });
-    
-    // Send AJAX request
-    fetch('get_appointment_stats.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ period: period })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            updateAppointmentStats(data.stats, data.changes);
-        } else {
-            console.error('Error fetching appointment data:', data.message);
-            // Reset to default values on error
-            resetAppointmentStats();
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        resetAppointmentStats();
-    });
-}
-
-function updateAppointmentStats(stats, changes) {
-    // Update stat values
-    document.getElementById('total-appointments').textContent = stats.total || 0;
-    document.getElementById('completed-appointments').textContent = stats.completed || 0;
-    document.getElementById('pending-appointments').textContent = stats.pending || 0;
-    document.getElementById('cancelled-appointments').textContent = stats.cancelled || 0;
-    
-    // Update change indicators
-    updateChangeIndicator('appointments-change', changes.total || 0);
-    updateChangeIndicator('completed-change', changes.completed || 0);
-    updateChangeIndicator('pending-change', changes.pending || 0);
-    updateChangeIndicator('cancelled-change', changes.cancelled || 0);
-}
-
-function updateChangeIndicator(elementId, change) {
-    const element = document.getElementById(elementId);
-    const icon = element.querySelector('i');
-    const span = element.querySelector('span');
-    
-    const changeValue = Math.abs(change);
-    const changeText = changeValue === 0 ? '0%' : `${change > 0 ? '+' : ''}${change}%`;
-    
-    span.textContent = changeText;
-    
-    // Update classes and icons
-    element.className = 'stat-change';
-    if (change > 0) {
-        element.classList.add('positive');
-        icon.className = 'fas fa-arrow-up';
-    } else if (change < 0) {
-        element.classList.add('negative');
-        icon.className = 'fas fa-arrow-down';
-    } else {
-        element.classList.add('neutral');
-        icon.className = 'fas fa-minus';
-    }
-}
-
-function resetAppointmentStats() {
-    document.getElementById('total-appointments').textContent = '0';
-    document.getElementById('completed-appointments').textContent = '0';
-    document.getElementById('pending-appointments').textContent = '0';
-    document.getElementById('cancelled-appointments').textContent = '0';
-    
-    // Reset change indicators
-    document.querySelectorAll('.stat-change span').forEach(span => {
-        span.textContent = '+0%';
-    });
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    updatePeriodLabel('daily');
-});
-</script>
-
-</body>
-</html>
-</script>
-
-        </div>
-</div>
-
-<script>
-// Update current date and time
-function updateDateTime() {
-    const now = new Date();
-    const dateElement = document.getElementById('current-date');
-    const timeElement = document.getElementById('current-time');
-    
-    // Format date
-    const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    };
-    dateElement.textContent = now.toLocaleDateString('en-US', options);
-    
-    // Format time
-    const timeOptions = { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit',
-        hour12: true 
-    };
-    timeElement.textContent = now.toLocaleTimeString('en-US', timeOptions);
-}
-
-// Update immediately and then every second
-updateDateTime();
-setInterval(updateDateTime, 1000);
 </script>
 
 </body>

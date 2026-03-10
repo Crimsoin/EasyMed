@@ -1,6 +1,6 @@
 <?php
 $page_title = "Appointment Management";
-$additional_css = ['admin/sidebar.css', 'admin/appointment.css'];
+$additional_css = ['admin/sidebar.css', 'admin/appointment.css', 'shared-modal.css'];
 require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/database_helper.php';
@@ -565,11 +565,11 @@ require_once '../../includes/header.php';
                                                 <?php // Schedule Appointment - only for pending ?>
                                                 <?php if ($appointment['status'] === 'pending'): ?>
                                                     <form method="POST" style="display: inline;" 
-                                                          onsubmit="return confirm('Are you sure you want to schedule this appointment?')">
+                                                          onsubmit="return handleBtnSpinner(this, 'Are you sure you want to schedule this appointment?')">
                                                         <input type="hidden" name="action" value="update_status">
                                                         <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
                                                         <input type="hidden" name="status" value="scheduled">
-                                                        <button type="submit" class="btn btn-primary btn-sm" title="Schedule Appointment">
+                                                        <button type="submit" class="btn btn-primary btn-sm btn-schedule" title="Schedule Appointment">
                                                             <i class="fas fa-calendar-check"></i>
                                                         </button>
                                                     </form>
@@ -663,13 +663,17 @@ require_once '../../includes/header.php';
 
 <!-- Appointment Details Modal -->
 <div id="appointmentModal" class="modal">
-    <div class="modal-content" style="max-width: 1000px; width: 90%; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-content">
         <div class="modal-header">
-            <h3>Appointment Details</h3>
-            <span class="close">&times;</span>
+            <h3><i class="fas fa-calendar-check"></i> Appointment Details</h3>
+            <span class="close-modal" onclick="closeModal('appointmentModal')"><i class="fas fa-times"></i></span>
         </div>
         <div class="modal-body" id="appointmentDetails">
-            <!-- Content will be loaded via JavaScript -->
+            <!-- Content injected by JavaScript -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('appointmentModal')">Close</button>
+            <button type="button" class="modal-btn modal-btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print Details</button>
         </div>
     </div>
 </div>
@@ -682,7 +686,7 @@ require_once '../../includes/header.php';
             <span class="close">&times;</span>
         </div>
         <div class="modal-body">
-            <form id="statusForm" method="POST">
+            <form id="statusForm" method="POST" onsubmit="return handleBtnSpinner(this)">
                 <input type="hidden" name="action" value="update_status">
                 <input type="hidden" name="appointment_id" id="statusAppointmentId">
                 
@@ -714,7 +718,7 @@ require_once '../../includes/header.php';
             <span class="close">&times;</span>
         </div>
         <div class="modal-body">
-            <form id="rescheduleForm" method="POST">
+            <form id="rescheduleForm" method="POST" onsubmit="return handleBtnSpinner(this)">
                 <input type="hidden" name="action" value="reschedule">
                 <input type="hidden" name="appointment_id" id="rescheduleAppointmentId">
                 
@@ -758,6 +762,24 @@ require_once '../../includes/header.php';
 </div>
 
 <script>
+// Global function for buttons showing spinner during form submission
+function handleBtnSpinner(form, confirmMsg = '') {
+    if (confirmMsg && !confirm(confirmMsg)) return false;
+    
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn) {
+        btn.disabled = true;
+        const originalText = btn.innerHTML;
+        // Check if button is small/circular or full-text
+        if (btn.classList.contains('btn-sm')) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        } else {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        }
+    }
+    return true;
+}
+
 // Modal functionality
 function viewAppointment(id) {
     // Show loading state
@@ -766,6 +788,7 @@ function viewAppointment(id) {
     
     detailsDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Loading appointment details...</div>';
     modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
     
     // Fetch appointment details via AJAX
     fetch(`get_appointment_details.php?id=${id}`)
@@ -780,99 +803,120 @@ function viewAppointment(id) {
             const payment = data.payment;
             const patientInfo = data.patient_info;
             
+            // Format name for avatar
+            const firstName = appointment.patient_first_name || 'P';
+            const lastName = appointment.patient_last_name || '';
+            const initials = firstName.charAt(0) + (lastName ? lastName.charAt(0) : '');
+            
             detailsDiv.innerHTML = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                    <div>
-                        <h4 style="color: var(--primary-cyan); margin-bottom: 1rem; border-bottom: 2px solid var(--light-cyan); padding-bottom: 0.5rem;">
-                            <i class="fas fa-user"></i> Patient Information
-                        </h4>
-                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                            <div style="margin-bottom: 0.7rem;"><strong>Name:</strong> ${appointment.patient_first_name} ${appointment.patient_last_name}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Email:</strong> ${appointment.patient_email || 'N/A'}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Phone:</strong> ${appointment.patient_phone || 'N/A'}</div>
+                <div class="modal-patient-hero">
+                    <div class="modal-avatar">${initials}</div>
+                    <div class="patient-identity">
+                        <h2>${appointment.patient_first_name} ${appointment.patient_last_name}</h2>
+                        <div class="sub-text">
+                            <span>#APT-${String(appointment.id).padStart(5, '0')}</span>
+                            <span>•</span>
+                            <span class="status-badge status-${appointment.status.toLowerCase()}">${appointment.status}</span>
                         </div>
-                        
-                        ${patientInfo ? `
-                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.8rem; font-size: 1.1rem;">Booking Information</h5>
-                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                            ${patientInfo.first_name ? `<div style="margin-bottom: 0.7rem;"><strong>Booking Name:</strong> ${patientInfo.first_name} ${patientInfo.last_name}</div>` : ''}
-                            ${patientInfo.phone ? `<div style="margin-bottom: 0.7rem;"><strong>Booking Phone:</strong> ${patientInfo.phone}</div>` : ''}
-                            ${patientInfo.laboratory ? `<div style="margin-bottom: 0.7rem;"><strong>Laboratory Service:</strong> ${patientInfo.laboratory}</div>` : ''}
-                            ${patientInfo.reference_number ? `<div><strong>Reference:</strong> ${patientInfo.reference_number}</div>` : ''}
-                        </div>
-                        ` : ''}
-                        
-                        ${payment && payment.receipt_path ? `
-                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.8rem; font-size: 1.1rem;"><i class="fas fa-image"></i> Payment Screenshot</h5>
-                        <div style="background: #f5f5f5; padding: 1rem; border-radius: 8px; text-align: center;">
-                            <img src="../../${payment.receipt_path}" alt="Payment Receipt" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer;" onclick="window.open('../../${payment.receipt_path}', '_blank')">
-                            <div style="margin-top: 0.8rem; font-size: 0.9rem;">
-                                <a href="../../${payment.receipt_path}" target="_blank" style="color: var(--primary-cyan); text-decoration: none;">
-                                    <i class="fas fa-search-plus"></i> View Full Size
-                                </a>
-                            </div>
-                        </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div>
-                        <h4 style="color: var(--primary-cyan); margin-bottom: 1rem; border-bottom: 2px solid var(--light-cyan); padding-bottom: 0.5rem;">
-                            <i class="fas fa-user-md"></i> Doctor Information
-                        </h4>
-                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                            <div style="margin-bottom: 0.7rem;"><strong>Name:</strong> Dr. ${appointment.doctor_first_name} ${appointment.doctor_last_name}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Specialty:</strong> ${appointment.specialty}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>License:</strong> ${appointment.license_number || 'N/A'}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Email:</strong> ${appointment.doctor_email || 'N/A'}</div>
-                            <div><strong>Phone:</strong> ${appointment.doctor_phone || 'N/A'}</div>
-                        </div>
-                        
-                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.8rem; font-size: 1.1rem;">Appointment Details</h5>
-                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                            <div style="margin-bottom: 0.7rem;"><strong>Date:</strong> ${formatDate(appointment.appointment_date)}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Time:</strong> ${formatTime(appointment.appointment_time)}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Status:</strong> <span class="status-badge status-${appointment.status}">${appointment.status.toUpperCase()}</span></div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Fee:</strong> ₱${parseFloat(appointment.display_fee || appointment.consultation_fee || 0).toFixed(2)}</div>
-                            ${appointment.reason_for_visit ? `<div><strong>Reason:</strong> ${appointment.reason_for_visit}</div>` : ''}
-                        </div>
-                        
-                        ${payment ? `
-                        <h5 style="color: var(--primary-cyan); margin-bottom: 0.8rem; font-size: 1.1rem;">Payment Information</h5>
-                        <div style="background: #f5f5f5; padding: 1.2rem; border-radius: 8px;">
-                            <div style="margin-bottom: 0.7rem;"><strong>Amount:</strong> ₱${parseFloat(payment.amount || 0).toFixed(2)}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Payment Method:</strong> ${payment.payment_method || 'N/A'}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>GCash Reference:</strong> ${payment.gcash_reference || 'N/A'}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Status:</strong> ${payment.status || 'N/A'}</div>
-                            <div style="margin-bottom: 0.7rem;"><strong>Submitted:</strong> ${formatDateTime(payment.created_at)}</div>
-                            ${payment.verified_at ? `<div style="margin-bottom: 0.7rem;"><strong>Verified:</strong> ${formatDateTime(payment.verified_at)}</div>` : ''}
-                            ${payment.verified_by_name ? `<div><strong>Verified By:</strong> ${payment.verified_by_name} ${payment.verified_by_lastname}</div>` : ''}
-                        </div>
-                        ` : ''}
-
-                        ${payment ? (payment.status && payment.status !== 'verified' ? `
-                        <div style="margin-top: 0.8rem;">
-                            <form method="POST" onsubmit="return confirm('Are you sure you want to verify this payment?')">
-                                <input type="hidden" name="action" value="confirm_payment">
-                                <input type="hidden" name="appointment_id" value="${appointment.id}">
-                                <button type="submit" class="btn" style="background: #27ae60; color:#fff; border-radius:4px; padding:0.5rem 0.8rem;">
-                                    <i class="fas fa-check"></i> Approve Payment
-                                </button>
-                            </form>
-                        </div>
-                        ` : '') : ''}
                     </div>
                 </div>
-                
+
+                <div class="modal-section">
+                    <div class="modal-section-title"><i class="fas fa-info-circle"></i> Appointment Information</div>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Date</span>
+                            <span class="detail-value"><i class="far fa-calendar-alt"></i> ${formatDateJS(appointment.appointment_date)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Time</span>
+                            <span class="detail-value"><i class="far fa-clock"></i> ${formatTimeJS(appointment.appointment_time)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Age / Gender</span>
+                            <span class="detail-value"><i class="fas fa-user"></i> ${appointment.patient_dob ? calculateAgeJS(appointment.patient_dob) : 'N/A'} yrs • ${appointment.patient_gender || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Service Type</span>
+                            <span class="detail-value"><i class="fas fa-stethoscope"></i> ${patientInfo ? (patientInfo.purpose || patientInfo.reason) : 'Consultation'}</span>
+                        </div>
+                        ${patientInfo && patientInfo.laboratory ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Lab Test</span>
+                            <span class="detail-value"><i class="fas fa-flask"></i> ${patientInfo.laboratory}</span>
+                        </div>
+                        ` : ''}
+                        <div class="detail-item">
+                            <span class="detail-label">Consultation Fee</span>
+                            <span class="detail-value"><i class="fas fa-tag"></i> ₱${parseFloat(appointment.display_fee || appointment.consultation_fee || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-section">
+                    <div class="modal-section-title"><i class="fas fa-user-md"></i> Assigned Doctor</div>
+                    <div class="detail-grid">
+                        <div class="detail-item" style="grid-column: span 2;">
+                            <span class="detail-label">Doctor Name</span>
+                            <span class="detail-value"><i class="fas fa-user-md"></i> Dr. ${appointment.doctor_first_name} ${appointment.doctor_last_name} (${appointment.specialty})</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-section">
+                    <div class="modal-section-title"><i class="fas fa-user-circle"></i> Patient Details</div>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Account Name</span>
+                            <span class="detail-value"><i class="fas fa-id-card"></i> ${appointment.user_first_name ? (appointment.user_first_name + ' ' + appointment.user_last_name) : (appointment.patient_first_name + ' ' + appointment.patient_last_name)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Relationship</span>
+                            <span class="detail-value"><i class="fas fa-users"></i> ${appointment.relationship || 'Self'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-section">
+                    <div class="modal-section-title"><i class="fas fa-address-book"></i> Contact Details</div>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Email Address</span>
+                            <span class="detail-value"><i class="far fa-envelope"></i> ${appointment.patient_email || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Phone Number</span>
+                            <span class="detail-value"><i class="fas fa-phone-alt"></i> ${appointment.patient_phone || appointment.phone_number || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item" style="grid-column: span 2;">
+                            <span class="detail-label">Complete Address</span>
+                            <span class="detail-value"><i class="fas fa-map-marker-alt"></i> ${appointment.patient_address || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-section">
+                    <div class="modal-section-title"><i class="fas fa-comment-medical"></i> Reason for Visit / Illness</div>
+                    <div class="reason-box">${appointment.illness || appointment.reason_for_visit || 'No reason specified'}</div>
+                </div>
+
+                ${appointment.notes ? `
+                <div class="modal-section">
+                    <div class="modal-section-title"><i class="fas fa-clipboard-check"></i> Doctor's Findings</div>
+                    <div class="reason-box findings-view">${appointment.notes}</div>
+                </div>
+                ` : ''}
             `;
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
         })
         .catch(error => {
             console.error('Error fetching appointment details:', error);
-            detailsDiv.innerHTML = '<div style="text-align: center; padding: 2rem; color: #e74c3c;"><i class="fas fa-exclamation-triangle"></i> Error loading appointment details. Please try again.</div>';
+            detailsDiv.innerHTML = '<div style="text-align: center; padding: 2rem; color: #ef4444;"><i class="fas fa-exclamation-triangle"></i> Error loading appointment details. Please try again.</div>';
         });
 }
 
-// Helper functions for formatting
-function formatDate(dateString) {
+function formatDateJS(dateString) {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
@@ -883,16 +927,18 @@ function formatDate(dateString) {
     });
 }
 
-function formatTime(timeString) {
+function formatTimeJS(timeString) {
     if (!timeString) return 'N/A';
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+    const parts = timeString.split(':');
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1];
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours}:${minutes} ${ampm}`;
 }
 
-function formatDateTime(dateTimeString) {
+function formatDateTimeJS(dateTimeString) {
     if (!dateTimeString) return 'N/A';
     const date = new Date(dateTimeString);
     return date.toLocaleString('en-US', {
@@ -919,6 +965,7 @@ function openRescheduleModal(id, currentDate, currentTime) {
 
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
+    document.body.style.overflow = 'auto';
 }
 
 // Close modal when clicking outside
@@ -944,6 +991,10 @@ document.querySelectorAll('.close').forEach(closeBtn => {
         this.closest('.modal').style.display = 'none';
     }
 });
+function calculateAgeJS(dob) {
+    const diff = Date.now() - new Date(dob).getTime();
+    return Math.abs(new Date(diff).getUTCFullYear() - 1970);
+}
 </script>
 
 </body>

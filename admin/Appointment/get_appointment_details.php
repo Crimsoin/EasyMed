@@ -21,9 +21,15 @@ try {
     // Get appointment details with all related information
     $appointment = $db->fetch("
         SELECT a.*, 
-               pu.first_name as patient_first_name, pu.last_name as patient_last_name, 
-               pu.email as patient_email, pu.phone as patient_phone, pu.profile_image as patient_image,
-               p.date_of_birth, p.gender, p.address,
+               COALESCE(pu.first_name, a.first_name) as patient_first_name, 
+               COALESCE(pu.last_name, a.last_name) as patient_last_name, 
+               COALESCE(pu.email, a.email) as patient_email, 
+               COALESCE(p.phone, pu.phone, a.phone_number) as patient_phone, 
+               pu.profile_image as patient_image,
+               COALESCE(p.date_of_birth, pu.date_of_birth) as patient_dob, 
+               COALESCE(p.gender, pu.gender) as patient_gender, 
+               COALESCE(p.address, pu.address, a.address) as patient_address,
+               pu.first_name as user_first_name, pu.last_name as user_last_name,
                du.first_name as doctor_first_name, du.last_name as doctor_last_name,
                du.email as doctor_email, du.profile_image as doctor_image,
                d.id as doctor_internal_id, d.specialty, d.license_number, d.consultation_fee, d.phone as doctor_phone

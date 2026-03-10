@@ -123,6 +123,23 @@ if ($_GET['action'] ?? '' === 'reset_password' && isset($_GET['id'])) {
             $result = $db->update('users', ['password' => $hashedPassword], 'id = ?', [$patientId]);
             if ($result > 0) {
                 $_SESSION['success'] = 'Patient password reset successfully. New password: password123';
+
+                // Send email notification to the patient
+                try {
+                    $patient = $db->fetch("SELECT first_name, last_name, email FROM users WHERE id = ?", [$patientId]);
+                    if ($patient && !empty($patient['email'])) {
+                        require_once '../../includes/email.php';
+                        $emailService = new EmailService();
+                        $emailService->sendPasswordResetNotification(
+                            $patient['email'],
+                            $patient['first_name'] . ' ' . $patient['last_name'],
+                            $defaultPassword,
+                            'patient'
+                        );
+                    }
+                } catch (Exception $emailEx) {
+                    error_log("Password reset email failed for patient {$patientId}: " . $emailEx->getMessage());
+                }
             } else {
                 $_SESSION['error'] = 'Failed to reset password - no rows affected';
             }

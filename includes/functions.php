@@ -133,16 +133,22 @@ class Auth {
             
             // Prepare data for insertion (exclude confirm_password)
             $insertData = [
-                'username' => $userData['username'],
-                'email' => $userData['email'],
-                'password' => $hashedPassword,
-                'first_name' => $userData['first_name'],
-                'last_name' => $userData['last_name'],
-                'role' => 'patient',
-                'is_active' => 1,
-                'status' => 'active',
+                'username'     => $userData['username'],
+                'email'        => $userData['email'],
+                'password'     => $hashedPassword,
+                'first_name'   => $userData['first_name'],
+                'last_name'    => $userData['last_name'],
+                'role'         => 'patient',
+                'is_active'    => 1,
+                'status'       => 'active',
                 'email_verified' => 0
             ];
+
+            // Include optional profile fields if provided
+            if (!empty($userData['phone']))         $insertData['phone']         = $userData['phone'];
+            if (!empty($userData['address']))       $insertData['address']       = $userData['address'];
+            if (!empty($userData['date_of_birth'])) $insertData['date_of_birth'] = $userData['date_of_birth'];
+            if (!empty($userData['gender']))        $insertData['gender']        = $userData['gender'];
             
             // Insert user
             $userId = $this->db->insert('users', $insertData);

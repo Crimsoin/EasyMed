@@ -31,8 +31,8 @@ if (!empty($errors)) {
 
 $db = Database::getInstance();
 
-// Insert review (default: not approved)
-try {
+// Insert review (auto-approved — no manual approval required)
+    try {
     // Ensure we have the patient's record id (patients.id) for the foreign key
     $patientRecord = $db->fetch("SELECT id FROM patients WHERE user_id = ?", [$patient_user_id]);
     if (!$patientRecord) {
@@ -55,13 +55,32 @@ try {
         $patient_id = $patientRecord['id'];
     }
 
+    // Validation: Require completed appointments
+    $completedRes = $db->fetch("SELECT COUNT(*) as cnt FROM appointments WHERE patient_id = ? AND doctor_id = ? AND status = 'completed'", [$patient_id, $doctor_id]);
+    $completedCount = $completedRes ? $completedRes['cnt'] : 0;
+
+    if ($completedCount == 0) {
+        throw new Exception("You can only review doctors you have a completed appointment with.");
+    }
+
+    // Validation: 1 review per completed appointment
+    $reviewRes = $db->fetch("SELECT COUNT(*) as cnt FROM reviews WHERE patient_id = ? AND doctor_id = ?", [$patient_id, $doctor_id]);
+    $reviewCount = $reviewRes ? $reviewRes['cnt'] : 0;
+
+    if ($reviewCount >= $completedCount) {
+        throw new Exception("You can only submit one review per completed appointment with this doctor.");
+    }
+
+    $appointment_id = isset($_POST['appointment_id']) ? intval($_POST['appointment_id']) : null;
+
     $insertData = [
         'patient_id' => $patient_id,
         'doctor_id' => $doctor_id,
+        'appointment_id' => $appointment_id,
         'rating' => $rating,
         'review_text' => $review_text,
         'is_anonymous' => $is_anonymous,
-        'is_approved' => 0,
+        'is_approved' => 1,
         'created_at' => date('Y-m-d H:i:s')
     ];
 
@@ -72,7 +91,7 @@ try {
         $db->insertData('reviews', $insertData);
     }
 
-    $_SESSION['review_success'] = 'Your review was submitted and is pending approval.';
+    $_SESSION['review_success'] = 'Your review has been submitted successfully!';
 } catch (Exception $e) {
     $_SESSION['review_errors'] = ['Failed to submit review: ' . $e->getMessage()];
 }

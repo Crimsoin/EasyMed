@@ -1,6 +1,6 @@
 <?php
 $page_title = "Doctor Management";
-$additional_css = ['admin/sidebar.css', 'admin/doctor-management.css'];
+$additional_css = ['admin/sidebar.css', 'admin/doctor-management.css', 'admin/dashboard.css', 'shared-modal.css'];
 $additional_js = ['admin/doctor-management.js'];
 require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
@@ -10,12 +10,79 @@ $auth->requireRole('admin');
 
 $db = Database::getInstance();
 
+require_once '../../includes/email.php';
+$emailService = new EmailService();
+
 // Handle actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $doctor_id = $_POST['doctor_id'] ?? '';
+    $appointment_id = $_POST['appointment_id'] ?? '';
     
-    if ($action === 'toggle_status' && $doctor_id) {
+    if ($action === 'update_status' && $appointment_id) {
+        $new_status = $_POST['status'] ?? '';
+        
+        try {
+            // Get appointment and patient details before updating
+            $appointment_details = $db->fetch("
+                SELECT a.*, 
+                       pu.first_name as patient_first_name, pu.last_name as patient_last_name, pu.email as patient_email,
+                       du.first_name as doctor_first_name, du.last_name as doctor_last_name,
+                       d.specialty, d.consultation_fee
+                FROM appointments a
+                LEFT JOIN patients p ON a.patient_id = p.id
+                LEFT JOIN users pu ON p.user_id = pu.id
+                LEFT JOIN doctors d ON a.doctor_id = d.id
+                LEFT JOIN users du ON d.user_id = du.id
+                WHERE a.id = ?
+            ", [$appointment_id]);
+            
+            // Automatically verify payment if confirmed during scheduling
+            if ($new_status === 'scheduled' && isset($_POST['verify_payment'])) {
+                $db->query("UPDATE payments SET status = 'verified', verified_by = ?, verified_at = datetime('now') WHERE appointment_id = ? AND status != 'verified'", [$_SESSION['user_id'], $appointment_id]);
+                logActivity($_SESSION['user_id'], 'confirm_payment', "Payment verified during status update for appointment #$appointment_id");
+            }
+
+            $db->query("UPDATE appointments SET status = ?, updated_at = datetime('now') WHERE id = ?", 
+                      [$new_status, $appointment_id]);
+            
+            // Send email notification based on status change
+            if ($appointment_details && $appointment_details['patient_email']) {
+                $patient_email = $appointment_details['patient_email'];
+                $patient_name = $appointment_details['patient_first_name'] . ' ' . $appointment_details['patient_last_name'];
+                $doctor_name = 'Dr. ' . $appointment_details['doctor_first_name'] . ' ' . $appointment_details['doctor_last_name'];
+                
+                $appointment_data = [
+                    'appointment_id' => $appointment_id,
+                    'patient_name' => $patient_name,
+                    'doctor_name' => $doctor_name,
+                    'specialty' => $appointment_details['specialty'],
+                    'appointment_date' => date('l, F j, Y', strtotime($appointment_details['appointment_date'])),
+                    'appointment_time' => date('h:i A', strtotime($appointment_details['appointment_time'])),
+                    'reason' => $appointment_details['reason_for_visit'] ?? 'General consultation',
+                    'fee' => number_format($appointment_details['consultation_fee'], 2)
+                ];
+                
+                switch ($new_status) {
+                    case 'scheduled':
+                        $emailService->sendAppointmentScheduled($patient_email, $patient_name, $appointment_data);
+                        break;
+                    case 'cancelled':
+                        $emailService->sendAppointmentCancelled($patient_email, $patient_name, $appointment_data);
+                        break;
+                }
+            }
+            
+            // Log activity
+            logActivity($_SESSION['user_id'], 'update_appointment', "Updated appointment #$appointment_id status to $new_status");
+            
+            $message = "Appointment status updated successfully!";
+            $message_type = 'success';
+        } catch (Exception $e) {
+            $message = "Error updating appointment status.";
+            $message_type = 'error';
+        }
+    } elseif ($action === 'toggle_status' && $doctor_id) {
         try {
             $current_status = $db->fetch("SELECT is_active FROM users WHERE id = ? AND role = 'doctor'", [$doctor_id]);
             $new_status = $current_status['is_active'] ? 0 : 1;
@@ -410,10 +477,7 @@ require_once '../../includes/header.php';
                                             >
                                                 <i class="fas fa-calendar-alt"></i>
                                             </button>
-                                            <a href="edit-doctor.php?id=<?php echo $doctor['id']; ?>" 
-                                               class="btn-action btn-edit" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
+
                                             
                                             <form method="POST" style="display: inline;">
                                                 <input type="hidden" name="action" value="toggle_status">
@@ -523,10 +587,10 @@ require_once '../../includes/header.php';
             <button onclick="closeScheduleModal()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:34px;height:34px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
         </div>
         <!-- Month Nav -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1.75rem;border-bottom:1px solid #e0e0e0;background:#fafafa;flex-shrink:0;">
-            <button onclick="changeCalMonth(-1)" style="background:#e0f7fa;border:none;color:#2563eb;padding:0.4rem 0.9rem;border-radius:8px;cursor:pointer;font-weight:600;"><i class="fas fa-chevron-left"></i></button>
-            <span id="calMonthLabel" style="font-weight:700;font-size:1.05rem;color:#333;"></span>
-            <button onclick="changeCalMonth(1)"  style="background:#e0f7fa;border:none;color:#2563eb;padding:0.4rem 0.9rem;border-radius:8px;cursor:pointer;font-weight:600;"><i class="fas fa-chevron-right"></i></button>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.75rem;border-bottom:1px solid #f1f5f9;background:#fff;flex-shrink:0;">
+            <button onclick="changeCalMonth(-1)" style="background:#f8fafc;border:1px solid #e2e8f0;color:#1e3a8a;width:38px;height:38px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"><i class="fas fa-chevron-left"></i></button>
+            <span id="calMonthLabel" style="font-weight:700;font-size:1.1rem;color:#1e293b;letter-spacing:-0.01em;"></span>
+            <button onclick="changeCalMonth(1)"  style="background:#f8fafc;border:1px solid #e2e8f0;color:#1e3a8a;width:38px;height:38px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"><i class="fas fa-chevron-right"></i></button>
         </div>
         <!-- Legend -->
         <div style="display:flex;gap:1rem;padding:0.6rem 1.75rem;background:#fafafa;border-bottom:1px solid #e0e0e0;flex-shrink:0;flex-wrap:wrap;">
@@ -548,6 +612,19 @@ require_once '../../includes/header.php';
                 <button onclick="document.getElementById('calDayDetail').style.display='none'" style="background:none;border:none;cursor:pointer;color:#999;font-size:1.1rem;">&times;</button>
             </div>
             <div id="calDayDetailBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Appointment Details Modal -->
+<div id="appointmentModal" class="modal" style="z-index: 20000;">
+    <div class="modal-content" style="max-width: 1000px; width: 95%; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-medical"></i> Appointment Overview</h3>
+            <span class="close" onclick="closeAptModal()"><i class="fas fa-times"></i></span>
+        </div>
+        <div class="modal-body" id="appointmentDetailsContent">
+            <!-- Content will be loaded via JavaScript -->
         </div>
     </div>
 </div>
@@ -645,17 +722,256 @@ function renderCalendar(data) {
     window._calApptData = appts;
 }
 
+function showAppointmentDetails(id) {
+    const detailsDiv = document.getElementById('appointmentDetailsContent');
+    const modal = document.getElementById('appointmentModal');
+    
+    detailsDiv.innerHTML = '<div style="text-align: center; padding: 3rem;"><i class="fas fa-spinner fa-spin"></i> Loading appointment details...</div>';
+    modal.style.display = 'block';
+    
+    // Fetch appointment details via AJAX (Reusing dashboard endpoint)
+    fetch(`../Dashboard/get_appointment_details.php?id=${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                detailsDiv.innerHTML = `<div style="text-align: center; padding: 2rem; color: #e74c3c;"><i class="fas fa-exclamation-triangle"></i> Error: ${data.error}</div>`;
+                return;
+            }
+            
+            const appointment = data.appointment;
+            const payment = data.payment;
+            const patientInfo = data.patient_info;
+            
+            const pFN = appointment.patient_first_name || 'P';
+            const pLN = appointment.patient_last_name || '';
+            const initials = (pFN.charAt(0) + (pLN ? pLN.charAt(0) : '')).toUpperCase();
+            
+            detailsDiv.innerHTML = `
+                <div class="appointment-details-premium" style="background: #fdfdfd; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                    
+                    <!-- 1. Patient Hero Banner -->
+                    <div style="background: white; border-bottom: 1px solid #edf2f7; padding: 32px 40px; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 24px;">
+                            <div style="width: 72px; height: 72px; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.75rem; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.15);">
+                                ${initials}
+                            </div>
+                            <div>
+                                <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; margin: 0; letter-spacing: -0.04em;">${appointment.patient_first_name} ${appointment.patient_last_name}</h1>
+                                <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
+                                    <span style="color: #64748b; font-size: 0.95rem; font-weight: 600;">ID: <span style="color: #2563eb; font-weight: 700;">#APT-${appointment.id.toString().padStart(5, '0')}</span></span>
+                                    <span style="width: 4px; height: 4px; background: #cbd5e1; border-radius: 50%;"></span>
+                                    <span class="status-badge status-${appointment.status}" style="font-size: 0.8rem; padding: 4px 12px; border-radius: 6px; font-weight: 800; letter-spacing: 0.05em;">${appointment.status.toUpperCase()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="padding: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px;">
+                        
+                        <!-- 2. Appointment Schedule Card -->
+                        <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-calendar-alt" style="color: white; font-size: 0.9rem;"></i> Core Schedule
+                            </h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Date</label>
+                                    <div style="font-size: 1rem; font-weight: 600; color: #1e293b;">${formatDateJS(appointment.appointment_date)}</div>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Time Slot</label>
+                                    <div style="font-size: 1rem; font-weight: 600; color: #1e293b;">${fmtT(appointment.appointment_time)}</div>
+                                </div>
+                                <div style="grid-column: span 2;">
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Service Requested</label>
+                                    <div style="font-size: 1rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-stethoscope" style="color: #cbd5e1; font-size: 0.9rem;"></i>
+                                        ${appointment.purpose === 'consultation' ? 'Medical Consultation' : appointment.purpose}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Expert Consultation Card -->
+                        <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-user-md" style="color: white; font-size: 0.9rem;"></i> Medical Expert
+                            </h3>
+                            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                                <div style="width: 52px; height: 52px; background: #f8fafc; border: 1px solid #e2e8f0; color: #2563eb; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+                                    ${appointment.doctor_first_name[0]}${appointment.doctor_last_name[0]}
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">Dr. ${appointment.doctor_first_name} ${appointment.doctor_last_name}</div>
+                                    <div style="font-size: 0.85rem; font-weight: 600; color: #2563eb; text-transform: uppercase; letter-spacing: 0.05em;">${appointment.specialty}</div>
+                                </div>
+                            </div>
+                            <div style="padding-top: 16px; border-top: 1px dashed #e2e8f0; display: flex; justify-content: space-between;">
+                                <div>
+                                    <label style="display: block; font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">License</label>
+                                    <span style="font-size: 0.9rem; font-weight: 600; color: #1e293b;">${appointment.license_number || 'N/A'}</span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <label style="display: block; font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Professional Fee</label>
+                                    <span style="font-size: 1rem; font-weight: 800; color: #0f172a;">₱${parseFloat(appointment.display_fee || appointment.consultation_fee || 0).toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Patient Profile Card -->
+                        <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-info-circle" style="color: white; font-size: 0.9rem;"></i> Information Details
+                            </h3>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;">
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Relationship</label>
+                                    <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b; text-transform: capitalize;">${appointment.relationship || 'Self'}</div>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Age Group</label>
+                                    <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b;">${calculateAgeJS(appointment.date_of_birth)} Years</div>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Gender</label>
+                                    <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b; text-transform: capitalize;">${appointment.gender || 'N/A'}</div>
+                                </div>
+                                <div style="grid-column: span 3; padding-top: 16px; border-top: 1px solid #f1f5f9; display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 32px;">
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Email Address</label>
+                                        <div style="font-size: 0.9rem; color: #475569;">${appointment.patient_email || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Phone Contact</label>
+                                        <div style="font-size: 0.9rem; color: #475569;">${appointment.patient_phone || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Home Address</label>
+                                        <div style="font-size: 0.9rem; color: #475569; line-height: 1.5;">${appointment.address || 'N/A'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Transaction Summary Card -->
+                        <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-receipt" style="color: white; font-size: 0.9rem;"></i> Payment Summary
+                            </h3>
+                            <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                    <span style="font-weight: 700; color: #64748b; font-size: 0.8rem; text-transform: uppercase;">Amount Recieved</span>
+                                    <span style="font-size: 1.5rem; font-weight: 900; color: #059669;">₱${payment ? parseFloat(payment.amount).toFixed(2) : '0.00'}</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+                                    <div>
+                                        <label style="display: block; font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Status</label>
+                                        <span class="status-badge status-${payment ? payment.status : 'pending'}" style="font-weight: 800; font-size: 0.75rem;">${payment ? payment.status.toUpperCase() : 'PENDING'}</span>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <label style="display: block; font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">GCash Ref</label>
+                                        <span style="font-size: 0.95rem; font-weight: 700; color: #2563eb; font-family: monospace;">${payment ? payment.gcash_reference : 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. Proof of Payment (Half Width) -->
+                        ${payment && payment.receipt_path ? `
+                        <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;">
+                                <i class="fas fa-search-dollar" style="color: white; margin-right: 10px;"></i> Evidence of Transaction
+                            </h3>
+                            <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 32px; text-align: center;">
+                                <img src="../../${payment.receipt_path}" alt="Receipt" style="max-width: 100%; max-height: 500px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); cursor: pointer;" onclick="window.open('../../${payment.receipt_path}', '_blank')">
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <!-- 7. Observations Card (Full Width) -->
+                        <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-file-medical-alt" style="color: white; font-size: 0.9rem;"></i> Clinical Records
+                            </h3>
+                            <div style="display: flex; flex-direction: column; gap: 20px;">
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Reason for Visit</label>
+                                    <div style="font-size: 0.95rem; color: #1e293b; font-weight: 500; line-height: 1.5;">${appointment.illness || 'General Consultation'}</div>
+                                </div>
+                                <div style="background: #eff6ff; border: 1px solid #dbeafe; border-radius: 12px; padding: 16px;">
+                                    <label style="display: block; font-size: 0.75rem; color: #2563eb; font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">Doctor's Findings</label>
+                                    <div style="font-size: 0.95rem; color: #1e40af; line-height: 1.6; font-weight: 600; font-style: italic;">
+                                        ${appointment.notes || '"No records available yet."'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div> <!-- End of Card Grid -->
+
+                    <!-- Modal Actions Footer -->
+                    ${appointment.status === 'pending' ? `
+                    <div style="margin-top: 32px; padding: 24px 40px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; background: #f8fafc; border-radius: 0 0 20px 20px;">
+                        <form method="POST" style="display: flex; align-items: center; gap: 24px;" onsubmit="return confirm('Confirm marking this appointment as Scheduled?')">
+                            <input type="hidden" name="action" value="update_status">
+                            <input type="hidden" name="appointment_id" value="${appointment.id}">
+                            <input type="hidden" name="status" value="scheduled">
+                            
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 18px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer;">
+                                <input type="checkbox" id="verify_payment" name="verify_payment" value="1" style="width: 18px; height: 18px; cursor: pointer;" 
+                                    onchange="this.form.querySelector('button').disabled = !this.checked; this.form.querySelector('button').style.opacity = this.checked ? '1' : '0.5'; this.form.querySelector('button').style.cursor = this.checked ? 'pointer' : 'not-allowed';">
+                                <label for="verify_payment" style="font-size: 0.9rem; font-weight: 700; color: #475569; cursor: pointer; user-select: none;">Payment Verified</label>
+                            </div>
+
+                            <button type="submit" class="modal-btn" 
+                                disabled style="opacity: 0.5; cursor: not-allowed; padding: 12px 28px; font-size: 0.95rem; font-weight: 800; border-radius: 12px; display: flex; align-items: center; gap: 10px; border: none; background: #2563eb; color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15); transition: all 0.2s;">
+                                <i class="fas fa-calendar-check"></i> Mark Scheduled
+                            </button>
+                        </form>
+                    </div>
+                    ` : `
+                    <div style="margin-top: 32px; padding: 24px 40px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; background: #f8fafc; border-radius: 0 0 20px 20px;">
+                        <button type="button" class="modal-btn" onclick="closeAptModal()" style="padding: 10px 24px; font-size: 0.9rem; font-weight: 700; border-radius: 10px; border: 1px solid #e2e8f0; background: white; color: #64748b; cursor: pointer;">Close</button>
+                    </div>
+                    `}
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error fetching appointment details:', error);
+            detailsDiv.innerHTML = '<div style="text-align: center; padding: 2rem; color: #e74c3c;"><i class="fas fa-exclamation-triangle"></i> Error loading appointment details. Please try again.</div>';
+        });
+}
+
+function closeAptModal() {
+    document.getElementById('appointmentModal').style.display = 'none';
+    if (document.getElementById('scheduleModal').style.display !== 'flex') {
+        document.body.style.overflow = 'auto';
+    }
+}
+
+function formatDateJS(dateStr) {
+    return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function calculateAgeJS(dob) {
+    const diff = Date.now() - new Date(dob).getTime();
+    return Math.abs(new Date(diff).getUTCFullYear() - 1970);
+}
+
 function showDayDetail(dateStr, d) {
     const appts = (window._calApptData||{})[dateStr]||[];
     document.getElementById('calDayDetailTitle').textContent = `${_MONTHS[_calMonth-1]} ${d}, ${_calYear} — ${appts.length} appointment${appts.length!==1?'s':''}`;
     let html='';
     appts.forEach(a => {
         const col = _STATUS_COL[a.status]||'#999';
-        html += `<div class="cal-appt-row">
+        const aptData = JSON.stringify(a).replace(/'/g, "&apos;");
+        html += `<div class="cal-appt-row" onclick='showAppointmentDetails(${a.id})' style="cursor:pointer; transition: transform 0.2s;">
             <span class="cal-dot" style="background:${col};width:10px;height:10px;"></span>
             <span style="font-weight:600;color:#333;min-width:65px;">${fmtT(a.appointment_time)}</span>
             <span style="color:#444;flex:1;">${a.patient_name||'Unknown'}</span>
             <span style="font-size:0.73rem;color:#fff;background:${col};padding:2px 8px;border-radius:10px;white-space:nowrap;">${a.status.replace('_',' ')}</span>
+            <i class="fas fa-chevron-right" style="color:#ccc; font-size:0.8rem;"></i>
         </div>`;
     });
     document.getElementById('calDayDetailBody').innerHTML = html;

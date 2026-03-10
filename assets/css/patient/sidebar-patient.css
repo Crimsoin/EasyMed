@@ -166,7 +166,7 @@
 .stat-item {
     text-align: center;
     padding: 1.5rem;
-    background: linear-gradient(135deg, var(--light-cyan), var(--primary-cyan));
+    background: var(--primary-cyan);
     border-radius: 12px;
     color: white;
     box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
@@ -325,7 +325,7 @@
 .action-icon {
     width: 60px;
     height: 60px;
-    background: linear-gradient(135deg, var(--light-cyan), var(--primary-cyan));
+    background: var(--primary-cyan);
     border-radius: 50%;
     display: flex;
     align-items: center;

@@ -3,7 +3,7 @@ require_once '../includes/config.php';
 require_once '../includes/database.php';
 require_once '../includes/functions.php';
 
-$additional_css = ['patient/sidebar-patient.css', 'patient/dashboard-patient.css'];
+$additional_css = ['patient/sidebar-patient.css', 'patient/dashboard-patient.css', 'shared-modal.css'];
 
 // Require login as patient
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'patient') {
@@ -14,19 +14,62 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'patient') {
 $db = Database::getInstance();
 $patient_user_id = $_SESSION['user_id'];
 
-// Fetch list of doctors for the review form
-$doctors = $db->fetchAll("SELECT d.id, u.first_name, u.last_name, d.specialty FROM doctors d JOIN users u ON d.user_id = u.id ORDER BY u.last_name, u.first_name");
+// Get the patient ID for the current user
+$patientData = $db->fetch("SELECT id FROM patients WHERE user_id = ?", [$patient_user_id]);
+$patient_id = $patientData ? $patientData['id'] : 0;
 
-// Fetch current patient's reviews (by users.id)
+// Fetch list of doctors the patient has completed appointments with
+$doctors = $db->fetchAll("
+    SELECT DISTINCT d.id, u.first_name, u.last_name, d.specialty 
+    FROM doctors d 
+    JOIN users u ON d.user_id = u.id 
+    JOIN appointments a ON a.doctor_id = d.id
+    WHERE a.patient_id = ? AND a.status = 'completed'
+    ORDER BY u.last_name, u.first_name
+", [$patient_id]);
+
+// Fetch current patient's reviews (by patients.id)
 $reviews = $db->fetchAll(
-    "SELECT r.*, d.id as doctor_id, u.first_name as doctor_first_name, u.last_name as doctor_last_name
+    "SELECT r.*, d.id as doctor_id, u.first_name as doctor_first_name, u.last_name as doctor_last_name, d.specialty, a.appointment_date
      FROM reviews r
      LEFT JOIN doctors d ON r.doctor_id = d.id
      LEFT JOIN users u ON d.user_id = u.id
+     LEFT JOIN appointments a ON r.appointment_id = a.id
      WHERE r.patient_id = ?
      ORDER BY r.created_at DESC",
-    [$patient_user_id]
+    [$patient_id]
 );
+
+// Fetch recent completed appointments that need reviews with full details
+$unreviewed_appointments = $db->fetchAll("
+    SELECT 
+        a.id, a.appointment_date, a.appointment_time, a.patient_info, a.status, a.created_at, a.doctor_id,
+        u.first_name as dr_first_name, u.last_name as dr_last_name, 
+        d.specialty, d.consultation_fee,
+        p.amount as payment_amount
+    FROM appointments a
+    JOIN doctors d ON a.doctor_id = d.id
+    JOIN users u ON d.user_id = u.id
+    LEFT JOIN reviews r ON r.appointment_id = a.id
+    LEFT JOIN payments p ON a.id = p.appointment_id
+    WHERE a.patient_id = ? AND a.status = 'completed' AND r.id IS NULL
+    ORDER BY a.appointment_date DESC, a.appointment_time DESC
+", [$patient_id]);
+
+// Calculate fees for unreviewed appointments
+foreach ($unreviewed_appointments as &$apt) {
+    $p_info = json_decode($apt['patient_info'], true) ?? [];
+    $purpose = $p_info['purpose'] ?? 'consultation';
+    
+    $apt['display_fee'] = $apt['consultation_fee'];
+    $apt['fee_label'] = 'Consultation Fee';
+    
+    if ($purpose === 'laboratory' && !empty($apt['payment_amount'])) {
+        $apt['display_fee'] = $apt['payment_amount'];
+        $apt['fee_label'] = 'Laboratory Fee';
+    }
+}
+unset($apt);
 
 // Pull flash messages
 $success = $_SESSION['review_success'] ?? null;
@@ -42,303 +85,244 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
     <title>My Feedbacks - EasyMed</title>
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css">
     <style>
-        /* Container & Grid */
-        .reviews-container {
-            /* occupy full width of the content column so it aligns with .content-header */
-            width: 100%;
-            max-width: none;
-            margin: 0; /* layout spacing follows surrounding content */
-            padding: 24px;
+        /* Premium Card Layout for Feedbacks */
+        .appointments-container { width: 100%; max-width: none; margin: 0; padding: 24px 0; }
+        .appointments-grid { display: flex; flex-direction: column; gap: 16px; }
+        .appointment-card {
+            background: #fff; border-radius: 16px; overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.06);
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative; display: flex; flex-direction: row; align-items: center;
         }
-        .reviews-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 420px; 
-            gap: 32px; 
+        .appointment-card:hover { transform: translateX(5px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-color: #3b82f6; }
+        .status-indicator { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #10b981; }
+        
+        .card-header { padding: 24px; display: flex; flex-direction: column; width: 280px; flex-shrink: 0; justify-content: center; }
+        .doctor-meta h3 { font-size: 1.15rem; font-weight: 800; color: #1e293b; margin: 0 0 6px 0; }
+        .specialty-pill {
+            display: inline-block; padding: 4px 12px; background: #eff6ff; color: #3b82f6;
+            border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.5px; width: fit-content;
+        }
+        .appointment-id {
+            margin-top: 10px; font-size: 0.7rem; font-weight: 700; color: #94a3b8;
+            background: #f8fafc; padding: 4px 10px; border-radius: 6px; width: fit-content;
         }
         
-        /* Reviews List */
-        .reviews-list { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 20px; 
+        .card-body {
+            padding: 20px 24px; flex-grow: 1; display: flex; align-items: center; gap: 24px;
+            border-left: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9;
         }
-        .review-card { 
-            background: #fff; 
-            padding: 24px; 
-            border-radius: 16px; 
-            box-shadow: 0 8px 32px rgba(0,0,0,0.08); 
-            border: 1px solid rgba(0,0,0,0.06);
+        .info-grid { display: flex; gap: 24px; margin-bottom: 0; flex-grow: 1; }
+        .info-item { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 100px; }
+        .info-label { font-size: 0.65rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-value { font-size: 0.9rem; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+        .info-value i { color: #cbd5e1; font-size: 0.8rem; }
+        
+        .card-footer { padding: 24px; display: flex; flex-direction: column; width: 220px; flex-shrink: 0; gap: 12px; align-items: stretch; }
+        .status-pill {
+            padding: 6px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            text-transform: uppercase; background: #ecfdf5; color: #047857;
+        }
+        .btn-review-main {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white; border: none; padding: 10px; border-radius: 10px;
+            font-weight: 700; font-size: 0.85rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); transition: all 0.3s ease;
+        }
+        .btn-review-main:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(37, 99, 235, 0.3); color: white; }
+
+        .no-appointments { 
+            text-align: center; padding: 60px 40px; color: #64748b; background: #fff;
+            border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; align-items: center; gap: 15px; border: 1px solid #f1f5f9;
+        }
+        .no-appointments i { font-size: 3rem; color: #cbd5e1; }
+
+        @media (max-width: 1200px) {
+            .appointment-card { flex-direction: column; align-items: stretch; }
+            .card-header, .card-footer { width: 100%; }
+            .card-body { flex-direction: column; align-items: stretch; border: none; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; }
+        }
+
+        /* Premium Modal Overhaul */
+        .feedback-modal-content { 
+            max-width: 550px !important; 
+            border: none !important;
+            padding: 0 !important;
+            overflow: hidden;
+            border-radius: 24px !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            padding: 32px 40px !important;
+            color: white !important;
+            position: relative;
+            border: none !important;
+        }
+        .modal-header h3 {
+            font-size: 1.5rem !important;
+            font-weight: 800 !important;
+            margin: 0 !important;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white !important;
+        }
+        .modal-header h3 i { 
+            background: rgba(255, 255, 255, 0.2);
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+        .close-modal {
+            color: rgba(255, 255, 255, 0.8) !important;
+            font-size: 28px !important;
+            transition: all 0.2s ease;
+        }
+        .close-modal:hover { color: white !important; transform: rotate(90deg); }
+
+        .modal-body { padding: 40px !important; }
+        
+        .modal-dr-info {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .modal-dr-icon {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3b82f6;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .rating-widget {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 16px;
+            border: 2px solid #f1f5f9;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 10px 0 30px 0;
             transition: all 0.3s ease;
         }
-        .review-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
-        }
-        .review-header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 12px; 
-        }
-        .doctor-name { 
-            font-weight: 700; 
-            font-size: 18px;
-            color: #1a1a1a;
-        }
-        .rating { 
-            font-weight: 800; 
-            color: #ffb400; 
-            font-size: 16px;
-        }
-        .review-text { 
-            color: #333; 
-            margin-top: 12px; 
-            line-height: 1.6;
-        }
-        .review-meta { 
-            color: #777; 
-            font-size: 13px; 
-            margin-top: 16px; 
-            padding-top: 12px;
-            border-top: 1px solid rgba(0,0,0,0.06);
-        }
-
-        /* Review Form */
-        .review-form { 
-            background: #fff;
-            padding: 32px; 
-            border-radius: 16px; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
-            border: 1px solid #e9ecef;
-            position: sticky;
-            top: 20px;
-        }
-        .review-form h3 {
-            margin: 0 0 28px 0;
-            color: #1a1a1a;
-            font-size: 22px;
-            font-weight: 700;
-            text-align: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .review-form h3::before {
-            content: '✨';
-            font-size: 24px;
-        }
+        .rating-widget:hover { border-color: #3b82f6; background: white; }
         
-        .form-group { 
-            margin-bottom: 24px; 
-        }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 10px; 
-            color: #2d3748; 
-            font-weight: 600; 
-            font-size: 15px;
-        }
-        
-        /* Form Controls */
-        .form-group select, 
-        .form-group textarea, 
-        .form-group input[type="number"] { 
-            width: 100%; 
-            padding: 14px 18px; 
-            border: 2px solid #e2e8f0; 
-            border-radius: 10px; 
-            font-size: 15px;
-            transition: all 0.2s ease;
-            background: #fafbfc;
-            box-sizing: border-box;
-            font-family: inherit;
-        }
-        .form-group select:focus, 
-        .form-group textarea:focus, 
-        .form-group input[type="number"]:focus { 
-            outline: none;
-            border-color: #2563eb;
-            background: #fff;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-        }
-        
-        .form-group textarea { 
-            min-height: 130px; 
-            resize: vertical; 
-            line-height: 1.6;
-        }
-        .form-group textarea::placeholder {
-            color: #a0aec0;
-        }
-
-        /* Star Rating */
-        .star-rating {
-            display: flex;
-            gap: 6px;
-            margin: 12px 0;
-            justify-content: center;
-            padding: 12px 0;
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border-radius: 12px;
-        }
-        .star {
-            font-size: 32px;
-            color: #e2e8f0;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .star:hover {
-            transform: scale(1.15);
-        }
-        .star.active {
-            color: #fbbf24;
-            animation: starPulse 0.3s ease;
-        }
-        @keyframes starPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-        }
-        
-        /* Hidden number input for rating */
-        .form-group input[type="number"].rating-input {
-            display: none;
-        }
-
-        /* Checkbox */
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin: 20px 0;
-            padding: 14px;
-            background: #f7fafc;
-            border-radius: 10px;
-            border: 1px solid #e2e8f0;
-        }
-        .checkbox-group input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            accent-color: #2563eb;
-        }
-        .checkbox-group label {
-            margin: 0;
-            cursor: pointer;
-            font-size: 14px;
-            color: #4a5568;
-            font-weight: 500;
-        }
-
-        /* Buttons */
-        .form-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 28px;
-        }
-        .btn { 
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 16px 28px; 
-            border-radius: 10px; 
-            font-weight: 600;
-            font-size: 15px;
-            text-decoration: none; 
-            border: none; 
+        .star-box { 
+            font-size: 32px; 
+            color: #e2e8f0; 
             cursor: pointer; 
-            transition: all 0.2s ease;
-            text-align: center;
-            flex: 1;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
-            color: #fff;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
-        }
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-        .btn-secondary { 
-            background: #fff;
-            color: #64748b;
-            border: 2px solid #e2e8f0;
-        }
-        .btn-secondary:hover {
-            background: #f8fafc;
-            border-color: #cbd5e1;
-        }
+        .star-box.active { color: #fbbf24; transform: scale(1.1); }
+        .star-box:hover { transform: scale(1.2); }
 
-        /* Messages */
-        .success-message {
-            background: linear-gradient(135deg, #dcfce7 0%, #c3e6cb 100%);
-            color: #155724;
-            padding: 16px 20px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            border: 1px solid #c3e6cb;
-            box-shadow: 0 4px 12px rgba(21, 87, 36, 0.1);
-        }
-        .error-message {
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            color: #721c24;
-            padding: 16px 20px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            border: 1px solid #f5c6cb;
-            box-shadow: 0 4px 12px rgba(114, 28, 36, 0.1);
-        }
-
-        /* No appointments message */
-        .no-appointments {
-            text-align: center;
-            padding: 60px 40px;
-            background: #f8f9fa;
-            border-radius: 16px;
-            color: #6c757d;
-        }
-        .no-appointments h3 {
-            color: #495057;
-            margin-bottom: 12px;
-        }
-
-        /* Centering when there are no reviews */
-        .reviews-grid.single-center {
-            grid-template-columns: 1fr; /* single column */
-            justify-items: center; /* center aside/form */
-        }
-
-        .reviews-grid.single-center .review-form {
-            position: static; /* don't stick */
-            max-width: 700px;
+        .btn-submit {
             width: 100%;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 18px;
+            border-radius: 16px;
+            border: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2);
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            transition: all 0.3s ease;
+        }
+        .btn-submit:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 15px 35px rgba(37, 99, 235, 0.3);
         }
 
-        /* Responsive */
-        @media (max-width: 1000px) {
-            .reviews-grid { 
-                grid-template-columns: 1fr; 
-            }
-            .review-form {
-                position: static;
-            }
+        .modal-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 30px;
         }
-        @media (max-width: 600px) {
-            .reviews-container {
-                padding: 16px;
-            }
-            .review-form {
-                padding: 20px;
-            }
-            .form-actions {
-                flex-direction: column;
-            }
+        .modal-checkbox:hover { background: #f1f5f9; }
+        .modal-checkbox input { 
+            width: 20px; 
+            height: 20px; 
+            margin: 0;
+            accent-color: #3b82f6; 
+            cursor: pointer;
+        }
+        .modal-checkbox span { 
+            font-size: 0.95rem; 
+            color: #475569; 
+            font-weight: 600; 
+        }
+
+        /* Existing styles below */
+        .reviews-container { width: 100%; max-width: none; margin: 0; padding: 0; }
+        .reviews-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 380px; 
+            gap: 40px; 
+            align-items: start;
+        }
+        .reviews-main { display: flex; flex-direction: column; gap: 24px; }
+        .reviews-group-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .reviews-group-title i { color: #3b82f6; }
+        .review-card { background: white; padding: 28px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; transition: all 0.3s ease; position: relative; overflow: hidden; }
+        .review-card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); border-color: #3b82f6; }
+        .review-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #cbd5e1; transition: background 0.3s ease; }
+        .review-card:hover::before { background: #3b82f6; }
+        .review-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+        .doctor-meta h4 { margin: 0; color: #1e293b; font-size: 1.15rem; font-weight: 800; }
+        .doctor-meta p { margin: 4px 0 0 0; color: #64748b; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .rating-display { display: flex; align-items: center; gap: 4px; background: #fef3c7; padding: 6px 12px; border-radius: 10px; color: #b45309; font-weight: 800; font-size: 0.9rem; }
+        .rating-display i { color: #fbbf24; }
+        .review-content { color: #334155; font-size: 1rem; line-height: 1.6; margin: 0; font-weight: 500; }
+        .review-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9; color: #94a3b8; font-size: 0.8rem; font-weight: 600; }
+        .review-date { display: flex; align-items: center; gap: 6px; }
+        .anon-badge { background: #f1f5f9; padding: 4px 10px; border-radius: 6px; color: #64748b; }
+        .msg { padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; font-weight: 600; }
+        .msg-success { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+        .msg-error { background: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; }
+        .empty-state { text-align: center; padding: 80px 40px; background: white; border-radius: 20px; border: 2px dashed #e2e8f0; color: #94a3b8; }
+        .empty-state i { font-size: 4rem; margin-bottom: 20px; color: #cbd5e1; }
+        .empty-state h3 { color: #1e293b; margin: 0 0 10px 0; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #64748b; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-control { width: 100%; padding: 14px 16px; border: 2px solid #f1f5f9; border-radius: 12px; font-size: 0.95rem; background: #f8fafc; color: #1e293b; font-weight: 500; font-family: inherit; box-sizing: border-box; }
+        .form-control:focus { outline: none; border-color: #3b82f6; background: white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        textarea.form-control { min-height: 120px; resize: none; }
+        .checkbox-container { display: flex; align-items: center; gap: 10px; padding: 12px; background: #f8fafc; border-radius: 10px; cursor: pointer; }
+        .checkbox-container input { width: 18px; height: 18px; accent-color: #3b82f6; }
+        .checkbox-container label { margin: 0; cursor: pointer; font-size: 0.85rem; color: #475569; font-weight: 600; }
+
+        @media (max-width: 1024px) {
+            .reviews-grid { grid-template-columns: 1fr; }
+            .sidebar-appointments { position: static; }
         }
     </style>
 </head>
@@ -380,110 +364,192 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
 
             <div class="reviews-container">
                 <?php if ($success): ?>
-                    <div class="success-message"><?= htmlspecialchars($success) ?></div>
+                    <div class="msg msg-success"><i class="fas fa-check-circle"></i> <?= htmlspecialchars($success) ?></div>
                 <?php endif; ?>
                 <?php if (!empty($errors)): ?>
-                    <div class="error-message">
+                    <div class="msg msg-error">
+                        <i class="fas fa-exclamation-triangle"></i>
                         <?php foreach ($errors as $err) echo '<div>' . htmlspecialchars($err) . '</div>'; ?>
                     </div>
                 <?php endif; ?>
 
-                <div class="reviews-grid<?php if (empty($reviews)) echo ' single-center'; ?>">
-                    <?php if (!empty($reviews)): ?>
-                    <div class="reviews-list">
-                        <?php foreach ($reviews as $r): ?>
-                            <div class="review-card">
-                                <div class="review-header">
-                                    <div class="doctor-name">Dr. <?= htmlspecialchars($r['doctor_first_name'] . ' ' . $r['doctor_last_name']) ?></div>
-                                    <div class="rating"><?= intval($r['rating']) ?> / 5</div>
+                <div class="appointments-container">
+                    <?php if (empty($unreviewed_appointments)): ?>
+                        <div class="no-appointments">
+                            <i class="fas fa-check-circle"></i>
+                            <h3>All Caught Up!</h3>
+                            <p>You have no recent completed appointments waiting for a review.</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="appointments-grid">
+                            <?php foreach ($unreviewed_appointments as $apt): 
+                                $p_info = json_decode($apt['patient_info'], true) ?? [];
+                                $purpose = $p_info['purpose'] ?? 'consultation';
+                                $reference_number = $p_info['reference_number'] ?? ('APT-' . $apt['id']);
+                            ?>
+                                <div class="appointment-card">
+                                    <div class="status-indicator"></div>
+                                    
+                                    <div class="card-header">
+                                        <div class="doctor-meta">
+                                            <h3>Dr. <?= htmlspecialchars($apt['dr_first_name'] . ' ' . $apt['dr_last_name']) ?></h3>
+                                            <span class="specialty-pill"><?= htmlspecialchars($apt['specialty']) ?></span>
+                                        </div>
+                                        <div class="appointment-id">
+                                            REF: <?= htmlspecialchars($reference_number) ?>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-body">
+                                        <div class="info-grid">
+                                            <div class="info-item">
+                                                <span class="info-label">Date</span>
+                                                <span class="info-value"><i class="far fa-calendar-alt"></i> <?= date('M j, Y', strtotime($apt['appointment_date'])) ?></span>
+                                            </div>
+                                            <div class="info-item">
+                                                <span class="info-label">Time</span>
+                                                <span class="info-value"><i class="far fa-clock"></i> <?= date('g:i A', strtotime($apt['appointment_time'])) ?></span>
+                                            </div>
+                                            <div class="info-item">
+                                                <span class="info-label">Service Type</span>
+                                                <span class="info-value"><i class="fas fa-stethoscope"></i> <?= ucfirst($purpose) ?></span>
+                                            </div>
+                                            <div class="info-item">
+                                                <span class="info-label"><?= htmlspecialchars($apt['fee_label']) ?></span>
+                                                <span class="info-value"><i class="fas fa-tag"></i> ₱<?= number_format($apt['display_fee'], 2) ?></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-footer">
+                                        <div class="status-pill">
+                                            <i class="fas fa-check-double"></i> COMPLETED
+                                        </div>
+                                        <button class="btn-review-main" onclick='openFeedbackModal(<?= htmlspecialchars(json_encode([
+                                            "apt_id" => $apt['id'],
+                                            "dr_id" => $apt['doctor_id'],
+                                            "dr_name" => "Dr. " . $apt['dr_first_name'] . " " . $apt['dr_last_name'],
+                                            "dr_spec" => $apt['specialty']
+                                        ])) ?>)'>
+                                            <i class="fas fa-star-half-alt"></i> Review Service
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="review-text"><?= nl2br(htmlspecialchars($r['review_text'])) ?></div>
-                                <div class="review-meta">Submitted: <?= date('M j, Y g:i A', strtotime($r['created_at'])) ?> <?php if ($r['is_anonymous']) echo '• Anonymous'; ?> <?php if ($r['is_approved'] == 0) echo '• Pending approval'; ?></div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
+                            <?php endforeach; ?>
+                        </div>
                     <?php endif; ?>
 
-                    <aside>
-                        <div class="review-form">
-                            <h3>Submit a Feedback</h3>
-                            <form action="process_feedback.php" method="post">
-                                <div class="form-group">
-                                    <label for="doctor_id">Select Doctor</label>
-                                    <select name="doctor_id" id="doctor_id" required>
-                                        <option value="">Choose a doctor to review...</option>
-                                        <?php foreach ($doctors as $doc): ?>
-                                            <option value="<?= htmlspecialchars($doc['id']) ?>">Dr. <?= htmlspecialchars($doc['first_name'] . ' ' . $doc['last_name']) ?> — <?= htmlspecialchars($doc['specialty']) ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Rating</label>
-                                    <div class="star-rating" id="starRating">
-                                        <span class="star" data-rating="1">★</span>
-                                        <span class="star" data-rating="2">★</span>
-                                        <span class="star" data-rating="3">★</span>
-                                        <span class="star" data-rating="4">★</span>
-                                        <span class="star" data-rating="5">★</span>
-                                    </div>
-                                    <input type="number" name="rating" id="rating" min="1" max="5" value="5" class="rating-input" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="review_text">Your Experience</label>
-                                    <textarea name="review_text" id="review_text" placeholder="Share your experience with this doctor..."></textarea>
-                                </div>
-
-                                <div class="checkbox-group">
-                                    <input type="checkbox" name="is_anonymous" id="is_anonymous" value="1">
-                                    <label for="is_anonymous">Submit anonymously</label>
-                                </div>
-
-                                <div class="form-actions">
-                                    <button class="btn btn-primary" type="submit">
-                                        <i class="fas fa-paper-plane"></i>
-                                        Submit Feedback
-                                    </button>
-                                    <a href="feedbacks.php" class="btn btn-secondary">
-                                        <i class="fas fa-redo"></i>
-                                        Clear Form
-                                    </a>
-                                </div>
-                            </form>
+                    <!-- Review History Section -->
+                    <div style="margin-top: 60px;">
+                        <div class="reviews-group-title" style="margin-bottom: 24px;">
+                            <i class="fas fa-history"></i> Your Review History
                         </div>
-                    </aside>
+                        
+                        <?php if (empty($reviews)): ?>
+                            <div class="no-appointments" style="padding: 40px; background: white; border: 1px dashed #e2e8f0; box-shadow: none;">
+                                <i class="fas fa-comment-slash" style="font-size: 2rem; color: #cbd5e1;"></i>
+                                <p style="font-size: 0.95rem; margin-top: 10px;">No review history found. Your submitted reviews will appear here.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="reviews-main">
+                                <?php foreach ($reviews as $r): ?>
+                                    <div class="review-card">
+                                        <div class="review-header">
+                                            <div class="doctor-meta">
+                                                <h4>Dr. <?= htmlspecialchars($r['doctor_first_name'] . ' ' . $r['doctor_last_name']) ?></h4>
+                                                <p><?= htmlspecialchars($r['specialty'] ?? 'Medical Professional') ?></p>
+                                            </div>
+                                            <div class="rating-display">
+                                                <i class="fas fa-star"></i>
+                                                <?= intval($r['rating']) ?>.0
+                                            </div>
+                                        </div>
+                                        <p class="review-content"><?= nl2br(htmlspecialchars($r['review_text'])) ?></p>
+                                        <div class="review-footer">
+                                            <div class="review-date">
+                                                <i class="fas fa-calendar-check"></i>
+                                                <?php if ($r['appointment_date']): ?>
+                                                    Appt: <?= date('M j, Y', strtotime($r['appointment_date'])) ?>
+                                                <?php else: ?>
+                                                    Reviewed: <?= date('M j, Y', strtotime($r['created_at'])) ?>
+                                                <?php endif; ?>
+                                            </div>
+                                            <?php if ($r['is_anonymous']): ?>
+                                                <span class="anon-badge"><i class="fas fa-user-secret"></i> Anonymous Review</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
 
         </div>
     </div>
 
+    <!-- Feedback Submission Modal -->
+    <div id="feedbackModal" class="modal">
+        <div class="modal-content feedback-modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-feather-alt"></i> Share Experience</h3>
+                <span class="close-modal" onclick="closeFeedbackModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="modal-dr-info">
+                    <div class="modal-dr-icon">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div>
+                        <h4 id="modalDrName" style="margin: 0; color: #1e293b; font-size: 1.15rem; font-weight: 800;"></h4>
+                        <p id="modalDrSpec" style="margin: 4px 0 0 0; color: #64748b; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;"></p>
+                    </div>
+                </div>
+
+                <form action="process_feedback.php" method="post" id="feedbackForm">
+                    <input type="hidden" name="appointment_id" id="modalAptId">
+                    <input type="hidden" name="doctor_id" id="modalDrId">
+                    
+                    <div class="form-group">
+                        <label>How would you rate your visit?</label>
+                        <div class="rating-widget" id="starRating">
+                            <i class="fas fa-star star-box" data-rating="1"></i>
+                            <i class="fas fa-star star-box" data-rating="2"></i>
+                            <i class="fas fa-star star-box" data-rating="3"></i>
+                            <i class="fas fa-star star-box" data-rating="4"></i>
+                            <i class="fas fa-star star-box" data-rating="5"></i>
+                        </div>
+                        <input type="hidden" name="rating" id="ratingInput" value="5" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Describe your experience</label>
+                        <textarea name="review_text" class="form-control" placeholder="What did you like about the service? Was there anything we could improve? Your feedback helps thousands of other patients." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="modal-checkbox">
+                            <input type="checkbox" name="is_anonymous" value="1">
+                            <span>Keep my identity private in this review</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-magic"></i> Submit Review
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+        </div>
+    </div>
+
     <script>
-        // Interactive star rating
         document.addEventListener('DOMContentLoaded', function() {
-            const stars = document.querySelectorAll('.star');
-            const ratingInput = document.getElementById('rating');
-            
-            // Set initial rating (5 stars)
-            updateStars(5);
-            
-            stars.forEach(star => {
-                star.addEventListener('click', function() {
-                    const rating = parseInt(this.getAttribute('data-rating'));
-                    ratingInput.value = rating;
-                    updateStars(rating);
-                });
-                
-                star.addEventListener('mouseenter', function() {
-                    const rating = parseInt(this.getAttribute('data-rating'));
-                    highlightStars(rating);
-                });
-            });
-            
-            document.querySelector('.star-rating').addEventListener('mouseleave', function() {
-                updateStars(parseInt(ratingInput.value));
-            });
+            const stars = document.querySelectorAll('.star-box');
+            const ratingInput = document.getElementById('ratingInput');
             
             function updateStars(rating) {
                 stars.forEach((star, index) => {
@@ -494,17 +560,52 @@ unset($_SESSION['review_success'], $_SESSION['review_errors']);
                     }
                 });
             }
-            
-            function highlightStars(rating) {
-                stars.forEach((star, index) => {
-                    if (index < rating) {
-                        star.style.color = '#ffb400';
-                    } else {
-                        star.style.color = '#ddd';
-                    }
+
+            stars.forEach(star => {
+                star.addEventListener('mouseenter', function() {
+                    updateStars(parseInt(this.dataset.rating));
                 });
-            }
+
+                star.addEventListener('click', function() {
+                    const r = parseInt(this.dataset.rating);
+                    ratingInput.value = r;
+                    updateStars(r);
+                });
+            });
+            
+            document.getElementById('starRating').addEventListener('mouseleave', function() {
+                updateStars(parseInt(ratingInput.value));
+            });
         });
+
+        function openFeedbackModal(data) {
+            document.getElementById('modalDrName').textContent = data.dr_name;
+            document.getElementById('modalDrSpec').textContent = data.dr_spec;
+            document.getElementById('modalAptId').value = data.apt_id;
+            document.getElementById('modalDrId').value = data.dr_id;
+            
+            const modal = document.getElementById('feedbackModal');
+            modal.style.display = 'block';
+            setTimeout(() => modal.classList.add('show'), 10);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeFeedbackModal() {
+            const modal = document.getElementById('feedbackModal');
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }, 300);
+        }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('feedbackModal');
+            if (event.target == modal) {
+                closeFeedbackModal();
+            }
+        }
     </script>
 </body>
 </html>

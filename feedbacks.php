@@ -3,7 +3,7 @@ $page_title = "Patient Feedbacks";
 $page_description = "Read what our patients say about their experience at EasyMed Private Clinic";
 require_once 'includes/header.php';
 
-// Get approved reviews
+// Get all reviews
 $db = Database::getInstance();
 $reviews = $db->fetchAll("
     SELECT r.rating, r.review_text, r.created_at, r.is_anonymous,
@@ -15,7 +15,6 @@ $reviews = $db->fetchAll("
     LEFT JOIN users pu ON p.user_id = pu.id
     LEFT JOIN doctors d ON r.doctor_id = d.id
     LEFT JOIN users du ON d.user_id = du.id
-    WHERE r.is_approved = 1
     ORDER BY r.created_at DESC
     LIMIT 20
 ");
@@ -24,7 +23,6 @@ $reviews = $db->fetchAll("
 $avgRating = $db->fetch("
     SELECT AVG(rating) as avg_rating, COUNT(*) as total_reviews 
     FROM reviews 
-    WHERE is_approved = 1
 ");
 ?>
 
@@ -66,44 +64,57 @@ $avgRating = $db->fetch("
 <section class="section">
     <div class="container">
         <?php if (!empty($reviews)): ?>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
-                <?php foreach ($reviews as $review): ?>
-                    <div class="card">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                            <div>
-                                <div style="color: var(--primary-cyan); margin-bottom: 0.5rem;">
-                                    <?php
-                                    for ($i = 1; $i <= 5; $i++) {
-                                        echo $i <= $review['rating'] ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
-                                    }
-                                    ?>
+            <div style="display: flex; flex-direction: column; gap: 1.25rem; max-width: 860px; margin: 0 auto;">
+                <?php foreach ($reviews as $review):
+                    $initial     = $review['is_anonymous'] ? '?' : strtoupper(substr($review['first_name'] ?? 'A', 0, 1));
+                    $patientName = $review['is_anonymous']
+                        ? 'Anonymous Patient'
+                        : htmlspecialchars($review['first_name'] . ' ' . substr($review['last_name'], 0, 1) . '.');
+                    $rating = intval($review['rating']);
+                ?>
+                    <div class="card" style="display: flex; gap: 1.25rem; align-items: flex-start; padding: 1.5rem;">
+                        <!-- Avatar -->
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #dbeafe, #bfdbfe); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; color: #2563eb; flex-shrink: 0;">
+                            <?php echo $initial; ?>
+                        </div>
+
+                        <!-- Content -->
+                        <div style="flex: 1; min-width: 0;">
+                            <!-- Top row: name + date -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.3rem;">
+                                <div style="font-weight: 700; color: var(--text-dark); font-size: 0.97rem;">
+                                    <?php echo $patientName; ?>
                                 </div>
-                                <div style="font-weight: 600; color: var(--text-dark);">
-                                    <?php if ($review['is_anonymous']): ?>
-                                        Anonymous Patient
-                                    <?php else: ?>
-                                        <?php echo htmlspecialchars($review['first_name'] . ' ' . substr($review['last_name'], 0, 1) . '.'); ?>
-                                    <?php endif; ?>
+                                <div style="font-size: 0.78rem; color: var(--text-light); white-space: nowrap; flex-shrink: 0;">
+                                    <?php echo formatDate($review['created_at'], 'M j, Y'); ?>
+                                </div>
+                            </div>
+
+                            <!-- Stars + doctor -->
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                                <div style="color: #fbbf24; font-size: 0.9rem; line-height: 1;">
+                                    <?php for ($i = 1; $i <= 5; $i++):
+                                        echo $i <= $rating
+                                            ? '<i class="fas fa-star"></i>'
+                                            : '<i class="far fa-star" style="color:#d1d5db;"></i>';
+                                    endfor; ?>
+                                    <span style="font-size: 0.78rem; color: var(--text-light); margin-left: 4px;"><?php echo $rating; ?>/5</span>
                                 </div>
                                 <?php if (!empty($review['doctor_first_name'])): ?>
-                                    <div style="font-size: 0.9rem; color: var(--text-light);">
-                                        <i class="fas fa-user-md"></i> 
+                                    <div style="font-size: 0.82rem; color: var(--text-light);">
+                                        <i class="fas fa-user-md" style="font-size: 0.75rem;"></i>
                                         Dr. <?php echo htmlspecialchars($review['doctor_first_name'] . ' ' . $review['doctor_last_name']); ?>
                                         <?php if (!empty($review['specialty'])): ?>
-                                            - <?php echo htmlspecialchars($review['specialty']); ?>
+                                            &mdash; <?php echo htmlspecialchars($review['specialty']); ?>
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
                             </div>
-                            <div style="font-size: 0.8rem; color: var(--text-light);">
-                                <?php echo formatDate($review['created_at'], 'M j, Y'); ?>
+
+                            <!-- Review text -->
+                            <div style="color: var(--text-dark); line-height: 1.65; font-size: 0.95rem; padding-left: 0.1rem; border-left: 3px solid #bfdbfe; padding-left: 0.85rem;">
+                                <?php echo htmlspecialchars($review['review_text']); ?>
                             </div>
-                        </div>
-                        
-                        <div style="color: var(--text-dark); line-height: 1.6;">
-                            <i class="fas fa-quote-left" style="color: var(--light-cyan); margin-right: 0.5rem;"></i>
-                            <?php echo htmlspecialchars($review['review_text']); ?>
-                            <i class="fas fa-quote-right" style="color: var(--light-cyan); margin-left: 0.5rem;"></i>
                         </div>
                     </div>
                 <?php endforeach; ?>

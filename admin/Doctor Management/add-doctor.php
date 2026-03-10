@@ -210,6 +210,9 @@ require_once '../../includes/header.php';
             <a href="../Doctor Management/doctors.php" class="nav-item active">
                 <i class="fas fa-user-md"></i> Doctor Management
             </a>
+            <a href="../Feedbacks/feedback_admin.php" class="nav-item">
+                <i class="fas fa-star"></i> Feedbacks
+            </a>
             <a href="../Settings/settings.php" class="nav-item">
                 <i class="fas fa-cog"></i> Settings
             </a>

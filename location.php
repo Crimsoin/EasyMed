@@ -77,7 +77,7 @@ $clinic_email = getClinicSetting('clinic_email', 'easymed.notifications@gmail.co
                 </div>
                 
                 <!-- Quick Actions -->
-                <div class="card" style="background: linear-gradient(135deg, var(--light-cyan), var(--primary-cyan)); color: white; text-align: center;">
+                <div class="card" style="margin-top: 2rem; background: linear-gradient(135deg, var(--light-cyan), var(--primary-cyan)); color: white; text-align: center;">
                     <h4 style="color: white; margin-bottom: 1rem;">
                         <i class="fas fa-calendar-check"></i> Book an Appointment
                     </h4>

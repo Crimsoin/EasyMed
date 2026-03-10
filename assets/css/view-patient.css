@@ -19,7 +19,7 @@
 
 /* Content Header with Profile Style */
 .content-header {
-    background: linear-gradient(135deg, #02aec5 0%, #17a6b9 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     color: white;
     padding: 2rem;
     border-radius: 12px;
@@ -90,7 +90,8 @@
     flex-wrap: wrap;
 }
 
-.status-badge, .role-badge {
+.status-badge,
+.role-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -129,7 +130,8 @@
 }
 
 /* Info Section Badge Overrides */
-.info-item .role-badge, .info-item .status-badge {
+.info-item .role-badge,
+.info-item .status-badge {
     padding: 0.4rem 1rem;
     border-radius: 20px;
     font-size: 0.85rem;
@@ -168,8 +170,34 @@
    Keep variables in one place to avoid conflicts and duplication. */
 
 /* Header Actions */
+.header-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
 
-/* Header/action button styles moved to components/header.css and base.css to avoid conflicts. */
+.header-actions .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+
+.header-actions .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: translateY(-2px);
+}
 
 /* Statistics Grid */
 .stats-grid {
@@ -348,7 +376,7 @@
 }
 
 .content-section h4 {
-    color: var(--primary-cyan);
+    color: #2563eb;
     margin-bottom: 1.5rem;
     font-size: 1.2rem;
     font-weight: 600;
@@ -361,7 +389,7 @@
     content: '';
     width: 3px;
     height: 18px;
-    background: var(--primary-cyan);
+    background: #2563eb;
     border-radius: 2px;
 }
 
@@ -545,13 +573,13 @@
         margin-left: 0;
         padding: 1.5rem;
     }
-    
-    
+
+
     .stats-grid {
         grid-template-columns: 1fr 1fr;
         gap: 1rem;
     }
-    
+
     .profile-content {
         grid-template-columns: 1fr;
         gap: 1rem;
@@ -562,7 +590,7 @@
     .admin-content {
         padding: 1rem;
     }
-    
+
     .content-header {
         flex-direction: column;
         text-align: center;
@@ -570,57 +598,58 @@
         padding: 1.5rem;
         margin-bottom: 1rem;
     }
-    
+
     .content-header h1 {
         font-size: 1.8rem;
     }
-    
+
     .header-actions {
         margin-left: 0;
         justify-content: center;
     }
-    
+
     .section-header {
         padding: 1.5rem 1.5rem 1rem 1.5rem;
         flex-direction: column;
         align-items: flex-start;
     }
-    
-    .section-header > div {
+
+    .section-header>div {
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
         width: 100%;
     }
-    
+
     .stats-grid {
         grid-template-columns: 1fr;
         padding: 1.5rem !important;
     }
-    
+
     .stat-card {
         padding: 1.25rem;
     }
-    
+
     .data-table {
         font-size: 0.85rem;
     }
-    
+
     .data-table thead th,
     .data-table tbody td {
         padding: 1rem;
     }
-    
-    .btn-edit, .btn-secondary {
+
+    .btn-edit,
+    .btn-secondary {
         min-width: 100%;
         justify-content: center;
     }
-    
+
     .profile-badges {
         justify-content: center;
     }
-    
-    .content-section > div[style*="grid-template-columns"] {
+
+    .content-section>div[style*="grid-template-columns"] {
         grid-template-columns: 1fr !important;
         gap: 1.5rem !important;
     }
@@ -631,57 +660,57 @@
         padding: 1rem;
         border-radius: 12px;
     }
-    
+
     .content-header h1 {
         font-size: 1.5rem;
     }
-    
+
     .content-section {
         border-radius: 12px;
         margin-bottom: 1rem;
     }
-    
+
     .section-header {
         padding: 1rem;
     }
-    
+
     .section-header h2 {
         font-size: 1.25rem;
     }
-    
-    .content-section > div[style*="padding"] {
+
+    .content-section>div[style*="padding"] {
         padding: 1rem !important;
     }
-    
+
     .stat-card {
         padding: 1rem;
         flex-direction: column;
         text-align: center;
     }
-    
+
     .stat-icon {
         width: 50px;
         height: 50px;
         font-size: 1.25rem;
     }
-    
+
     .data-table thead th,
     .data-table tbody td {
         padding: 0.75rem 0.5rem;
     }
-    
+
     .stats-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .profile-header {
         padding: 1.5rem;
     }
-    
+
     .info-section {
         padding: 1rem;
     }
-    
+
     .header-actions {
         flex-direction: column;
     }
@@ -697,6 +726,7 @@
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -718,16 +748,17 @@
 
 /* Print styles */
 @media print {
+
     .btn-edit,
     .btn-secondary {
         display: none;
     }
-    
+
     .admin-content {
         margin-left: 0;
         padding: 0;
     }
-    
+
     .content-section {
         box-shadow: none;
         border: 1px solid #ddd;

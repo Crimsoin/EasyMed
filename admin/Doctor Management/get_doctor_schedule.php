@@ -45,12 +45,19 @@ $end   = date('Y-m-t', strtotime($start));
 
 $appointments = $db->fetchAll("
     SELECT
-        a.id,
-        a.appointment_date,
-        a.appointment_time,
-        a.status,
-        a.reason_for_visit,
-        pu.first_name || ' ' || pu.last_name AS patient_name
+        a.*,
+        COALESCE(pu.first_name, a.first_name) as patient_first_name, 
+        COALESCE(pu.last_name, a.last_name) as patient_last_name,
+        COALESCE(pu.email, a.email) as patient_email,
+        COALESCE(p.phone, pu.phone, a.phone_number) as patient_phone,
+        COALESCE(p.address, pu.address, a.address) as patient_address,
+        COALESCE(p.gender, pu.gender) as patient_gender,
+        COALESCE(p.date_of_birth, pu.date_of_birth) as patient_dob,
+        (COALESCE(pu.first_name, a.first_name) || ' ' || COALESCE(pu.last_name, a.last_name)) AS patient_name,
+        a.relationship,
+        a.illness,
+        a.purpose,
+        a.patient_info
     FROM appointments a
     LEFT JOIN patients p  ON a.patient_id = p.id
     LEFT JOIN users    pu ON p.user_id = pu.id

@@ -309,74 +309,64 @@ function getInitials($name) {
                     </div>
                 </div>
             <?php else: ?>
-                <div class="patients-grid">
-                    <?php foreach ($patients as $patient): ?>
-                        <div class="patient-card" data-patient-id="<?= $patient['id'] ?>">
-                            <div class="patient-header">
-                                <div class="patient-avatar">
-                                    <?= getInitials($patient['name']) ?>
-                                </div>
-                                <div class="patient-basic-info">
-                                    <h3 class="patient-name"><?= htmlspecialchars($patient['name']) ?></h3>
-                                    <p class="patient-id">ID: #<?= str_pad($patient['id'], 4, '0', STR_PAD_LEFT) ?></p>
-                                </div>
-                                <span class="patient-status <?= $patient['status'] ?>">
-                                    <?= ucfirst($patient['status']) ?>
-                                </span>
-                            </div>
-
-                            <div class="patient-body">
-                                <div class="patient-details">
-                                    <div class="detail-item">
-                                        <div class="detail-label">Age</div>
-                                        <div class="detail-value"><?php echo !empty($patient['date_of_birth']) ? calculateAge($patient['date_of_birth']) : 'N/A'; ?> years</div>
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">Gender</div>
-                                        <div class="detail-value"><?= ucfirst($patient['gender'] ?? 'N/A') ?></div>
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">Email</div>
-                                        <a href="mailto:<?= htmlspecialchars($patient['email']) ?>" class="detail-value email">
-                                            <?= htmlspecialchars($patient['email']) ?>
-                                        </a>
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">Phone</div>
-                                        <a href="tel:<?= htmlspecialchars($patient['phone']) ?>" class="detail-value phone">
-                                            <?= htmlspecialchars($patient['phone']) ?>
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <div class="patient-appointments">
-                                    <div class="appointments-summary">
-                                        <div class="appointment-stat">
-                                            <div class="appointment-stat-number"><?= $patient['appointment_count'] ?></div>
-                                            <div class="appointment-stat-label">Total</div>
+                <div class="patients-table-container">
+                    <table class="patients-table">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>ID</th>
+                                <th>Age/Gender</th>
+                                <th>Contact Info</th>
+                                <th>Appointments</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($patients as $patient): ?>
+                                <tr>
+                                    <td>
+                                        <div class="patient-cell">
+                                            <div class="patient-avatar"><?= getInitials($patient['name']) ?></div>
+                                            <div class="patient-name"><?= htmlspecialchars($patient['name']) ?></div>
                                         </div>
-                                        <div class="appointment-stat">
-                                            <div class="appointment-stat-number"><?= $patient['completed_appointments'] ?></div>
-                                            <div class="appointment-stat-label">Completed</div>
+                                    </td>
+                                    <td class="id-cell">#<?= str_pad($patient['id'], 4, '0', STR_PAD_LEFT) ?></td>
+                                    <td>
+                                        <div class="info-cell">
+                                            <span><?= !empty($patient['date_of_birth']) ? calculateAge($patient['date_of_birth']) : 'N/A'; ?> yrs</span>
+                                            <span class="text-light"><?= ucfirst($patient['gender'] ?? 'N/A') ?></span>
                                         </div>
-                                        <div class="appointment-stat">
-                                            <div class="appointment-stat-number"><?= $patient['pending_appointments'] ?></div>
-                                            <div class="appointment-stat-label">Pending</div>
+                                    </td>
+                                    <td>
+                                        <div class="contact-cell">
+                                            <a href="mailto:<?= htmlspecialchars($patient['email']) ?>"><?= htmlspecialchars($patient['email']) ?></a>
+                                            <span class="text-light"><?= htmlspecialchars($patient['phone']) ?></span>
                                         </div>
-                                    </div>
-                                </div>
-
-                                <div class="patient-actions">
-                                    <a href="appointments.php?patient_id=<?= $patient['id'] ?>" class="action-btn primary">
-                                        <i class="fas fa-calendar"></i> Appointments
-                                    </a>
-                                    <button class="action-btn secondary" onclick="viewPatientDetails(<?= $patient['id'] ?>)">
-                                        <i class="fas fa-eye"></i> View Details
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
+                                    </td>
+                                    <td>
+                                        <div class="stats-cell">
+                                            <span class="stat-badge total" title="Total Appointments">T: <?= $patient['appointment_count'] ?></span>
+                                            <span class="stat-badge completed" title="Completed Appointments">C: <?= $patient['completed_appointments'] ?></span>
+                                            <span class="stat-badge pending" title="Pending Appointments">P: <?= $patient['pending_appointments'] ?></span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="patient-status <?= $patient['status'] ?>">
+                                            <?= ucfirst($patient['status']) ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <a href="view-patient.php?id=<?= $patient['id'] ?>" class="table-action-btn primary" style="background-color: #2563eb; color: white;" title="View Profile">
+                                                <i class="fas fa-user-circle"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
 
                 <!-- Pagination -->

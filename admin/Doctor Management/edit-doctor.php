@@ -275,6 +275,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['lab_offer_action']))
                 if (!empty($password)) {
                     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
                     $db->query("UPDATE users SET password = ? WHERE id = ?", [$hashedPassword, $doctor_id]);
+
+                    // Send password reset notification email to doctor
+                    try {
+                        $doctorEmail = $userData['email'];
+                        $doctorName  = $userData['first_name'] . ' ' . $userData['last_name'];
+                        require_once '../../includes/email.php';
+                        $emailService = new EmailService();
+                        $emailService->sendPasswordResetNotification($doctorEmail, $doctorName, $password, 'doctor');
+                    } catch (Exception $emailEx) {
+                        error_log("Password reset email failed for doctor {$doctor_id}: " . $emailEx->getMessage());
+                    }
                 }
                 
                 // Handle phone, date_of_birth, gender (these might be in patients table if doctor also has patient record)
@@ -395,6 +406,9 @@ require_once '../../includes/header.php';
             </a>
             <a href="../Doctor Management/doctors.php" class="nav-item active">
                 <i class="fas fa-user-md"></i> Doctor Management
+            </a>
+            <a href="../Feedbacks/feedback_admin.php" class="nav-item">
+                <i class="fas fa-star"></i> Feedbacks
             </a>
             <a href="../Settings/settings.php" class="nav-item">
                 <i class="fas fa-cog"></i> Settings

@@ -28,7 +28,7 @@ require_once '../../includes/header.php';
     <div class="admin-content">
         <div class="content-header">
             <h1>Manage Feedbacks</h1>
-            <p>Approve, delete or review patient feedback.</p>
+            <p>View all patient feedback and ratings.</p>
         </div>
 
         <div class="content-section">
@@ -42,9 +42,7 @@ require_once '../../includes/header.php';
                             <th>Rating</th>
                             <th>Feedback</th>
                             <th>Anonymous</th>
-                            <th>Approved</th>
                             <th>Created</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -66,21 +64,7 @@ require_once '../../includes/header.php';
                             </td>
                             <td><?php echo nl2br(htmlspecialchars($r['review_text'])); ?></td>
                             <td><?php echo $r['is_anonymous'] ? '<span class="pill pill-anonymous">Anonymous</span>' : '<span class="pill pill-public">Public</span>'; ?></td>
-                            <td><?php echo $r['is_approved'] ? '<span class="pill pill-approved">Approved</span>' : '<span class="pill pill-pending">Pending</span>'; ?></td>
                             <td><?php echo date('M j, Y', strtotime($r['created_at'])); ?></td>
-                            <td>
-                                <form method="post" action="process_feedback_admin.php" style="display:inline-block;">
-                                    <input type="hidden" name="id" value="<?php echo $r['id']; ?>">
-                                    <?php if (!$r['is_approved']): ?>
-                                    <button type="submit" name="action" value="approve" class="btn btn-sm btn-success">
-                                        <i class="fas fa-check"></i> Approve
-                                    </button>
-                                    <?php endif; ?>
-                                    <button type="submit" name="action" value="delete" class="btn btn-sm btn-danger" onclick="return confirm('Delete this review?');">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </form>
-                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>

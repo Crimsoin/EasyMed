@@ -68,6 +68,7 @@ try {
         'username' => sanitize($_POST['username'] ?? ''),
         'password' => $_POST['password'] ?? '',
         'phone' => sanitize($_POST['phone'] ?? ''),
+        'address' => sanitize($_POST['address'] ?? ''),
         'date_of_birth' => sanitize($_POST['date_of_birth'] ?? ''),
         'gender' => sanitize($_POST['gender'] ?? ''),
         'role' => sanitize($_POST['role'] ?? 'patient')
@@ -102,10 +103,16 @@ try {
         $errors[] = 'Passwords do not match';
     }
     
-    if (!empty($userData['phone']) && !preg_match('/^[\+]?[0-9\-\s\(\)]{10,}$/', $userData['phone'])) {
-        $errors[] = 'Invalid phone number format. Use format like +1 (555) 123-4567 or 5551234567 (minimum 10 digits)';
+    if (empty($userData['phone'])) {
+        $errors[] = 'Phone number is required.';
+    } elseif (!preg_match('/^[\+]?[0-9\-\s\(\)]{10,}$/', $userData['phone'])) {
+        $errors[] = 'Invalid phone number format. Use format like +63 912 345 6789 (minimum 10 digits)';
     }
-    
+
+    if (empty($userData['address'])) {
+        $errors[] = 'Address is required.';
+    }
+
     if (!empty($userData['date_of_birth']) && !isValidDate($userData['date_of_birth'])) {
         $errors[] = 'Invalid date of birth';
     }
@@ -123,8 +130,7 @@ try {
         exit();
     }
     
-    // Remove empty optional fields
-    if (empty($userData['phone'])) unset($userData['phone']);
+    // Remove empty optional fields (phone and address are now required)
     if (empty($userData['date_of_birth'])) unset($userData['date_of_birth']);
     if (empty($userData['gender'])) unset($userData['gender']);
     

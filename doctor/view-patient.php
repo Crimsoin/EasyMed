@@ -1,145 +1,77 @@
 <?php
-$page_title = "My Appointments";
-$additional_css = ['base.css', 'doctor/sidebar-doctor.css', 'doctor/appointments-doctor.css', 'shared-modal.css'];
+$page_title = 'View Patient';
+$additional_css = ['doctor/sidebar-doctor.css', 'shared-modal.css'];
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
-require_once '../includes/email.php';
 
-// Check if user is logged in and is doctor
+// Check if user is logged in and is a doctor
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'doctor') {
-    header('Location: ' . SITE_URL . '/index.php');
+    header('Location: ../index.php');
     exit();
 }
 
-
 $db = Database::getInstance();
-// Get doctor record ID from doctors table
-$doctor_user_id = $_SESSION['user_id'];
-$doctor_record = $db->fetch("SELECT id, specialty FROM doctors WHERE user_id = ?", [$doctor_user_id]);
-if (!$doctor_record) {
-    die("Doctor profile not found.");
-}
-$doctor_id = $doctor_record['id'];
-$doctor_specialty = $doctor_record['specialty'] ?? 'Medical Practitioner';
+$doctor_id = $_SESSION['user_id'];
 
-// Handle appointment status updates
-if ($_POST && isset($_POST['action']) && isset($_POST['appointment_id'])) {
-    $appointment_id = (int)$_POST['appointment_id'];
-    $action = $_POST['action'];
-    
-    // Get appointment details
-    $appointment_details = $db->fetch("SELECT id, status FROM appointments WHERE id = ? AND doctor_id = ?", [$appointment_id, $doctor_id]);
-    
-    if ($appointment_details) {
-        switch ($action) {
-            case 'complete':
-                $notes = $_POST['notes'] ?? '';
-                $db->update('appointments', ['notes' => $notes], 'id = ?', [$appointment_id]);
-                $success_message = "Appointment findings updated successfully.";
-                // Redirect to avoid form resubmission and refresh list
-                header("Location: appointments.php?success=" . urlencode($success_message));
-                exit();
-            case 'update_findings':
-                $notes = $_POST['notes'] ?? '';
-                $db->update('appointments', ['notes' => $notes], 'id = ?', [$appointment_id]);
-                $success_message = "Appointment findings updated successfully.";
-                break;
-        }
-    }
+// Get patient ID
+$patientId = (int)($_GET['id'] ?? 0);
+if (!$patientId) {
+    header('Location: patients.php');
+    exit;
 }
 
-if (isset($_GET['success'])) {
-    $success_message = $_GET['success'];
-}
+// Ensure doctor's patient connection
+$doctor_record_id = $db->fetch("SELECT id FROM doctors WHERE user_id = ?", [$doctor_id])['id'] ?? 0;
 
-// Get filter parameters
-$status_filter = $_GET['status'] ?? 'all';
-$date_filter = $_GET['date'] ?? 'all';
-$search = $_GET['search'] ?? '';
-
-// Build query conditions
-$conditions = ["a.doctor_id = ?"];
-$params = [$doctor_id];
-
-if ($status_filter !== 'all') {
-    $conditions[] = "a.status = ?";
-    $params[] = $status_filter;
-}
-
-if ($date_filter !== 'all') {
-    switch ($date_filter) {
-        case 'today':
-            $conditions[] = "DATE(a.appointment_date) = date('now')";
-            break;
-        case 'tomorrow':
-            $conditions[] = "DATE(a.appointment_date) = date('now', '+1 day')";
-            break;
-        case 'this_week':
-            $conditions[] = "a.appointment_date BETWEEN date('now') AND date('now', '+7 days')";
-            break;
-        case 'next_week':
-            $conditions[] = "a.appointment_date BETWEEN date('now', '+7 days') AND date('now', '+14 days')";
-            break;
-        case 'past':
-            $conditions[] = "a.appointment_date < date('now')";
-            break;
-    }
-}
-
-if (!empty($search)) {
-    $conditions[] = "(u.first_name LIKE ? OR u.last_name LIKE ? OR a.reason LIKE ?)";
-    $search_param = "%{$search}%";
-    $params[] = $search_param;
-    $params[] = $search_param;
-    $params[] = $search_param;
-}
-
-$where_clause = implode(' AND ', $conditions);
-
-// Get appointments with pagination
-$page = (int)($_GET['page'] ?? 1);
-$per_page = 15;
-$offset = ($page - 1) * $per_page;
-
-$appointments = $db->fetchAll("
-    SELECT a.*, 
-           u.first_name as patient_first_name, 
-           u.last_name as patient_last_name, 
-           u.email as patient_email,
-           p.phone as patient_phone,
-           p.gender as patient_gender,
-           p.date_of_birth as patient_dob,
-           p.address as patient_address,
-           pay.status as payment_status, pay.amount as payment_amount, pay.gcash_reference, pay.receipt_file
+$verify_sql = "
+    SELECT COUNT(*) as count 
     FROM appointments a
-    JOIN patients p ON a.patient_id = p.id
-    JOIN users u ON p.user_id = u.id
-    LEFT JOIN payments pay ON a.id = pay.appointment_id
-    WHERE {$where_clause}
-    ORDER BY a.appointment_date DESC, a.appointment_time DESC
-    LIMIT {$per_page} OFFSET {$offset}
-", $params);
+    WHERE a.patient_id = ? AND a.doctor_id = ?
+";
+$verify_result = $db->fetch($verify_sql, [$patientId, $doctor_record_id]);
 
-// Get total count for pagination
-$total_appointments = $db->fetch("
-    SELECT COUNT(*) as count
-    FROM appointments a
-    JOIN patients p ON a.patient_id = p.id
-    JOIN users u ON p.user_id = u.id
-    WHERE {$where_clause}
-", $params)['count'];
+// Get doctor specialty for modals
+$doctor_specialty = $db->fetch("SELECT specialty FROM doctors WHERE id = ?", [$doctor_record_id])['specialty'] ?? 'Medical Practitioner';
 
-$total_pages = ceil($total_appointments / $per_page);
+if ($verify_result['count'] == 0) {
+    $_SESSION['error'] = 'Patient not found or you do not have permission to view them.';
+    header('Location: patients.php');
+    exit;
+}
 
-// Get quick stats
-$stats = [
-    'total' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ?", [$doctor_id])['count'],
-    'pending' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND status = 'pending'", [$doctor_id])['count'],
-    'scheduled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND status = 'scheduled'", [$doctor_id])['count'],
-    'completed' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND status = 'completed'", [$doctor_id])['count'],
-    'no_show' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND status = 'no_show'", [$doctor_id])['count'],
-    'today' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND DATE(appointment_date) = date('now')", [$doctor_id])['count']
-];
+// Get user data
+$user = $db->fetch("
+    SELECT u.*, 
+           p.phone, p.date_of_birth, p.gender, p.id as patient_record_id,
+           p.address, p.blood_type, p.allergies, p.medical_history, p.emergency_contact, p.emergency_phone
+    FROM users u 
+    JOIN patients p ON u.id = p.user_id
+    WHERE p.id = ?", [$patientId]);
+
+if (!$user) {
+    $_SESSION['error'] = 'Patient not found';
+    header('Location: patients.php');
+    exit;
+}
+
+// Stats
+$stats = [];
+if ($user['role'] === 'patient' && $doctor_record_id) {
+    $stats['total_appointments'] = $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND doctor_id = ?", [$user['patient_record_id'], $doctor_record_id])['count'];
+    $stats['completed_appointments'] = $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND doctor_id = ? AND status = 'completed'", [$user['patient_record_id'], $doctor_record_id])['count'];
+    $stats['cancelled_appointments'] = $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND doctor_id = ? AND status = 'cancelled'", [$user['patient_record_id'], $doctor_record_id])['count'];
+}
+
+// Recent Activity
+$recentActivity = [];
+if ($user['role'] === 'patient' && $doctor_record_id) {
+    $recentActivity = $db->fetchAll("
+        SELECT a.*
+        FROM appointments a
+        WHERE a.patient_id = ? AND a.doctor_id = ?
+        ORDER BY a.appointment_date DESC, a.appointment_time DESC
+        LIMIT 10", [$user['patient_record_id'], $doctor_record_id]);
+}
 
 require_once '../includes/header.php';
 ?>
@@ -148,19 +80,19 @@ require_once '../includes/header.php';
     <div class="doctor-sidebar">
         <div class="sidebar-header">
             <h3><i class="fas fa-user-md"></i> Doctor Portal</h3>
-            <p>Dr. <?php echo htmlspecialchars($_SESSION['first_name'] . ' ' . $_SESSION['last_name']); ?></p>
+            <p>Dr. <?php echo htmlspecialchars(($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? 'Doctor')); ?></p>
         </div>
         <nav class="sidebar-nav">
             <a href="dashboard_doctor.php" class="nav-item">
                 <i class="fas fa-tachometer-alt"></i> Dashboard
             </a>
-            <a href="appointments.php" class="nav-item active">
+            <a href="appointments.php" class="nav-item">
                 <i class="fas fa-calendar-alt"></i> My Appointments
             </a>
             <a href="schedule.php" class="nav-item">
                 <i class="fas fa-clock"></i> Schedule
             </a>
-            <a href="patients.php" class="nav-item">
+            <a href="patients.php" class="nav-item active">
                 <i class="fas fa-users"></i> My Patients
             </a>
             <a href="profile.php" class="nav-item">
@@ -169,252 +101,194 @@ require_once '../includes/header.php';
         </nav>
     </div>
 
-    <div class="doctor-content">
-        <div class="content-header">
-            <h1><i class="fas fa-calendar-alt"></i> My Appointments</h1>
-            <p>Manage and view all your patient appointments</p>
-        </div>
-
-        <?php if (isset($success_message)): ?>
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i>
-                <?php echo $success_message; ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Quick Stats -->
-        <div class="content-section">
-            <div class="section-header">
-                <h2>Appointment Overview</h2>
-            </div>
-            <div class="section-content stats-content">
-                <div class="stats-row">
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo $stats['total']; ?></div>
-                        <div class="stat-label">Total Appointments</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo $stats['pending']; ?></div>
-                        <div class="stat-label">Pending</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo $stats['scheduled']; ?></div>
-                        <div class="stat-label">Scheduled</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo $stats['completed']; ?></div>
-                        <div class="stat-label">Completed</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo $stats['no_show']; ?></div>
-                        <div class="stat-label">No Show</div>
+    <div class="doctor-content" style="flex: 1; padding: 2rem; background-color: #f8fafc; min-height: 100vh;">
+        <!-- Profile Header -->
+        <div class="content-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+            <div style="display: flex; gap: 2rem;">
+                <div class="profile-avatar" style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <?php echo strtoupper(substr($user['first_name'], 0, 1) . substr($user['last_name'], 0, 1)); ?>
+                </div>
+                
+                <div class="profile-info" style="display: flex; flex-direction: column; justify-content: center;">
+                    <h1 style="margin: 0 0 0.5rem 0; font-size: 2rem; color: #1e293b;"><?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></h1>
+                    <p style="margin: 0 0 1rem 0; color: #64748b;"><?php echo ucfirst($user['role']); ?> Profile</p>
+                    
+                    <div class="profile-badges" style="display: flex; gap: 1rem;">
+                        <span class="status-badge <?php echo $user['is_active'] ? 'active' : 'inactive'; ?>" style="padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; background: <?php echo $user['is_active'] ? '#dcfce7' : '#fee2e2'; ?>; color: <?php echo $user['is_active'] ? '#166534' : '#991b1b'; ?>;">
+                            <i class="fas fa-<?php echo $user['is_active'] ? 'check-circle' : 'times-circle'; ?>"></i>
+                            <?php echo $user['is_active'] ? 'Active' : 'Inactive'; ?>
+                        </span>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Filters -->
-        <div class="content-section">
-            <div class="section-header">
-                <h2>Filter Appointments</h2>
-            </div>
-            <div class="section-content">
-                <form method="GET" class="filter-form">
-                    <div class="filter-row">
-                        <div class="filter-group">
-                            <label for="status">Status:</label>
-                            <select name="status" id="status">
-                                <option value="all" <?php echo $status_filter === 'all' ? 'selected' : ''; ?>>All Status</option>
-                                <option value="pending" <?php echo $status_filter === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                <option value="scheduled" <?php echo $status_filter === 'scheduled' ? 'selected' : ''; ?>>Scheduled</option>
-                                <option value="ongoing" <?php echo $status_filter === 'ongoing' ? 'selected' : ''; ?>>Ongoing</option>
-                                <option value="completed" <?php echo $status_filter === 'completed' ? 'selected' : ''; ?>>Completed</option>
-                                <option value="no_show" <?php echo $status_filter === 'no_show' ? 'selected' : ''; ?>>No Show</option>
-                                <option value="cancelled" <?php echo $status_filter === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label for="date">Date Range:</label>
-                            <select name="date" id="date">
-                                <option value="all" <?php echo $date_filter === 'all' ? 'selected' : ''; ?>>All Dates</option>
-                                <option value="today" <?php echo $date_filter === 'today' ? 'selected' : ''; ?>>Today</option>
-                                <option value="tomorrow" <?php echo $date_filter === 'tomorrow' ? 'selected' : ''; ?>>Tomorrow</option>
-                                <option value="this_week" <?php echo $date_filter === 'this_week' ? 'selected' : ''; ?>>This Week</option>
-                                <option value="next_week" <?php echo $date_filter === 'next_week' ? 'selected' : ''; ?>>Next Week</option>
-                                <option value="past" <?php echo $date_filter === 'past' ? 'selected' : ''; ?>>Past Appointments</option>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label for="search">Search:</label>
-                            <input type="text" name="search" id="search" 
-                                   value="<?php echo htmlspecialchars($search); ?>" 
-                                   placeholder="Patient name or reason...">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-search"></i> Filter
-                            </button>
-                            <a href="appointments.php" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Clear
-                            </a>
-                        </div>
-                    </div>
-                </form>
+            
+            <div class="header-actions">
+                <a href="patients.php" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; text-decoration: none; color: #475569; font-weight: 500; background: white; transition: all 0.2s;">
+                    <i class="fas fa-arrow-left"></i> Back to Patients
+                </a>
             </div>
         </div>
 
-        <!-- Appointments List -->
-        <div class="content-section">
-            <div class="section-header">
-                <h2>Appointments (<?php echo $total_appointments; ?> total)</h2>
-            </div>
-            <div class="section-content">
-                <?php if (empty($appointments)): ?>
-                    <div class="no-data">
-                        <i class="fas fa-calendar-times"></i>
-                        <h3>No appointments found</h3>
-                        <p>No appointments match your current filters.</p>
+        <!-- Profile Content -->
+        <div class="profile-content" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+            <!-- Left Column -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                
+                <!-- User Information Section -->
+                <div class="info-section" style="background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div class="section-header" style="margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
+                        <h2 style="margin: 0; font-size: 1.25rem; color: #1e293b;"><i class="fas fa-user" style="color: #3b82f6; margin-right: 0.5rem;"></i> Patient Information</h2>
                     </div>
-                <?php else: ?>
-                    <div class="appointments-table-container">
-                        <table class="appointments-table">
-                            <thead>
-                                <tr>
-                                    <th>Date & Time</th>
-                                    <th>Patient</th>
-                                    <th>Contact</th>
-                                    <th>Reason</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($appointments as $appointment): 
-                                    $appointment_datetime = strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']);
-                                ?>
-                                    <tr class="appointment-row status-<?php echo $appointment['status']; ?>">
-                                        <td>
-                                            <div class="date-time-cell">
-                                                <span class="date"><?php echo formatDate($appointment['appointment_date']); ?></span>
-                                                <span class="time"><?php echo formatTime($appointment['appointment_time']); ?></span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="patient-cell">
-                                                <span class="name"><?php echo htmlspecialchars($appointment['patient_first_name'] . ' ' . $appointment['patient_last_name']); ?></span>
-                                                <span class="meta">
-                                                    <?php echo !empty($appointment['date_of_birth']) ? calculateAge($appointment['date_of_birth']) . ' yrs' : ''; ?>
-                                                    <?php echo !empty($appointment['patient_gender']) ? ' • ' . ucfirst($appointment['patient_gender']) : ''; ?>
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="contact-cell">
-                                                <?php if ($appointment['patient_email']): ?>
-                                                    <a href="mailto:<?php echo htmlspecialchars($appointment['patient_email']); ?>" title="Email Patient">
-                                                        <i class="fas fa-envelope"></i> <?php echo htmlspecialchars($appointment['patient_email']); ?>
-                                                    </a>
-                                                <?php endif; ?>
-                                                <?php if ($appointment['patient_phone']): ?>
-                                                    <a href="tel:<?php echo htmlspecialchars($appointment['patient_phone']); ?>" title="Call Patient">
-                                                        <i class="fas fa-phone"></i> <?php echo htmlspecialchars($appointment['patient_phone']); ?>
-                                                    </a>
-                                                <?php endif; ?>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="reason-cell">
-                                                <?php 
-                                                $patient_info = [];
-                                                if (!empty($appointment['patient_info'])) {
-                                                    $patient_info = json_decode($appointment['patient_info'], true) ?? [];
-                                                }
-                                                $reason = $appointment['reason_for_visit'] ?? ($patient_info['laboratory'] ?? 'General Consultation');
-                                                echo htmlspecialchars($reason);
-                                                ?>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="status-badge status-<?php echo htmlspecialchars($appointment['status']); ?>">
-                                                <?php echo ucfirst(htmlspecialchars($appointment['status'])); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <?php 
-                                                    $receipt_path = !empty($appointment['receipt_file']) ? 'assets/uploads/payment_receipts/' . $appointment['receipt_file'] : null;
-                                                ?>
-                                                <button type="button" class="action-btn btn-view" title="View Details" 
-                                                        onclick="showAppointmentDetails(<?php echo htmlspecialchars(json_encode([
-                                                            'name' => ($appointment['patient_first_name'] ?? '') . ' ' . ($appointment['patient_last_name'] ?? ''),
-                                                            'account_name' => ($appointment['patient_first_name'] ?? '') . ' ' . ($appointment['patient_last_name'] ?? ''),
-                                                            'date' => formatDate($appointment['appointment_date']),
-                                                            'time' => formatTime($appointment['appointment_time']),
-                                                            'email' => $appointment['patient_email'] ?? 'N/A',
-                                                            'phone' => $appointment['patient_phone'] ?? 'N/A',
-                                                            'address' => $appointment['patient_address'] ?? 'N/A',
-                                                            'gender' => ucfirst($appointment['patient_gender'] ?? 'N/A'),
-                                                            'age' => !empty($appointment['patient_dob']) ? calculateAge($appointment['patient_dob']) : 'N/A',
-                                                            'reason' => $appointment['reason_for_visit'] ?? 'Consultation',
-                                                            'purpose' => ucfirst($appointment['purpose'] ?? 'Consultation'),
-                                                            'relationship' => ucfirst($appointment['relationship'] ?? 'Self'),
-                                                             'status' => ucfirst($appointment['status']),
-                                                             'id' => $appointment['id'],
-                                                             'notes' => $appointment['notes'] ?? '',
-                                                             'can_complete' => false,
-                                                             'can_add_findings' => strtolower($appointment['status'] ?? $activity['status'] ?? '') === 'completed',
-                                                             'doctor_first_name' => $_SESSION['first_name'],
-                                                             'doctor_last_name' => $_SESSION['last_name'],
-                                                            'specialty' => $doctor_specialty,
-                                                            'payment_status' => $appointment['payment_status'] ?? 'PENDING',
-                                                            'payment_amount' => $appointment['payment_amount'] ?? 0,
-                                                            'gcash_reference' => $appointment['gcash_reference'] ?? 'N/A',
-                                                            'receipt_path' => $receipt_path
-                                                        ]), ENT_QUOTES, 'UTF-8'); ?>)">
-                                                    <i class="fas fa-eye"></i> View Details
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Pagination -->
-                    <?php if ($total_pages > 1): ?>
-                        <div class="pagination-container">
-                            <div class="pagination">
-                                <?php if ($page > 1): ?>
-                                    <a href="?page=<?php echo $page - 1; ?>&status=<?php echo $status_filter; ?>&date=<?php echo $date_filter; ?>&search=<?php echo urlencode($search); ?>" 
-                                       class="pagination-link">
-                                        <i class="fas fa-chevron-left"></i> Previous
-                                    </a>
-                                <?php endif; ?>
-                                
-                                <?php for ($i = max(1, $page - 2); $i <= min($total_pages, $page + 2); $i++): ?>
-                                    <a href="?page=<?php echo $i; ?>&status=<?php echo $status_filter; ?>&date=<?php echo $date_filter; ?>&search=<?php echo urlencode($search); ?>" 
-                                       class="pagination-link <?php echo $i === $page ? 'active' : ''; ?>">
-                                        <?php echo $i; ?>
-                                    </a>
-                                <?php endfor; ?>
-                                
-                                <?php if ($page < $total_pages): ?>
-                                    <a href="?page=<?php echo $page + 1; ?>&status=<?php echo $status_filter; ?>&date=<?php echo $date_filter; ?>&search=<?php echo urlencode($search); ?>" 
-                                       class="pagination-link">
-                                        Next <i class="fas fa-chevron-right"></i>
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-                            <div class="pagination-info">
-                                Showing <?php echo ($offset + 1); ?> to <?php echo min($offset + $per_page, $total_appointments); ?> of <?php echo $total_appointments; ?> appointments
-                            </div>
+                    
+                    <div class="info-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                        <div class="info-item">
+                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Email</label>
+                            <span style="color: #0f172a;"><?php echo htmlspecialchars($user['email']); ?></span>
                         </div>
+                        <div class="info-item">
+                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Phone</label>
+                            <span style="color: #0f172a;"><?php echo htmlspecialchars($user['phone'] ?: 'Not provided'); ?></span>
+                        </div>
+                        <div class="info-item">
+                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Date of Birth</label>
+                            <span style="color: #0f172a;"><?php echo $user['date_of_birth'] ? date('M j, Y', strtotime($user['date_of_birth'])) : 'Not provided'; ?></span>
+                        </div>
+                        <div class="info-item">
+                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Gender</label>
+                            <span style="color: #0f172a;"><?php echo $user['gender'] ? ucfirst($user['gender']) : 'Not provided'; ?></span>
+                        </div>
+                        <div class="info-item" style="grid-column: 1 / -1;">
+                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Address</label>
+                            <span style="color: #0f172a;"><?php echo htmlspecialchars($user['address'] ?: 'Not provided'); ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="info-section" style="background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div class="section-header" style="margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 1.25rem; color: #1e293b;"><i class="fas fa-history" style="color: #3b82f6; margin-right: 0.5rem;"></i> Appointment History</h2>
+                        <a href="appointments.php?patient_id=<?php echo $user['id']; ?>" class="view-all-link" style="color: #3b82f6; text-decoration: none; font-weight: 500; font-size: 0.875rem;">View All</a>
+                    </div>
+                    
+                    <?php if (!empty($recentActivity)): ?>
+                    <div class="appointments-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <?php foreach ($recentActivity as $activity): ?>
+                        <div class="appointment-item clickable" style="border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; display: flex; justify-content: space-between; align-items: flex-start; transition: all 0.2s; cursor: pointer;" 
+                             onclick="showAppointmentDetails(<?php echo htmlspecialchars(json_encode([
+                                'name' => ($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''),
+                                'account_name' => ($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''),
+                                'date' => formatDate($activity['appointment_date']),
+                                'time' => formatTime($activity['appointment_time']),
+                                'email' => $user['email'] ?? 'N/A',
+                                'phone' => $user['phone'] ?? 'N/A',
+                                'address' => $user['address'] ?? 'N/A',
+                                'gender' => ucfirst($user['gender'] ?? 'N/A'),
+                                'age' => !empty($user['date_of_birth']) ? calculateAge($user['date_of_birth']) : 'N/A',
+                                'reason' => $activity['reason_for_visit'] ?? 'Consultation',
+                                'purpose' => ucfirst($activity['purpose'] ?? 'Consultation'),
+                                'relationship' => ucfirst($activity['relationship'] ?? 'Self'),
+                                 'status' => ucfirst($activity['status']),
+                                 'id' => $activity['id'],
+                                 'notes' => $activity['notes'] ?? '',
+                                 'can_complete' => false,
+                                 'can_add_findings' => strtolower($appointment['status'] ?? $activity['status'] ?? '') === 'completed',
+                                 'doctor_first_name' => $_SESSION['first_name'],
+                                 'doctor_last_name' => $_SESSION['last_name'],
+                                'specialty' => $doctor_specialty,
+                                'payment_status' => $activity['payment_status'] ?? 'PENDING',
+                                'payment_amount' => $activity['payment_amount'] ?? 0,
+                                'gcash_reference' => $activity['gcash_reference'] ?? 'N/A',
+                                'receipt_path' => $activity['payment_receipt_path'] ?? ''
+                            ]), ENT_QUOTES, 'UTF-8'); ?>)" 
+                             onmouseover="this.style.borderColor='#3b82f6'; this.style.backgroundColor='#f8fafc';" 
+                             onmouseout="this.style.borderColor='#e2e8f0'; this.style.backgroundColor='transparent';">
+                            <div class="appointment-info">
+                                <p class="appointment-date" style="margin: 0 0 0.5rem 0; color: #64748b; font-size: 0.875rem; display: flex; gap: 1rem;">
+                                    <span><i class="fas fa-calendar" style="color: #2563eb;"></i> <?php echo date('M j, Y', strtotime($activity['appointment_date'])); ?></span>
+                                    <span><i class="fas fa-clock" style="color: #2563eb;"></i> <?php echo date('g:i A', strtotime($activity['appointment_time'])); ?></span>
+                                </p>
+                                <?php if (!empty($activity['reason_for_visit'])): ?>
+                                <p class="appointment-reason" style="margin: 0; color: #0f172a; font-weight: 500;">
+                                    <?php echo htmlspecialchars($activity['reason_for_visit']); ?>
+                                </p>
+                                <?php endif; ?>
+                            </div>
+                            <span class="appointment-status status-<?php echo $activity['status']; ?>" style="padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; background: <?php echo $activity['status'] === 'completed' ? '#dcfce7' : ($activity['status'] === 'pending' ? '#fef08a' : '#f1f5f9'); ?>; color: <?php echo $activity['status'] === 'completed' ? '#166534' : ($activity['status'] === 'pending' ? '#854d0e' : '#475569'); ?>;">
+                                <?php echo ucfirst($activity['status']); ?>
+                            </span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                    <div class="no-appointments" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                        <i class="fas fa-calendar-times" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p style="margin: 0;">No past appointments found with you.</p>
+                    </div>
                     <?php endif; ?>
-                <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                
+                <!-- Statistics -->
+                <div class="stats-grid" style="display: grid; gap: 1rem;">
+                    <?php foreach ($stats as $key => $value): ?>
+                    <div class="stat-card" style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 1rem;">
+                        <div class="stat-icon" style="width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; 
+                            <?php echo $key === 'total_appointments' ? 'background: #eff6ff; color: #3b82f6;' : 
+                                     ($key === 'completed_appointments' ? 'background: #f0fdf4; color: #16a34a;' : 'background: #fef2f2; color: #dc2626;'); ?>">
+                            <i class="fas fa-<?php echo $key === 'total_appointments' ? 'calendar' : ($key === 'completed_appointments' ? 'check' : 'times'); ?>"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 style="margin: 0 0 0.25rem 0; font-size: 1.5rem; color: #0f172a;"><?php echo $value; ?></h3>
+                            <p style="margin: 0; font-size: 0.875rem; color: #64748b;"><?php echo ucwords(str_replace('_', ' ', $key)); ?></p>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- Medical Info Summary -->
+                <div class="info-section" style="background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div class="section-header" style="margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
+                        <h2 style="margin: 0; font-size: 1.25rem; color: #1e293b;"><i class="fas fa-notes-medical" style="color: #ef4444; margin-right: 0.5rem;"></i> Medical Summary</h2>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Blood Type</label>
+                            <span style="color: #0f172a; font-weight: 500;"><?php echo $user['blood_type'] ?: 'Unknown'; ?></span>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Allergies</label>
+                            <span style="color: <?php echo $user['allergies'] ? '#ef4444' : '#0f172a'; ?>; font-weight: 500;"><?php echo htmlspecialchars($user['allergies'] ?: 'No known allergies'); ?></span>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Medical History Summary</label>
+                            <p style="margin: 0; color: #475569; font-size: 0.875rem; line-height: 1.5;"><?php echo nl2br(htmlspecialchars($user['medical_history'] ?: 'No history provided')); ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Contact -->
+                <div class="info-section" style="background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div class="section-header" style="margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
+                        <h2 style="margin: 0; font-size: 1.25rem; color: #1e293b;"><i class="fas fa-phone-alt" style="color: #f59e0b; margin-right: 0.5rem;"></i> Emergency Contact</h2>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Name</label>
+                            <span style="color: #0f172a; font-weight: 500;"><?php echo htmlspecialchars($user['emergency_contact'] ?: 'Not provided'); ?></span>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Phone</label>
+                            <span style="color: #0f172a; font-weight: 500;"><?php echo htmlspecialchars($user['emergency_phone'] ?: 'Not provided'); ?></span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -728,6 +602,49 @@ window.onclick = function(event) {
     }
 }
 </script>
+
+
+
+<style>
+/* Add missing modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+    backdrop-filter: blur(5px);
+}
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.modal-header {
+    background: linear-gradient(135deg, #2563eb, #1e3a8a);
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-header h3 { margin: 0; }
+.close-modal {
+    color: rgba(255,255,255,0.8);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+</style>
 
 </body>
 </html>
