@@ -1,7 +1,7 @@
 <?php
-// Maintenance Mode - Uncomment the lines below to enable
-// header('Location: /maintenance.php');
-// exit();
+// Maintenance Mode - Uncomment the lines below to enable -- comment back if you want to enable the website again
+header('Location: /maintenance.php');
+exit();
 
 $page_title = "Home";
 $page_description = "Welcome to EasyMed - Your trusted private clinic for comprehensive healthcare services";
