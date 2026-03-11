@@ -645,7 +645,18 @@ require_once '../../includes/header.php';
                 <div class="stat-content">
                     <h3><?php echo $stats['appointments']['completed']; ?></h3>
                     <p>Completed</p>
-                    <small><?php echo $stats['appointments']['scheduled']; ?> scheduled</small>
+                    <small><?php echo $stats['rates']['completion_rate']; ?>% success rate</small>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-content">
+                    <h3><?php echo $stats['appointments']['scheduled']; ?></h3>
+                    <p>Scheduled</p>
+                    <small><?php echo $stats['appointments']['pending']; ?> pending verification</small>
                 </div>
             </div>
             
@@ -667,7 +678,7 @@ require_once '../../includes/header.php';
                 <div class="stat-content">
                     <h3><?php echo $stats['rates']['no_show_rate']; ?>%</h3>
                     <p>No Show Rate</p>
-                    <small><?php echo $stats['appointments']['no_show']; ?> no shows</small>
+                    <small><?php echo $stats['appointments']['no_show']; ?> total no-shows</small>
                 </div>
             </div>
             
@@ -678,7 +689,7 @@ require_once '../../includes/header.php';
                 <div class="stat-content">
                     <h3><?php echo $stats['rates']['cancellation_rate']; ?>%</h3>
                     <p>Cancellation Rate</p>
-                    <small><?php echo $stats['appointments']['cancelled']; ?> cancelled</small>
+                    <small><?php echo $stats['appointments']['cancelled']; ?> total cancelled</small>
                 </div>
             </div>
         </div>

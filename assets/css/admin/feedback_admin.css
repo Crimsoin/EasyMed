@@ -111,3 +111,12 @@
 /* Empty state */
 .table-container .no-results { padding:2.5rem; text-align:center; color:var(--text-light); }
 
+/* Censored name style */
+.censored-name {
+	font-style: italic;
+	color: var(--text-light);
+	background: rgba(108, 117, 125, 0.05);
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-size: 0.9em;
+}

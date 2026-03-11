@@ -49,7 +49,15 @@ require_once '../../includes/header.php';
                         <?php foreach ($reviews as $r): ?>
                         <tr>
                             <td><?php echo $r['id']; ?></td>
-                            <td><?php echo $r['patient_user_id'] ? htmlspecialchars($r['patient_first_name'] . ' ' . $r['patient_last_name']) : 'Guest'; ?></td>
+                            <td>
+                                <?php 
+                                if ($r['is_anonymous']) {
+                                    echo '<span class="censored-name">Anonymous Patient</span>';
+                                } else {
+                                    echo $r['patient_user_id'] ? htmlspecialchars($r['patient_first_name'] . ' ' . $r['patient_last_name']) : 'Guest';
+                                }
+                                ?>
+                            </td>
                             <td><?php echo $r['doctor_user_id'] ? htmlspecialchars($r['doctor_first_name'] . ' ' . $r['doctor_last_name']) : 'Unknown'; ?></td>
                             <td>
                                 <div class="rating-display">
