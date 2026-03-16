@@ -253,7 +253,7 @@ if (empty($appointment_data)) {
           <!-- Doctor details will be injected here -->
         </div>
         <div class="appointment-form-panel">
-          <form method="post" action="process_appointment.php" class="appointment-form-grid" novalidate>
+          <form method="post" action="process_appointment.php" class="appointment-form-grid" enctype="multipart/form-data" novalidate>
             <input type="hidden" name="doctor_id" id="modal_doctor_id" value="">
             <!-- Section: Patient Information -->
             <div class="form-section-header">
@@ -371,6 +371,18 @@ if (empty($appointment_data)) {
                     <select name="laboratory" id="modal_laboratory" class="form-control">
                       <option value="">Choose available test...</option>
                     </select>
+                </div>
+              </div>
+            </div>
+            <div class="form-row" id="laboratory_image_row" style="display: none;">
+              <div class="form-group">
+                <label for="modal_laboratory_image">Upload Laboratory Request Image</label>
+                <div class="input-icon-wrapper">
+                    <input type="file" name="laboratory_image" id="modal_laboratory_image" class="form-control" accept="image/*">
+                </div>
+                <small style="color:#666; display:block; margin-top:0.3rem; font-size:0.85rem; font-weight: 500;">Accepted formats: JPG, JPEG, PNG, WEBP</small>
+                <div id="laboratory_image_preview" class="laboratory-image-preview" style="display: none;">
+                    <img id="laboratory_image_preview_tag" src="" alt="Laboratory request preview">
                 </div>
               </div>
             </div>
@@ -704,6 +716,28 @@ if (empty($appointment_data)) {
 
 .input-icon-wrapper .form-control:focus + i {
     color: var(--primary-cyan);
+}
+
+.laboratory-image-preview {
+  margin-top: 0.9rem;
+  padding: 0.75rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.laboratory-image-preview img {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  max-height: 240px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid #cbd5e0;
+  background: #f8fafc;
 }
 
 .policy-agreement-box {
@@ -1401,20 +1435,68 @@ document.addEventListener('DOMContentLoaded', function() {
   // Handle purpose selection to show/hide laboratory dropdown
   var purposeSelect = document.getElementById('modal_purpose');
   var laboratoryRow = document.getElementById('laboratory_row');
+  var laboratoryImageRow = document.getElementById('laboratory_image_row');
   var laboratorySelect = document.getElementById('modal_laboratory');
+  var laboratoryImageInput = document.getElementById('modal_laboratory_image');
+  var laboratoryImagePreview = document.getElementById('laboratory_image_preview');
+  var laboratoryImagePreviewTag = document.getElementById('laboratory_image_preview_tag');
+
+  function clearLaboratoryImagePreview() {
+    if (laboratoryImagePreviewTag) {
+      laboratoryImagePreviewTag.src = '';
+    }
+    if (laboratoryImagePreview) {
+      laboratoryImagePreview.style.display = 'none';
+    }
+  }
   
   if (purposeSelect) {
     purposeSelect.addEventListener('change', function() {
       if (this.value === 'laboratory') {
         laboratoryRow.style.display = 'block';
+        laboratoryImageRow.style.display = 'block';
         laboratorySelect.setAttribute('required', 'required');
+        laboratoryImageInput.setAttribute('required', 'required');
         updatePriceDisplay('laboratory', laboratorySelect.value);
       } else {
         laboratoryRow.style.display = 'none';
+        laboratoryImageRow.style.display = 'none';
         laboratorySelect.removeAttribute('required');
+        laboratoryImageInput.removeAttribute('required');
         laboratorySelect.value = ''; // Clear selection
+        laboratoryImageInput.value = '';
+        clearLaboratoryImagePreview();
         updatePriceDisplay('consultation');
       }
+    });
+  }
+
+  if (laboratoryImageInput) {
+    laboratoryImageInput.addEventListener('change', function() {
+      var file = this.files && this.files[0] ? this.files[0] : null;
+
+      if (!file) {
+        clearLaboratoryImagePreview();
+        return;
+      }
+
+      if (!file.type || file.type.indexOf('image/') !== 0) {
+        clearLaboratoryImagePreview();
+        alert('Please select a valid image file.');
+        this.value = '';
+        return;
+      }
+
+      var reader = new FileReader();
+      reader.onload = function(event) {
+        if (laboratoryImagePreviewTag) {
+          laboratoryImagePreviewTag.src = event.target.result;
+        }
+        if (laboratoryImagePreview) {
+          laboratoryImagePreview.style.display = 'flex';
+        }
+      };
+      reader.readAsDataURL(file);
     });
   }
   

@@ -219,7 +219,7 @@ require_once '../includes/header.php';
                     <div class="appointments-list" style="display: flex; flex-direction: column; gap: 1rem;">
                         <?php foreach ($recentActivity as $activity): ?>
                         <div class="appointment-item clickable" style="border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; display: flex; justify-content: space-between; align-items: flex-start; transition: all 0.2s; cursor: pointer;" 
-                             onclick="showAppointmentDetails(<?php echo htmlspecialchars(json_encode([
+                                onclick="showAppointmentDetails(<?php $activity_patient_info = !empty($activity['patient_info']) ? (json_decode($activity['patient_info'], true) ?? []) : []; echo htmlspecialchars(json_encode([
                                 'name' => ($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''),
                                 'account_name' => ($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''),
                                 'date' => formatDate($activity['appointment_date']),
@@ -244,7 +244,8 @@ require_once '../includes/header.php';
                                 'payment_status' => $activity['payment_status'] ?? 'PENDING',
                                 'payment_amount' => $activity['payment_amount'] ?? 0,
                                 'gcash_reference' => $activity['gcash_reference'] ?? 'N/A',
-                                'receipt_path' => $activity['payment_receipt_path'] ?? ''
+                                'receipt_path' => $activity['payment_receipt_path'] ?? '',
+                                'laboratory_image_path' => $activity_patient_info['laboratory_image'] ?? null
                             ]), ENT_QUOTES, 'UTF-8'); ?>)" 
                              onmouseover="this.style.borderColor='#3b82f6'; this.style.backgroundColor='#f8fafc';" 
                              onmouseout="this.style.borderColor='#e2e8f0'; this.style.backgroundColor='transparent';">
@@ -512,6 +513,17 @@ function showAppointmentDetails(data) {
                         </div>
                     </div>
                 </div>
+
+                ${data.laboratory_image_path ? `
+                <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;">
+                        <i class="fas fa-flask" style="color: white; margin-right: 10px;"></i> Laboratory Request
+                    </h3>
+                    <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 32px; text-align: center;">
+                        <img src="../${data.laboratory_image_path}" alt="Laboratory Request" style="max-width: 100%; max-height: 500px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); cursor: pointer;" onclick="window.open('../${data.laboratory_image_path}', '_blank')">
+                    </div>
+                </div>
+                ` : ''}
 
                 <!-- 5. Transaction Summary Card -->
                 <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">

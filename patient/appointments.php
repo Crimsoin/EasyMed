@@ -699,6 +699,7 @@ unset($_SESSION['appointment_errors']);
                                     "age" => $p_info['age'] ?? 'N/A',
                                     "reason" => !empty($appointment['illness']) ? $appointment['illness'] : ($appointment['reason_for_visit'] ?: 'General Consultation'),
                                     "notes" => $appointment['notes'],
+                                    "laboratory_image" => $p_info['laboratory_image'] ?? null,
                                     "payment" => [
                                         "amount" => number_format($appointment['payment_amount'] ?? $appointment['display_fee'], 2),
                                         "ref" => $appointment['gcash_reference'] ?? 'N/A',
@@ -852,6 +853,17 @@ unset($_SESSION['appointment_errors']);
                             </div>
                         </div>
                     </div>
+
+                    ${data.laboratory_image ? `
+                    <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                        <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;">
+                            <i class="fas fa-flask" style="color: white; margin-right: 10px;"></i> Laboratory Request
+                        </h3>
+                        <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 32px; text-align: center;">
+                            <img src="../${data.laboratory_image}" alt="Laboratory Request" style="max-width: 100%; max-height: 500px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); cursor: pointer;" onclick="window.open('../${data.laboratory_image}', '_blank')">
+                        </div>
+                    </div>
+                    ` : ''}
 
                     <!-- 5. Transaction Summary Card -->
                     <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">

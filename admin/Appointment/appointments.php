@@ -9,6 +9,40 @@ require_once '../../includes/email.php';
 $auth = new Auth();
 $auth->requireRole('admin');
 
+// Appointment management has been consolidated into the Admin Dashboard.
+// Redirect legacy URLs to the dashboard while preserving compatible filters.
+$dashboard_params = [];
+
+if (!empty($_GET['search'])) {
+    $dashboard_params['search'] = $_GET['search'];
+}
+
+if (!empty($_GET['status'])) {
+    $dashboard_params['status'] = $_GET['status'];
+}
+
+if (!empty($_GET['date'])) {
+    $dashboard_params['date'] = $_GET['date'];
+}
+
+if (!empty($_GET['page'])) {
+    $dashboard_params['page'] = $_GET['page'];
+}
+
+if (!empty($_GET['doctor_id'])) {
+    $dashboard_params['doctor'] = $_GET['doctor_id'];
+} elseif (!empty($_GET['doctor'])) {
+    $dashboard_params['doctor'] = $_GET['doctor'];
+}
+
+$redirect_url = '../Dashboard/dashboard.php';
+if (!empty($dashboard_params)) {
+    $redirect_url .= '?' . http_build_query($dashboard_params);
+}
+
+header('Location: ' . $redirect_url);
+exit;
+
 $db = Database::getInstance();
 $emailService = new EmailService();
 
@@ -846,6 +880,15 @@ function viewAppointment(id) {
                         </div>
                     </div>
                 </div>
+
+                ${patientInfo && patientInfo.laboratory_image ? `
+                <div class="modal-section">
+                    <div class="modal-section-title"><i class="fas fa-flask"></i> Laboratory Request</div>
+                    <div class="reason-box" style="text-align: center; background: #f8fafc; border: 1.5px dashed #cbd5e1;">
+                        <img src="../../${patientInfo.laboratory_image}" alt="Laboratory Request" style="max-width: 100%; max-height: 500px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); cursor: pointer;" onclick="window.open('../../${patientInfo.laboratory_image}', '_blank')">
+                    </div>
+                </div>
+                ` : ''}
 
                 <div class="modal-section">
                     <div class="modal-section-title"><i class="fas fa-user-md"></i> Assigned Doctor</div>

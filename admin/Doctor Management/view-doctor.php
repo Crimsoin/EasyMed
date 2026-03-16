@@ -43,7 +43,7 @@ $stats = [
     'cancelled_appointments' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = (SELECT id FROM doctors WHERE user_id = ?) AND status = 'cancelled'", [$doctor_id])['count']
 ];
 
-// Get recent appointments
+// Get consultation history (all appointments)
 $recent_appointments = $db->fetchAll("
     SELECT a.id, a.appointment_date, a.appointment_time, a.status, a.reason_for_visit, a.illness,
            (up.first_name || ' ' || up.last_name) as patient_name
@@ -52,7 +52,6 @@ $recent_appointments = $db->fetchAll("
     JOIN users up ON p.user_id = up.id
     WHERE a.doctor_id = (SELECT id FROM doctors WHERE user_id = ?)
     ORDER BY a.appointment_date DESC, a.appointment_time DESC
-    LIMIT 5
 ", [$doctor_id]);
 
 // Get average rating
@@ -273,9 +272,6 @@ require_once '../../includes/header.php';
                 <div class="info-section">
                     <div class="section-header">
                         <h3><i class="fas fa-calendar-check"></i> Consultation History</h3>
-                        <a href="../Appointment/appointments.php?doctor_id=<?php echo $doctor["id"]; ?>" class="view-all-link">
-                            View All
-                        </a>
                     </div>
                     <div class="appointments-list">
                         <?php if (!empty($recent_appointments)): ?>
@@ -361,7 +357,7 @@ require_once '../../includes/header.php';
                             <i class="fas fa-<?php echo $doctor['is_active'] ? 'ban' : 'check'; ?>"></i>
                             <?php echo $doctor['is_active'] ? 'Deactivate' : 'Activate'; ?>
                         </button>
-                        <a href="../Appointment/appointments.php?doctor_id=<?php echo $doctor['id']; ?>" class="action-btn">
+                        <a href="../Dashboard/dashboard.php?doctor=<?php echo $doctor['id']; ?>" class="action-btn">
                             <i class="fas fa-calendar-alt"></i>
                             View Appointments
                         </a>
@@ -580,6 +576,17 @@ function viewAppointment(id) {
                                 </div>
                             </div>
                         </div>
+
+                        ${patientInfo && patientInfo.laboratory_image ? `
+                        <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                            <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;">
+                                <i class="fas fa-flask" style="color: white; margin-right: 10px;"></i> Laboratory Request
+                            </h3>
+                            <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 32px; text-align: center;">
+                                <img src="../../${patientInfo.laboratory_image}" alt="Laboratory Request" style="max-width: 100%; max-height: 500px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); cursor: pointer;" onclick="window.open('../../${patientInfo.laboratory_image}', '_blank')">
+                            </div>
+                        </div>
+                        ` : ''}
 
                         <!-- 5. Transaction Summary Card -->
                         <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">

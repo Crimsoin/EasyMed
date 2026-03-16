@@ -33,7 +33,9 @@ try {
     $purpose = trim($_POST['purpose'] ?? '');
     $laboratory = trim($_POST['laboratory'] ?? '');
     $agreed_no_refund = isset($_POST['agreed_no_refund_policy']) ? 1 : 0;
+    $laboratory_image_file = $_FILES['laboratory_image'] ?? null;
     $patient_id = $_SESSION['user_id'];
+    $uploaded_laboratory_image = '';
 
     // Validate required fields
     $errors = [];
@@ -93,6 +95,14 @@ try {
         $errors[] = 'Please select a laboratory service.';
     }
 
+    if ($purpose === 'laboratory') {
+        if (!$laboratory_image_file || ($laboratory_image_file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            $errors[] = 'Please upload a laboratory request image.';
+        } elseif (($laboratory_image_file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+            $errors[] = 'Laboratory image upload failed. Please try again.';
+        }
+    }
+
     if (!empty($errors)) {
         $_SESSION['appointment_errors'] = $errors;
         $_SESSION['appointment_data'] = $_POST;
@@ -132,6 +142,24 @@ try {
     }
     
     $doctor_record_id = $doctor['doctor_record_id'];
+
+    // Upload laboratory image after core validation passes.
+    if ($purpose === 'laboratory' && $laboratory_image_file && ($laboratory_image_file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+        $upload_result = uploadFile(
+            $laboratory_image_file,
+            __DIR__ . '/../assets/uploads/lab_requests',
+            ['jpg', 'jpeg', 'png', 'webp']
+        );
+
+        if (!$upload_result['success']) {
+            $_SESSION['appointment_errors'] = ['Failed to upload laboratory request image. Please try again.'];
+            $_SESSION['appointment_data'] = $_POST;
+            header('Location: book-appointment.php');
+            exit();
+        }
+
+        $uploaded_laboratory_image = 'assets/uploads/lab_requests/' . $upload_result['filename'];
+    }
 
     // Verify the selected day or date is in doctor's schedule
     $doctor_days = array_map('trim', explode(',', $doctor['schedule_days']));
@@ -200,6 +228,7 @@ try {
         'illness' => $illness,
         'purpose' => $purpose,
         'laboratory' => $laboratory,
+        'laboratory_image' => $uploaded_laboratory_image,
         'reference_number' => $reference_number,
         'agreed_no_refund_policy' => $agreed_no_refund
     ]);
