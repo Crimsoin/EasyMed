@@ -26,7 +26,7 @@ $patient_record_id = $patient_record['id'];
 // Get patient's appointments with payment status
 $appointments = $db->fetchAll("
     SELECT 
-        a.id, a.appointment_date, a.appointment_time, a.reason_for_visit, 
+        a.id, a.appointment_date, a.appointment_time, a.reason_for_visit, a.illness, 
         a.status, a.patient_info, a.notes, a.created_at,
         u.first_name as doctor_first_name, u.last_name as doctor_last_name,
         d.id as doctor_internal_id, d.specialty, d.license_number, d.consultation_fee,
@@ -697,7 +697,7 @@ unset($_SESSION['appointment_errors']);
                                     "address" => $p_info['address'] ?? 'N/A',
                                     "gender" => $p_info['gender'] ?? ($_SESSION['gender'] ?? 'N/A'),
                                     "age" => $p_info['age'] ?? 'N/A',
-                                    "reason" => $appointment['reason_for_visit'],
+                                    "reason" => !empty($appointment['illness']) ? $appointment['illness'] : ($appointment['reason_for_visit'] ?: 'General Consultation'),
                                     "notes" => $appointment['notes'],
                                     "payment" => [
                                         "amount" => number_format($appointment['payment_amount'] ?? $appointment['display_fee'], 2),

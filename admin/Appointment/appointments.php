@@ -364,6 +364,10 @@ require_once '../../includes/header.php';
 ?>
 
 <div class="admin-container">
+    <button class="sidebar-toggle" title="Toggle Sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+
     <div class="admin-sidebar">
         <div class="sidebar-header">
             <h3><i class="fas fa-user-shield"></i> Admin Panel</h3>
@@ -531,9 +535,9 @@ require_once '../../includes/header.php';
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="reason-text" title="<?php echo htmlspecialchars($appointment['reason_for_visit'] ?? ''); ?>">
+                                        <div class="reason-text" title="<?php echo htmlspecialchars($appointment['illness'] ?: $appointment['reason_for_visit'] ?: ''); ?>">
                                             <?php 
-                                            $reason = $appointment['reason_for_visit'] ?? '';
+                                            $reason = !empty($appointment['illness']) ? $appointment['illness'] : ($appointment['reason_for_visit'] ?? '');
                                             echo htmlspecialchars(substr($reason, 0, 50) . (strlen($reason) > 50 ? '...' : ''));
                                             ?>
                                         </div>
@@ -584,17 +588,7 @@ require_once '../../includes/header.php';
                                                     </button>
                                                 <?php endif; ?>
 
-                                                <?php // Cancel - only for pending, scheduled, rescheduled ?>
-                                                <?php if (in_array($appointment['status'], ['pending', 'scheduled', 'rescheduled'])): ?>
-                                                    <form method="POST" style="display: inline;" 
-                                                          onsubmit="return confirm('Are you sure you want to cancel this appointment?')">
-                                                        <input type="hidden" name="action" value="delete">
-                                                        <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                                        <button type="submit" class="btn btn-sm btn-delete" title="Cancel">
-                                                            <i class="fas fa-ban"></i>
-                                                        </button>
-                                                    </form>
-                                                <?php endif; ?>
+
                                         </div>
                                     </td>
                                 </tr>

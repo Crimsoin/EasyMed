@@ -11,7 +11,51 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'doctor') {
 }
 
 $db = Database::getInstance();
-$doctor_id = $_SESSION['user_id'];
+$doctor_user_id = $_SESSION['user_id'];
+$doctor_record = $db->fetch("SELECT id, specialty FROM doctors WHERE user_id = ?", [$doctor_user_id]);
+if (!$doctor_record) {
+    die("Doctor profile not found.");
+}
+$doctor_id = $doctor_record['id'];
+
+// Handle appointment status updates
+if ($_POST && isset($_POST['action']) && isset($_POST['appointment_id'])) {
+    $appointment_id = (int)$_POST['appointment_id'];
+    $action = $_POST['action'];
+    $patient_id_param = (int)($_GET['id'] ?? 0);
+    
+    // Get appointment details
+    $appointment_details = $db->fetch("SELECT id, status FROM appointments WHERE id = ? AND doctor_id = ?", [$appointment_id, $doctor_id]);
+    
+    if ($appointment_details) {
+        switch ($action) {
+            case 'complete':
+                $notes = $_POST['notes'] ?? '';
+                $db->update('appointments', [
+                    'status' => 'completed',
+                    'notes' => $notes
+                ], 'id = ?', [$appointment_id]);
+                $success_message = "Appointment marked as completed successfully.";
+                header("Location: view-patient.php?id=" . $patient_id_param . "&success=" . urlencode($success_message));
+                exit();
+            case 'no_show':
+                $db->update('appointments', ['status' => 'no_show'], 'id = ?', [$appointment_id]);
+                $success_message = "Appointment marked as No Show.";
+                header("Location: view-patient.php?id=" . $patient_id_param . "&success=" . urlencode($success_message));
+                exit();
+            case 'update_findings':
+                $notes = $_POST['notes'] ?? '';
+                $db->update('appointments', ['notes' => $notes], 'id = ?', [$appointment_id]);
+                $success_message = "Appointment findings updated successfully.";
+                header("Location: view-patient.php?id=" . $patient_id_param . "&success=" . urlencode($success_message));
+                exit();
+        }
+    }
+}
+
+if (isset($_GET['success'])) {
+    $success_message = $_GET['success'];
+}
 
 // Get patient ID
 $patientId = (int)($_GET['id'] ?? 0);
@@ -185,14 +229,15 @@ require_once '../includes/header.php';
                                 'address' => $user['address'] ?? 'N/A',
                                 'gender' => ucfirst($user['gender'] ?? 'N/A'),
                                 'age' => !empty($user['date_of_birth']) ? calculateAge($user['date_of_birth']) : 'N/A',
-                                'reason' => $activity['reason_for_visit'] ?? 'Consultation',
+                                'reason' => $activity['illness'] ?? $activity['reason_for_visit'] ?? 'Consultation',
                                 'purpose' => ucfirst($activity['purpose'] ?? 'Consultation'),
                                 'relationship' => ucfirst($activity['relationship'] ?? 'Self'),
                                  'status' => ucfirst($activity['status']),
                                  'id' => $activity['id'],
                                  'notes' => $activity['notes'] ?? '',
-                                 'can_complete' => false,
-                                 'can_add_findings' => strtolower($appointment['status'] ?? $activity['status'] ?? '') === 'completed',
+                                 'can_complete' => in_array(strtolower($activity['status']), ['scheduled', 'ongoing', 'confirmed', 'pending']),
+                                 'can_no_show' => in_array(strtolower($activity['status']), ['scheduled', 'ongoing', 'confirmed', 'pending']),
+                                 'can_add_findings' => strtolower($activity['status']) === 'completed',
                                  'doctor_first_name' => $_SESSION['first_name'],
                                  'doctor_last_name' => $_SESSION['last_name'],
                                 'specialty' => $doctor_specialty,
@@ -532,12 +577,16 @@ function showAppointmentDetails(data) {
         <button type="button" class="modal-btn modal-btn-secondary" onclick="window.print()" style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: #475569; transition: all 0.2s;"><i class="fas fa-print"></i> Print</button>
     `;
 
-    if (false) { // Disabled logic
+    if (data.can_complete) {
         footerHtml = `
-            <div style="flex: 1;"></div>
-            <button type="button" class="modal-btn modal-btn-primary" onclick='openFindingsModal(${data.id}, ${JSON.stringify(data.notes || "")}, "complete")' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; background: linear-gradient(135deg, #2563eb, #1e3a8a); color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); transition: all 0.2s;">
-                <i class="fas fa-check-circle"></i> Save Findings
-            </button>
+            <div style="flex: 1; display: flex; gap: 12px;">
+                <button type="button" class="modal-btn" onclick='markAsNoShow(${data.id})' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid #ef4444; background: #fef2f2; color: #dc2626; transition: all 0.2s;">
+                    <i class="fas fa-user-slash"></i> No Show
+                </button>
+                <button type="button" class="modal-btn modal-btn-primary" onclick='openFindingsModal(${data.id}, ${JSON.stringify(data.notes || "")}, "complete")' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: all 0.2s;">
+                    <i class="fas fa-check-circle"></i> Mark as Completed
+                </button>
+            </div>
             ${footerHtml}
         `;
     } else if (data.can_add_findings) {
@@ -577,6 +626,27 @@ function openFindingsModal(id, currentNotes, action = 'complete') {
 
     document.getElementById('findingsModal').style.display = 'block';
     document.getElementById('appointmentModal').style.zIndex = '999';
+}
+
+function markAsNoShow(id) {
+    if (confirm('Are you sure you want to mark this appointment as No Show?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.style.display = 'none';
+        
+        const actionInput = document.createElement('input');
+        actionInput.name = 'action';
+        actionInput.value = 'no_show';
+        
+        const idInput = document.createElement('input');
+        idInput.name = 'appointment_id';
+        idInput.value = id;
+        
+        form.appendChild(actionInput);
+        form.appendChild(idInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 
 function closeFindingsModal() {

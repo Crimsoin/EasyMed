@@ -303,7 +303,7 @@ require_once '../../includes/header.php';
                             </div>
                             <div class="meta-item">
                                 <i class="fas fa-clipboard-list"></i>
-                                <span><?php echo htmlspecialchars($activity['reason_for_visit'] ?: 'Consultation Only'); ?></span>
+                                <span><?php echo htmlspecialchars(!empty($activity['illness']) ? $activity['illness'] : ($activity['reason_for_visit'] ?: 'Consultation Only')); ?></span>
                             </div>
                             <div class="meta-item amount">
                                 <i class="fas fa-coins"></i>
@@ -524,7 +524,7 @@ function viewAppointment(id) {
                             <div style="display: flex; flex-direction: column; gap: 20px;">
                                 <div>
                                     <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Reason for Visit</label>
-                                    <div style="font-size: 0.95rem; color: #1e293b; font-weight: 500; line-height: 1.5;">${appointment.reason_for_visit || 'General Consultation'}</div>
+                                    <div style="font-size: 0.95rem; color: #1e293b; font-weight: 500; line-height: 1.5;">${appointment.illness || appointment.reason_for_visit || 'General Consultation'}</div>
                                 </div>
                                 <div style="background: #eff6ff; border: 1px solid #dbeafe; border-radius: 12px; padding: 16px;">
                                     <label style="display: block; font-size: 0.75rem; color: #2563eb; font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">Doctor's Findings</label>

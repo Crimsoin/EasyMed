@@ -34,9 +34,17 @@ if ($_POST && isset($_POST['action']) && isset($_POST['appointment_id'])) {
         switch ($action) {
             case 'complete':
                 $notes = $_POST['notes'] ?? '';
-                $db->update('appointments', ['notes' => $notes], 'id = ?', [$appointment_id]);
-                $success_message = "Appointment findings updated successfully.";
+                $db->update('appointments', [
+                    'status' => 'completed',
+                    'notes' => $notes
+                ], 'id = ?', [$appointment_id]);
+                $success_message = "Appointment marked as completed successfully.";
                 // Refresh data to reflect status change
+                header("Location: dashboard_doctor.php?success=" . urlencode($success_message));
+                exit();
+            case 'no_show':
+                $db->update('appointments', ['status' => 'no_show'], 'id = ?', [$appointment_id]);
+                $success_message = "Appointment marked as No Show.";
                 header("Location: dashboard_doctor.php?success=" . urlencode($success_message));
                 exit();
             case 'update_findings':
@@ -101,7 +109,7 @@ foreach ($today_appointments as &$appt) {
              $appt['address'] = $appt['address'] ?? $decoded['address'] ?? $appt['patient_address'] ?? 'N/A';
         }
     }
-    $appt['reason'] = $appt['reason_for_visit'] ?? 'Consultation';
+    $appt['reason'] = !empty($appt['illness']) ? $appt['illness'] : ($appt['reason_for_visit'] ?? 'Consultation');
     $appt['doctor_first_name'] = $_SESSION['first_name'];
     $appt['doctor_last_name'] = $_SESSION['last_name'];
     $appt['doctor_specialty'] = $doctor_specialty;
@@ -124,7 +132,7 @@ foreach ($upcoming_appointments as &$appt) {
              $appt['address'] = $appt['address'] ?? $decoded['address'] ?? $appt['patient_address'] ?? 'N/A';
         }
     }
-    $appt['reason'] = $appt['reason_for_visit'] ?? 'Consultation';
+    $appt['reason'] = !empty($appt['illness']) ? $appt['illness'] : ($appt['reason_for_visit'] ?? 'Consultation');
     $appt['doctor_first_name'] = $_SESSION['first_name'];
     $appt['doctor_last_name'] = $_SESSION['last_name'];
     $appt['doctor_specialty'] = $doctor_specialty;
@@ -310,14 +318,15 @@ require_once '../includes/header.php';
                                         'address' => $appointment['address'] ?? 'N/A',
                                         'gender' => ucfirst($appointment['patient_gender'] ?? 'N/A'),
                                         'age' => !empty($appointment['patient_dob']) ? calculateAge($appointment['patient_dob']) : 'N/A',
-                                        'reason' => $appointment['illness'] ?? $appointment['reason'],
+                                        'reason' => $appointment['reason'],
                                         'purpose' => ucfirst($appointment['purpose'] ?? 'Consultation'),
                                         'relationship' => ucfirst($appointment['relationship'] ?? 'Self'),
                                         'status' => ucfirst($appointment['status']),
                                         'id' => $appointment['id'],
                                         'notes' => $appointment['notes'] ?? '',
-                                        'can_complete' => false,
-                                        'can_add_findings' => strtolower($appointment['status'] ?? $activity['status'] ?? '') === 'completed',
+                                        'can_complete' => in_array(strtolower($appointment['status']), ['scheduled', 'ongoing', 'confirmed', 'pending']),
+                                        'can_no_show' => in_array(strtolower($appointment['status']), ['scheduled', 'ongoing', 'confirmed', 'pending']),
+                                        'can_add_findings' => strtolower($appointment['status']) === 'completed',
                                         'doctor_first_name' => $appointment['doctor_first_name'],
                                         'doctor_last_name' => $appointment['doctor_last_name'],
                                         'specialty' => $appointment['doctor_specialty'],
@@ -401,14 +410,15 @@ require_once '../includes/header.php';
                                         'address' => $appointment['address'] ?? 'N/A',
                                         'gender' => ucfirst($appointment['patient_gender'] ?? 'N/A'),
                                         'age' => !empty($appointment['patient_dob']) ? calculateAge($appointment['patient_dob']) : 'N/A',
-                                        'reason' => $appointment['illness'] ?? $appointment['reason'],
+                                        'reason' => $appointment['reason'],
                                         'purpose' => ucfirst($appointment['purpose'] ?? 'Consultation'),
                                         'relationship' => ucfirst($appointment['relationship'] ?? 'Self'),
                                         'status' => ucfirst($appointment['status']),
                                         'id' => $appointment['id'],
                                         'notes' => $appointment['notes'] ?? '',
-                                        'can_complete' => false,
-                                        'can_add_findings' => strtolower($appointment['status'] ?? $activity['status'] ?? '') === 'completed',
+                                        'can_complete' => in_array(strtolower($appointment['status']), ['scheduled', 'ongoing', 'confirmed', 'pending']),
+                                        'can_no_show' => in_array(strtolower($appointment['status']), ['scheduled', 'ongoing', 'confirmed', 'pending']),
+                                        'can_add_findings' => strtolower($appointment['status']) === 'completed',
                                         'doctor_first_name' => $appointment['doctor_first_name'],
                                         'doctor_last_name' => $appointment['doctor_last_name'],
                                         'specialty' => $appointment['doctor_specialty'],
@@ -705,12 +715,16 @@ function showAppointmentDetails(data) {
         <button type="button" class="modal-btn modal-btn-secondary" onclick="window.print()" style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: #475569; transition: all 0.2s;"><i class="fas fa-print"></i> Print</button>
     `;
 
-    if (false) { // Disabled logic
+    if (data.can_complete) {
         footerHtml = `
-            <div style="flex: 1;"></div>
-            <button type="button" class="modal-btn modal-btn-primary" onclick='openFindingsModal(${data.id}, ${JSON.stringify(data.notes || "")}, "complete")' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; background: linear-gradient(135deg, #2563eb, #1e3a8a); color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); transition: all 0.2s;">
-                <i class="fas fa-check-circle"></i> Save Findings
-            </button>
+            <div style="flex: 1; display: flex; gap: 12px;">
+                <button type="button" class="modal-btn" onclick='markAsNoShow(${data.id})' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid #ef4444; background: #fef2f2; color: #dc2626; transition: all 0.2s;">
+                    <i class="fas fa-user-slash"></i> No Show
+                </button>
+                <button type="button" class="modal-btn modal-btn-primary" onclick='openFindingsModal(${data.id}, ${JSON.stringify(data.notes || "")}, "complete")' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: all 0.2s;">
+                    <i class="fas fa-check-circle"></i> Mark as Completed
+                </button>
+            </div>
             ${footerHtml}
         `;
     } else if (data.can_add_findings) {
@@ -750,6 +764,27 @@ function openFindingsModal(id, currentNotes, action = 'complete') {
 
     document.getElementById('findingsModal').style.display = 'block';
     document.getElementById('appointmentModal').style.zIndex = '999';
+}
+
+function markAsNoShow(id) {
+    if (confirm('Are you sure you want to mark this appointment as No Show?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.style.display = 'none';
+        
+        const actionInput = document.createElement('input');
+        actionInput.name = 'action';
+        actionInput.value = 'no_show';
+        
+        const idInput = document.createElement('input');
+        idInput.name = 'appointment_id';
+        idInput.value = id;
+        
+        form.appendChild(actionInput);
+        form.appendChild(idInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 
 function closeFindingsModal() {

@@ -30,8 +30,8 @@ function initializeApp() {
     // Initialize password toggles
     initializePasswordToggles();
 
-    // Initialize multi-step form
-    initializeMultiStepForm();
+    // Initialize admin sidebar toggle
+    initializeAdminSidebar();
 }
 
 // Enhanced Modal Functions
@@ -955,6 +955,42 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+
+// Admin Sidebar Toggle Functionality
+function initializeAdminSidebar() {
+    const sidebar = document.querySelector('.admin-sidebar');
+    const toggle = document.querySelector('.sidebar-toggle');
+    
+    if (sidebar && toggle) {
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            sidebar.classList.toggle('active');
+            
+            // Change icon based on state
+            const icon = this.querySelector('i');
+            if (sidebar.classList.contains('active')) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            } else {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        });
+
+        // Close sidebar when clicking outside
+        document.addEventListener('click', function(e) {
+            if (sidebar.classList.contains('active') && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                sidebar.classList.remove('active');
+                const icon = toggle.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+            }
+        });
+    }
+}
 
 // Export functions for use in other scripts
 window.EasyMed = {

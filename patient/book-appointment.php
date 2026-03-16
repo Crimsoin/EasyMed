@@ -595,6 +595,14 @@ if (empty($appointment_data)) {
     margin-top: 0.2rem;
 }
 
+.doctor-info-text {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
 .doctor-info-text strong {
     display: block;
     font-size: 0.75rem;
@@ -979,7 +987,8 @@ function openAppointmentModal(buttonElement) {
 
     // Schedule Days
     if (doctor.schedule_days) {
-      panelHtml += '<div class="doctor-info-item"><i class="fas fa-calendar-alt"></i><div class="doctor-info-text"><strong>Available Days</strong>' + doctor.schedule_days + '</div></div>';
+      var formattedDays = doctor.schedule_days.split(',').join(', ');
+      panelHtml += '<div class="doctor-info-item"><i class="fas fa-calendar-alt"></i><div class="doctor-info-text"><strong>Available Days</strong>' + formattedDays + '</div></div>';
     }
     
     // Schedule Time

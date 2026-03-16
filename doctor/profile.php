@@ -25,25 +25,19 @@ $doctor_internal_id = $doctorRecord['id'] ?? 0;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
-            case 'update_basic_info':
-                $result = updateBasicInfo($db, $doctor_id, $_POST);
-                if ($result['success']) {
-                    $message = $result['message'];
-                    // Update session data
-                    $_SESSION['first_name'] = $_POST['first_name'];
-                    $_SESSION['last_name'] = $_POST['last_name'];
-                    $_SESSION['email'] = $_POST['email'];
-                } else {
-                    $error = $result['message'];
-                }
-                break;
+            case 'update_profile':
+                $basic_result = updateBasicInfo($db, $doctor_id, $_POST);
+                $medical_result = updateMedicalInfo($db, $doctor_id, $_POST);
                 
-            case 'update_medical_info':
-                $result = updateMedicalInfo($db, $doctor_id, $_POST);
-                if ($result['success']) {
-                    $message = $result['message'];
+                if ($basic_result['success'] || $medical_result['success']) {
+                    $message = "Profile updated successfully!";
+                    if ($basic_result['success']) {
+                        $_SESSION['first_name'] = $_POST['first_name'];
+                        $_SESSION['last_name'] = $_POST['last_name'];
+                        $_SESSION['email'] = $_POST['email'];
+                    }
                 } else {
-                    $error = $result['message'];
+                    $error = $basic_result['message'] . " " . $medical_result['message'];
                 }
                 break;
                 
@@ -114,31 +108,26 @@ $lab_offers = getLabOffers($db, $doctor_internal_id);
 function getDoctorProfile($db, $doctor_id) {
     $sql = "
         SELECT 
-            u.first_name, u.last_name, u.email,
+            u.first_name, u.last_name, u.email, u.phone, u.date_of_birth, u.gender,
             d.specialty as specialization, d.license_number, 
             d.experience_years as years_of_experience,
             d.biography as bio, d.consultation_fee,
-            COUNT(a.id) as total_appointments
+            d.schedule_days, d.schedule_time_start, d.schedule_time_end,
+            (SELECT COUNT(*) FROM appointments WHERE doctor_id = d.id) as total_appointments,
+            (SELECT AVG(rating) FROM reviews WHERE doctor_id = d.id) as avg_rating,
+            (SELECT COUNT(*) FROM reviews WHERE doctor_id = d.id) as total_reviews
         FROM users u
         JOIN doctors d ON d.user_id = u.id
-        LEFT JOIN appointments a ON a.doctor_id = d.id
         WHERE u.id = ?
-        GROUP BY u.id
     ";
     
     $result = $db->fetch($sql, [$doctor_id]);
     
-    // Map old column names to new ones for backward compatibility
+    // Map old column names to new ones for backward compatibility if needed
     if ($result) {
-        if (empty($result['specialization']) && !empty($result['specialty'])) {
-            $result['specialization'] = $result['specialty'];
-        }
-        if (empty($result['years_of_experience']) && !empty($result['experience_years'])) {
-            $result['years_of_experience'] = $result['experience_years'];
-        }
-        if (empty($result['bio']) && !empty($result['biography'])) {
-            $result['bio'] = $result['biography'];
-        }
+        $result['specialization'] = $result['specialization'] ?? '';
+        $result['years_of_experience'] = $result['years_of_experience'] ?? 0;
+        $result['bio'] = $result['bio'] ?? '';
     }
     
     return $result;
@@ -451,9 +440,14 @@ require_once '../includes/header.php';
         
         <main class="doctor-content">
             <!-- Page Header -->
-            <div class="content-header">
-                <h1><i class="fas fa-user-cog"></i> Doctor Profile</h1>
-                <p>Manage your professional profile and account settings</p>
+            <div class="content-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1><i class="fas fa-user-cog"></i> Doctor Profile</h1>
+                    <p>Manage your professional profile and account settings</p>
+                </div>
+                <button type="button" id="edit-profile-btn" class="btn btn-primary" style="background: white; color: var(--primary-cyan); border: 2px solid var(--primary-cyan); box-shadow: none;">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </button>
             </div>
 
             <!-- Messages -->
@@ -507,14 +501,8 @@ require_once '../includes/header.php';
             <!-- Profile Tabs -->
             <div class="profile-tabs">
                 <div class="tab-navigation">
-                    <button class="tab-btn active" data-tab="basic-info">
-                        <i class="fas fa-user"></i> Basic Information
-                    </button>
-                    <button class="tab-btn" data-tab="medical-info">
-                        <i class="fas fa-stethoscope"></i> Medical Information
-                    </button>
-                    <button class="tab-btn" data-tab="lab-offers">
-                        <i class="fas fa-flask"></i> Lab Offers
+                    <button class="tab-btn active" data-tab="profile">
+                        <i class="fas fa-user-md"></i> Professional Profile
                     </button>
                     <button class="tab-btn" data-tab="security">
                         <i class="fas fa-lock"></i> Security
@@ -524,67 +512,72 @@ require_once '../includes/header.php';
                     </button>
                 </div>
 
-                <!-- Basic Information Tab -->
-                <div class="tab-content active" id="basic-info">
+                <!-- Professional Profile Tab (Merged) -->
+                <div class="tab-content active" id="profile">
+                    <!-- Basic & Medical Info Form -->
                     <div class="content-section">
                         <div class="section-header">
-                            <h3><i class="fas fa-user"></i> Basic Information</h3>
-                            <p>Update your personal information and contact details</p>
+                            <div>
+                                <h3><i class="fas fa-user-md"></i> Professional Profile</h3>
+                                <p>Manage your professional identity and medical credentials</p>
+                            </div>
+                            <button type="button" class="btn btn-primary edit-profile-btn" style="background: white; color: var(--primary-cyan); border: 2px solid var(--primary-cyan); box-shadow: none;">
+                                <i class="fas fa-edit"></i> Edit Profile
+                            </button>
                         </div>
                         
                         <form method="POST" class="profile-form">
-                            <input type="hidden" name="action" value="update_basic_info">
+                            <input type="hidden" name="action" value="update_profile">
                             
+                            <!-- Basic Information Section -->
+                            <h4 style="margin: 1rem 0; color: var(--text-dark); border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">
+                                <i class="fas fa-user"></i> Basic Information
+                            </h4>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="first_name" class="form-label">
                                         <i class="fas fa-user"></i> First Name
                                     </label>
                                     <input type="text" id="first_name" name="first_name" class="form-control" 
-                                           value="<?= htmlspecialchars($doctor_info['first_name'] ?? '') ?>">
+                                           value="<?= htmlspecialchars($doctor_info['first_name'] ?? '') ?>" disabled>
                                 </div>
-                                
                                 <div class="form-group">
                                     <label for="last_name" class="form-label">
                                         <i class="fas fa-user"></i> Last Name
                                     </label>
                                     <input type="text" id="last_name" name="last_name" class="form-control" 
-                                           value="<?= htmlspecialchars($doctor_info['last_name'] ?? '') ?>">
+                                           value="<?= htmlspecialchars($doctor_info['last_name'] ?? '') ?>" disabled>
                                 </div>
                             </div>
-                            
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="email" class="form-label">
                                         <i class="fas fa-envelope"></i> Email Address
                                     </label>
                                     <input type="email" id="email" name="email" class="form-control" 
-                                           value="<?= htmlspecialchars($doctor_info['email'] ?? '') ?>">
+                                           value="<?= htmlspecialchars($doctor_info['email'] ?? '') ?>" disabled>
                                 </div>
-                                
                                 <div class="form-group">
                                     <label for="phone" class="form-label">
                                         <i class="fas fa-phone"></i> Phone Number
                                     </label>
                                     <input type="tel" id="phone" name="phone" class="form-control" 
-                                           value="<?= htmlspecialchars($doctor_info['phone'] ?? '') ?>">
+                                           value="<?= htmlspecialchars($doctor_info['phone'] ?? '') ?>" disabled>
                                 </div>
                             </div>
-                            
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="date_of_birth" class="form-label">
                                         <i class="fas fa-calendar"></i> Date of Birth
                                     </label>
                                     <input type="date" id="date_of_birth" name="date_of_birth" class="form-control" 
-                                           value="<?= htmlspecialchars($doctor_info['date_of_birth'] ?? '') ?>">
+                                           value="<?= htmlspecialchars($doctor_info['date_of_birth'] ?? '') ?>" disabled>
                                 </div>
-                                
                                 <div class="form-group">
                                     <label for="gender" class="form-label">
                                         <i class="fas fa-venus-mars"></i> Gender
                                     </label>
-                                    <select id="gender" name="gender" class="form-control">
+                                    <select id="gender" name="gender" class="form-control" disabled>
                                         <option value="">Select Gender</option>
                                         <option value="male" <?= ($doctor_info['gender'] ?? '') === 'male' ? 'selected' : '' ?>>Male</option>
                                         <option value="female" <?= ($doctor_info['gender'] ?? '') === 'female' ? 'selected' : '' ?>>Female</option>
@@ -592,27 +585,11 @@ require_once '../includes/header.php';
                                     </select>
                                 </div>
                             </div>
-                            
-                            <div class="form-actions">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> Update Basic Information
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
 
-                <!-- Medical Information Tab -->
-                <div class="tab-content" id="medical-info">
-                    <div class="content-section">
-                        <div class="section-header">
-                            <h3><i class="fas fa-stethoscope"></i> Medical Information</h3>
-                            <p>Update your professional medical credentials and details</p>
-                        </div>
-                        
-                        <form method="POST" class="profile-form">
-                            <input type="hidden" name="action" value="update_medical_info">
-                            
+                            <!-- Medical Information Section -->
+                            <h4 style="margin: 2rem 0 1rem 0; color: var(--text-dark); border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">
+                                <i class="fas fa-stethoscope"></i> Medical Information
+                            </h4>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="specialization" class="form-label">
@@ -620,19 +597,17 @@ require_once '../includes/header.php';
                                     </label>
                                     <input type="text" id="specialization" name="specialization" class="form-control" 
                                            value="<?= htmlspecialchars($doctor_info['specialization'] ?? '') ?>" 
-                                           placeholder="e.g., Cardiology, Pediatrics, General Medicine">
+                                           placeholder="e.g., Cardiology, Pediatrics, General Medicine" disabled>
                                 </div>
-                                
                                 <div class="form-group">
                                     <label for="license_number" class="form-label">
                                         <i class="fas fa-id-card"></i> License Number
                                     </label>
                                     <input type="text" id="license_number" name="license_number" class="form-control" 
                                            value="<?= htmlspecialchars($doctor_info['license_number'] ?? '') ?>" 
-                                           placeholder="Medical license number">
+                                           placeholder="Medical license number" disabled>
                                 </div>
                             </div>
-                            
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="years_of_experience" class="form-label">
@@ -640,37 +615,37 @@ require_once '../includes/header.php';
                                     </label>
                                     <input type="number" id="years_of_experience" name="years_of_experience" class="form-control" 
                                            value="<?= htmlspecialchars($doctor_info['years_of_experience'] ?? '') ?>" 
-                                           min="0" max="50">
+                                           min="0" max="50" disabled>
                                 </div>
-                                
                                 <div class="form-group">
                                     <label for="consultation_fee" class="form-label">
                                         <i class="fas fa-coins"></i> Consultation Fee (₱)
                                     </label>
                                     <input type="number" id="consultation_fee" name="consultation_fee" class="form-control" 
                                            value="<?= htmlspecialchars($doctor_info['consultation_fee'] ?? '') ?>" 
-                                           min="0" step="0.01" placeholder="0.00">
+                                           min="0" step="0.01" placeholder="0.00" disabled>
                                 </div>
                             </div>
                             
-                            <div class="form-actions">
+                            <div class="form-actions" style="display: none;">
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> Update Medical Information
+                                    <i class="fas fa-save"></i> Save Profile Changes
+                                </button>
+                                <button type="button" class="btn btn-secondary cancel-edit">
+                                    <i class="fas fa-times"></i> Cancel
                                 </button>
                             </div>
                         </form>
                     </div>
-                </div>
 
-                <!-- Lab Offers Tab -->
-                <div class="tab-content" id="lab-offers">
-                    <div class="content-section">
-                        <div class="section-header">
+                    <!-- Laboratory Offers Section (Same Page) -->
+                    <div class="content-section" style="margin-top: 3rem; border-top: 2px solid #f8f9fa; padding-top: 2rem;">
+                        <div class="lab-offers-section-header">
                             <div>
                                 <h3><i class="fas fa-flask"></i> Laboratory Offers</h3>
                                 <p>Manage your laboratory tests and diagnostic services</p>
                             </div>
-                            <button type="button" class="btn btn-primary" onclick="openAddLabOfferModal()">
+                            <button type="button" class="btn btn-primary" onclick="openAddLabOfferModal()" style="height: fit-content;">
                                 <i class="fas fa-plus"></i> Add New Lab Offer
                             </button>
                         </div>
@@ -722,8 +697,8 @@ require_once '../includes/header.php';
                             <?php endforeach; ?>
                         </div>
                         <?php else: ?>
-                        <div class="empty-state">
-                            <i class="fas fa-flask"></i>
+                        <div class="empty-state" style="padding: 2rem;">
+                            <i class="fas fa-flask" style="font-size: 3rem;"></i>
                             <h4>No Lab Offers Yet</h4>
                             <p>Start by adding your first laboratory test or diagnostic service.</p>
                         </div>
@@ -735,8 +710,13 @@ require_once '../includes/header.php';
                 <div class="tab-content" id="security">
                     <div class="content-section">
                         <div class="section-header">
-                            <h3><i class="fas fa-lock"></i> Security Settings</h3>
-                            <p>Change your password and manage account security</p>
+                            <div>
+                                <h3><i class="fas fa-lock"></i> Security Settings</h3>
+                                <p>Change your password and manage account security</p>
+                            </div>
+                            <button type="button" class="btn btn-primary edit-profile-btn" style="background: white; color: var(--primary-cyan); border: 2px solid var(--primary-cyan); box-shadow: none;">
+                                <i class="fas fa-edit"></i> Edit Profile
+                            </button>
                         </div>
                         
                         <form method="POST" class="profile-form">
@@ -746,7 +726,7 @@ require_once '../includes/header.php';
                                 <label for="current_password" class="form-label">
                                     <i class="fas fa-lock"></i> Current Password
                                 </label>
-                                <input type="password" id="current_password" name="current_password" class="form-control">
+                                <input type="password" id="current_password" name="current_password" class="form-control" disabled>
                             </div>
                             
                             <div class="form-row">
@@ -755,7 +735,7 @@ require_once '../includes/header.php';
                                         <i class="fas fa-key"></i> New Password
                                     </label>
                                     <input type="password" id="new_password" name="new_password" class="form-control" 
-                                           minlength="8">
+                                           minlength="8" disabled>
                                     
                                 </div>
                                 
@@ -764,13 +744,16 @@ require_once '../includes/header.php';
                                         <i class="fas fa-key"></i> Confirm New Password
                                     </label>
                                     <input type="password" id="confirm_password" name="confirm_password" class="form-control" 
-                                           minlength="8">
+                                           minlength="8" disabled>
                                 </div>
                             </div>
                             
-                            <div class="form-actions">
+                            <div class="form-actions" style="display: none;">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save"></i> Change Password
+                                </button>
+                                <button type="button" class="btn btn-secondary cancel-edit">
+                                    <i class="fas fa-times"></i> Cancel
                                 </button>
                             </div>
                         </form>
@@ -781,8 +764,13 @@ require_once '../includes/header.php';
                 <div class="tab-content" id="preferences">
                     <div class="content-section">
                         <div class="section-header">
-                            <h3><i class="fas fa-cog"></i> Preferences</h3>
-                            <p>Configure your availability and notification settings</p>
+                            <div>
+                                <h3><i class="fas fa-cog"></i> Preferences</h3>
+                                <p>Configure your availability and notification settings</p>
+                            </div>
+                            <button type="button" class="btn btn-primary edit-profile-btn" style="background: var(--primary-cyan); color: white; border: none; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);">
+                                <i class="fas fa-edit"></i> Edit Profile
+                            </button>
                         </div>
                         
                         <form method="POST" class="profile-form">
@@ -799,7 +787,7 @@ require_once '../includes/header.php';
                                     foreach ($days as $day): ?>
                                         <label class="checkbox-item">
                                             <input type="checkbox" name="available_days[]" value="<?= $day ?>" 
-                                                   <?= in_array($day, $schedule_days) ? 'checked' : '' ?>>
+                                                   <?= in_array($day, $schedule_days) ? 'checked' : '' ?> disabled>
                                             <span class="checkbox-label"><?= ucfirst($day) ?></span>
                                         </label>
                                     <?php endforeach; ?>
@@ -812,7 +800,7 @@ require_once '../includes/header.php';
                                         <i class="fas fa-clock"></i> Start Time
                                     </label>
                                     <input type="time" id="schedule_time_start" name="schedule_time_start" class="form-control" 
-                                           value="<?= htmlspecialchars($doctor_info['schedule_time_start'] ?? '') ?>">
+                                           value="<?= htmlspecialchars($doctor_info['schedule_time_start'] ?? '') ?>" disabled>
                                 </div>
                                 
                                 <div class="form-group">
@@ -820,7 +808,7 @@ require_once '../includes/header.php';
                                         <i class="fas fa-clock"></i> End Time
                                     </label>
                                     <input type="time" id="schedule_time_end" name="schedule_time_end" class="form-control" 
-                                           value="<?= htmlspecialchars($doctor_info['schedule_time_end'] ?? '') ?>">
+                                           value="<?= htmlspecialchars($doctor_info['schedule_time_end'] ?? '') ?>" disabled>
                                 </div>
                             </div>
                             
@@ -829,9 +817,12 @@ require_once '../includes/header.php';
                                 <strong>Note:</strong> You can set your available days and working hours. Additional preference settings (notifications, timezone) are not yet configured in the database.
                             </div>
                             
-                            <div class="form-actions">
+                            <div class="form-actions" style="display: none;">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save"></i> Update Preferences
+                                </button>
+                                <button type="button" class="btn btn-secondary cancel-edit">
+                                    <i class="fas fa-times"></i> Cancel
                                 </button>
                             </div>
                         </form>
@@ -842,6 +833,35 @@ require_once '../includes/header.php';
     </div>
 
     <script>
+        // Edit Profile Toggle
+        document.querySelectorAll('.edit-profile-btn, #edit-profile-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const formInputs = document.querySelectorAll('.profile-form input, .profile-form select, .profile-form textarea');
+                const actions = document.querySelectorAll('.profile-form .form-actions');
+                
+                formInputs.forEach(input => {
+                    if (input.type !== 'hidden') {
+                        input.disabled = false;
+                    }
+                });
+                
+                // Hide ALL edit buttons
+                document.querySelectorAll('.edit-profile-btn, #edit-profile-btn').forEach(b => b.style.display = 'none');
+                
+                actions.forEach(action => {
+                    action.style.display = 'flex';
+                    action.style.gap = '10px';
+                });
+            });
+        });
+
+        // Cancel Edit
+        document.querySelectorAll('.cancel-edit').forEach(btn => {
+            btn.addEventListener('click', function() {
+                location.reload();
+            });
+        });
+
         // Tab switching functionality
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -858,21 +878,26 @@ require_once '../includes/header.php';
         });
 
         // Password confirmation validation
-        document.getElementById('confirm_password').addEventListener('input', function() {
-            const newPassword = document.getElementById('new_password').value;
-            const confirmPassword = this.value;
-            
-            if (newPassword !== confirmPassword) {
-                this.setCustomValidity('Passwords do not match');
-            } else {
-                this.setCustomValidity('');
-            }
-        });
+        const confirmPass = document.getElementById('confirm_password');
+        const newPass = document.getElementById('new_password');
+        if (confirmPass && newPass) {
+            confirmPass.addEventListener('input', function() {
+                const newPassword = newPass.value;
+                const confirmPassword = this.value;
+                
+                if (newPassword !== confirmPassword) {
+                    this.setCustomValidity('Passwords do not match');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        }
 
         // Auto-hide alerts after 5 seconds
         setTimeout(() => {
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(alert => {
+                alert.style.transition = 'opacity 0.3s ease';
                 alert.style.opacity = '0';
                 setTimeout(() => alert.remove(), 300);
             });

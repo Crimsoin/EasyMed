@@ -288,6 +288,10 @@ require_once '../../includes/header.php';
 ?>
 
 <div class="admin-container">
+    <button class="sidebar-toggle" title="Toggle Sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+
     <div class="admin-sidebar">
         <div class="sidebar-header">
             <h3><i class="fas fa-user-shield"></i> Admin Panel</h3>
@@ -497,15 +501,7 @@ require_once '../../includes/header.php';
                                                 <?php endif; ?>
                                             </form>
                                             
-                                            <form method="POST" style="display: inline;">
-                                                <input type="hidden" name="action" value="delete">
-                                                <input type="hidden" name="doctor_id" value="<?php echo $doctor['id']; ?>">
-                                                <button type="submit" class="btn-action btn-danger" 
-                                                        title="Delete Account"
-                                                        onclick="return confirm('Are you sure you want to permanently delete this doctor account? This action cannot be undone and will remove all associated data including appointments, schedules, and reviews.')">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
+
                                         </div>
                                     </td>
                                 </tr>

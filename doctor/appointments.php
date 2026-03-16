@@ -34,9 +34,17 @@ if ($_POST && isset($_POST['action']) && isset($_POST['appointment_id'])) {
         switch ($action) {
             case 'complete':
                 $notes = $_POST['notes'] ?? '';
-                $db->update('appointments', ['notes' => $notes], 'id = ?', [$appointment_id]);
-                $success_message = "Appointment findings updated successfully.";
+                $db->update('appointments', [
+                    'status' => 'completed',
+                    'notes' => $notes
+                ], 'id = ?', [$appointment_id]);
+                $success_message = "Appointment marked as completed successfully.";
                 // Redirect to avoid form resubmission and refresh list
+                header("Location: appointments.php?success=" . urlencode($success_message));
+                exit();
+            case 'no_show':
+                $db->update('appointments', ['status' => 'no_show'], 'id = ?', [$appointment_id]);
+                $success_message = "Appointment marked as No Show.";
                 header("Location: appointments.php?success=" . urlencode($success_message));
                 exit();
             case 'update_findings':
@@ -328,11 +336,7 @@ require_once '../includes/header.php';
                                         <td>
                                             <div class="reason-cell">
                                                 <?php 
-                                                $patient_info = [];
-                                                if (!empty($appointment['patient_info'])) {
-                                                    $patient_info = json_decode($appointment['patient_info'], true) ?? [];
-                                                }
-                                                $reason = $appointment['reason_for_visit'] ?? ($patient_info['laboratory'] ?? 'General Consultation');
+                                                $reason = !empty($appointment['illness']) ? $appointment['illness'] : ($appointment['reason_for_visit'] ?? 'General Consultation');
                                                 echo htmlspecialchars($reason);
                                                 ?>
                                             </div>
@@ -358,14 +362,15 @@ require_once '../includes/header.php';
                                                             'address' => $appointment['patient_address'] ?? 'N/A',
                                                             'gender' => ucfirst($appointment['patient_gender'] ?? 'N/A'),
                                                             'age' => !empty($appointment['patient_dob']) ? calculateAge($appointment['patient_dob']) : 'N/A',
-                                                            'reason' => $appointment['reason_for_visit'] ?? 'Consultation',
+                                                            'reason' => $appointment['illness'] ?? $appointment['reason_for_visit'] ?? 'Consultation',
                                                             'purpose' => ucfirst($appointment['purpose'] ?? 'Consultation'),
                                                             'relationship' => ucfirst($appointment['relationship'] ?? 'Self'),
                                                              'status' => ucfirst($appointment['status']),
                                                              'id' => $appointment['id'],
                                                              'notes' => $appointment['notes'] ?? '',
-                                                             'can_complete' => false,
-                                                             'can_add_findings' => strtolower($appointment['status'] ?? $activity['status'] ?? '') === 'completed',
+                                                             'can_complete' => in_array(strtolower($appointment['status']), ['scheduled', 'ongoing', 'confirmed', 'pending']),
+                                                             'can_no_show' => in_array(strtolower($appointment['status']), ['scheduled', 'ongoing', 'confirmed', 'pending']),
+                                                             'can_add_findings' => strtolower($appointment['status']) === 'completed',
                                                              'doctor_first_name' => $_SESSION['first_name'],
                                                              'doctor_last_name' => $_SESSION['last_name'],
                                                             'specialty' => $doctor_specialty,
@@ -658,12 +663,16 @@ function showAppointmentDetails(data) {
         <button type="button" class="modal-btn modal-btn-secondary" onclick="window.print()" style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: #475569; transition: all 0.2s;"><i class="fas fa-print"></i> Print</button>
     `;
 
-    if (false) { // Disabled logic
+    if (data.can_complete) {
         footerHtml = `
-            <div style="flex: 1;"></div>
-            <button type="button" class="modal-btn modal-btn-primary" onclick='openFindingsModal(${data.id}, ${JSON.stringify(data.notes || "")}, "complete")' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; background: linear-gradient(135deg, #2563eb, #1e3a8a); color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); transition: all 0.2s;">
-                <i class="fas fa-check-circle"></i> Save Findings
-            </button>
+            <div style="flex: 1; display: flex; gap: 12px;">
+                <button type="button" class="modal-btn" onclick='markAsNoShow(${data.id})' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid #ef4444; background: #fef2f2; color: #dc2626; transition: all 0.2s;">
+                    <i class="fas fa-user-slash"></i> No Show
+                </button>
+                <button type="button" class="modal-btn modal-btn-primary" onclick='openFindingsModal(${data.id}, ${JSON.stringify(data.notes || "")}, "complete")' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: all 0.2s;">
+                    <i class="fas fa-check-circle"></i> Mark as Completed
+                </button>
+            </div>
             ${footerHtml}
         `;
     } else if (data.can_add_findings) {
@@ -703,6 +712,27 @@ function openFindingsModal(id, currentNotes, action = 'complete') {
 
     document.getElementById('findingsModal').style.display = 'block';
     document.getElementById('appointmentModal').style.zIndex = '999';
+}
+
+function markAsNoShow(id) {
+    if (confirm('Are you sure you want to mark this appointment as No Show?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.style.display = 'none';
+        
+        const actionInput = document.createElement('input');
+        actionInput.name = 'action';
+        actionInput.value = 'no_show';
+        
+        const idInput = document.createElement('input');
+        idInput.name = 'appointment_id';
+        idInput.value = id;
+        
+        form.appendChild(actionInput);
+        form.appendChild(idInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 
 function closeFindingsModal() {

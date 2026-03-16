@@ -417,12 +417,15 @@ require_once '../../includes/header.php';
     </div>
 
     <div class="admin-content">
-        <div class="content-header">
+        <div class="content-header" style="display: flex; justify-content: space-between; align-items: center;">
             <div class="header-info">
                 <h1><i class="fas fa-edit"></i> Edit Doctor</h1>
                 <p>Update doctor account and profile information</p>
             </div>
-            <div class="header-actions">
+            <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
+                <button type="button" id="edit-mode-btn" class="btn btn-primary" style="background: white; color: var(--primary-cyan); border: 2px solid var(--primary-cyan); box-shadow: none;">
+                    <i class="fas fa-edit"></i> Edit Doctor Information
+                </button>
                 <a href="view-doctor.php?id=<?php echo $doctor_id; ?>" class="btn btn-info">
                     <i class="fas fa-eye"></i> View Profile
                 </a>
@@ -459,13 +462,13 @@ require_once '../../includes/header.php';
                 <div class="form-group">
                     <label for="first_name" class="form-label required">First Name</label>
                     <input type="text" id="first_name" name="first_name" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['first_name'] ?? $doctor['first_name']); ?>" required>
+                           value="<?php echo htmlspecialchars($_POST['first_name'] ?? $doctor['first_name']); ?>" required disabled>
                 </div>
 
                 <div class="form-group">
                     <label for="last_name" class="form-label required">Last Name</label>
                     <input type="text" id="last_name" name="last_name" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['last_name'] ?? $doctor['last_name']); ?>" required>
+                           value="<?php echo htmlspecialchars($_POST['last_name'] ?? $doctor['last_name']); ?>" required disabled>
                 </div>
             </div>
             
@@ -473,7 +476,7 @@ require_once '../../includes/header.php';
                 <div class="form-group">
                     <label for="email" class="form-label required">Email Address</label>
                     <input type="email" id="email" name="email" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['email'] ?? $doctor['email']); ?>" required>
+                           value="<?php echo htmlspecialchars($_POST['email'] ?? $doctor['email']); ?>" required disabled>
                 </div>
                 
                 <!-- Username is internal and not editable from this form -->
@@ -482,14 +485,14 @@ require_once '../../includes/header.php';
             <div class="form-row">
                 <div class="form-group">
                     <label for="password" class="form-label">New Password</label>
-                    <input type="password" id="password" name="password" class="form-control">
+                    <input type="password" id="password" name="password" class="form-control" disabled>
                     <small class="form-text">Leave blank to keep current password. Minimum 6 characters if changing.</small>
                 </div>
                 
                 <div class="form-group">
                     <label for="phone" class="form-label">Phone Number</label>
                     <input type="tel" id="phone" name="phone" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['phone'] ?? $doctor['phone']); ?>">
+                           value="<?php echo htmlspecialchars($_POST['phone'] ?? $doctor['phone']); ?>" disabled>
                 </div>
             </div>
             
@@ -497,12 +500,12 @@ require_once '../../includes/header.php';
                 <div class="form-group">
                     <label for="date_of_birth" class="form-label">Date of Birth</label>
                     <input type="date" id="date_of_birth" name="date_of_birth" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['date_of_birth'] ?? $doctor['date_of_birth']); ?>">
+                           value="<?php echo htmlspecialchars($_POST['date_of_birth'] ?? $doctor['date_of_birth']); ?>" disabled>
                 </div>
                 
                 <div class="form-group">
                     <label for="gender" class="form-label">Gender</label>
-                    <select id="gender" name="gender" class="form-control">
+                    <select id="gender" name="gender" class="form-control" disabled>
                         <option value="">Select Gender</option>
                         <option value="male" <?php echo ($_POST['gender'] ?? $doctor['gender']) === 'male' ? 'selected' : ''; ?>>Male</option>
                         <option value="female" <?php echo ($_POST['gender'] ?? $doctor['gender']) === 'female' ? 'selected' : ''; ?>>Female</option>
@@ -514,14 +517,14 @@ require_once '../../includes/header.php';
             <div class="form-group">
                 <label class="checkbox-label">
                     <input type="checkbox" name="is_active" value="1" 
-                           <?php echo ($_POST['is_active'] ?? $doctor['is_active']) ? 'checked' : ''; ?>>
+                           <?php echo ($_POST['is_active'] ?? $doctor['is_active']) ? 'checked' : ''; ?> disabled>
                     <span class="checkmark"></span>
                     Active account
                 </label>
                 <small class="form-text">Uncheck to deactivate this doctor's account</small>
             </div>
             
-            <div style="margin-top: 1.5rem; text-align: right;">
+            <div style="margin-top: 1.5rem; text-align: right;" class="edit-actions" style="display: none;">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Save Changes
                 </button>
@@ -540,13 +543,13 @@ require_once '../../includes/header.php';
                     <label for="specialty" class="form-label required">Specialty</label>
                     <input type="text" id="specialty" name="specialty" class="form-control" 
                            value="<?php echo htmlspecialchars($_POST['specialty'] ?? $doctor['specialty']); ?>" 
-                           placeholder="e.g., General Medicine, Cardiology, Pediatrics" required>
+                           placeholder="e.g., General Medicine, Cardiology, Pediatrics" required disabled>
                 </div>
                 
                 <div class="form-group">
                     <label for="license_number" class="form-label required">Medical License Number</label>
                     <input type="text" id="license_number" name="license_number" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['license_number'] ?? $doctor['license_number']); ?>" required>
+                           value="<?php echo htmlspecialchars($_POST['license_number'] ?? $doctor['license_number']); ?>" required disabled>
                 </div>
             </div>
             
@@ -554,17 +557,17 @@ require_once '../../includes/header.php';
                 <div class="form-group">
                     <label for="experience_years" class="form-label">Years of Experience</label>
                     <input type="number" id="experience_years" name="experience_years" class="form-control" 
-                           min="0" max="50" value="<?php echo htmlspecialchars($_POST['experience_years'] ?? $doctor['experience_years']); ?>">
+                           min="0" max="50" value="<?php echo htmlspecialchars($_POST['experience_years'] ?? $doctor['experience_years']); ?>" disabled>
                 </div>
                 
                 <div class="form-group">
                     <label for="consultation_fee" class="form-label">Consultation Fee (₱)</label>
                     <input type="number" id="consultation_fee" name="consultation_fee" class="form-control" 
-                           min="0" step="0.01" value="<?php echo htmlspecialchars($_POST['consultation_fee'] ?? $doctor['consultation_fee']); ?>">
+                           min="0" step="0.01" value="<?php echo htmlspecialchars($_POST['consultation_fee'] ?? $doctor['consultation_fee']); ?>" disabled>
                 </div>
             </div>
             
-            <div style="margin-top: 1.5rem; text-align: right;">
+            <div style="margin-top: 1.5rem; text-align: right;" class="edit-actions" style="display: none;">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Save Changes
                 </button>
@@ -588,7 +591,7 @@ require_once '../../includes/header.php';
                     <?php foreach ($days as $day): ?>
                         <label class="checkbox-label">
                             <input type="checkbox" name="schedule_days[]" value="<?php echo $day; ?>" 
-                                   <?php echo in_array($day, $selected_days) ? 'checked' : ''; ?>>
+                                   <?php echo in_array($day, $selected_days) ? 'checked' : ''; ?> disabled>
                             <span class="checkmark"></span>
                             <?php echo $day; ?>
                         </label>
@@ -600,27 +603,27 @@ require_once '../../includes/header.php';
                 <div class="form-group">
                     <label for="schedule_time_start" class="form-label">Start Time</label>
                     <input type="time" id="schedule_time_start" name="schedule_time_start" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['schedule_time_start'] ?? $doctor['schedule_time_start']); ?>">
+                           value="<?php echo htmlspecialchars($_POST['schedule_time_start'] ?? $doctor['schedule_time_start']); ?>" disabled>
                 </div>
                 
                 <div class="form-group">
                     <label for="schedule_time_end" class="form-label">End Time</label>
                     <input type="time" id="schedule_time_end" name="schedule_time_end" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['schedule_time_end'] ?? $doctor['schedule_time_end']); ?>">
+                           value="<?php echo htmlspecialchars($_POST['schedule_time_end'] ?? $doctor['schedule_time_end']); ?>" disabled>
                 </div>
             </div>
             
             <div class="form-group">
                 <label class="checkbox-label">
                     <input type="checkbox" name="is_available" value="1" 
-                           <?php echo ($_POST['is_available'] ?? $doctor['is_available']) ? 'checked' : ''; ?>>
+                           <?php echo ($_POST['is_available'] ?? $doctor['is_available']) ? 'checked' : ''; ?> disabled>
                     <span class="checkmark"></span>
                     Available for appointments
                 </label>
                 <small class="form-text">Uncheck to make doctor unavailable for new appointments</small>
             </div>
             
-            <div style="margin-top: 1.5rem; text-align: right;">
+            <div style="margin-top: 1.5rem; text-align: right;" class="edit-actions" style="display: none;">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Save Changes
                 </button>
@@ -793,7 +796,21 @@ require_once '../../includes/header.php';
     </div>
 </div>
 
-<script>
+    <script>
+    document.getElementById('edit-mode-btn').addEventListener('click', function() {
+        const formInputs = document.querySelectorAll('.admin-form input, .admin-form select, .admin-form textarea');
+        const actions = document.querySelectorAll('.edit-actions');
+        
+        formInputs.forEach(input => {
+            input.disabled = false;
+        });
+        
+        this.style.display = 'none';
+        actions.forEach(action => {
+            action.style.display = 'block';
+        });
+    });
+
     function openLabOfferModal(editMode = false, offerData = null) {
         const modal = document.getElementById('labOfferModal');
         const form = document.getElementById('labOfferForm');

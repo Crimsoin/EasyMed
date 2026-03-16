@@ -601,14 +601,24 @@ textarea.form-control {
 }
 
 /* Lab Offers Styles */
-#lab-offers .lab-offers-grid {
+.lab-offers-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1.5rem;
     margin-top: 1.5rem;
+    width: 100%;
 }
 
-#lab-offers .lab-offer-card {
+.lab-offers-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.lab-offer-card {
     background: #ffffff;
     border-radius: 12px;
     padding: 1.5rem;
@@ -617,12 +627,12 @@ textarea.form-control {
     transition: all 0.3s ease;
 }
 
-#lab-offers .lab-offer-card:hover {
+.lab-offer-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
 }
 
-#lab-offers .lab-offer-header {
+.lab-offer-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -631,7 +641,7 @@ textarea.form-control {
     border-bottom: 2px solid #f0f0f0;
 }
 
-#lab-offers .lab-offer-header h4 {
+.lab-offer-header h4 {
     margin: 0;
     color: #2c3e50;
     font-size: 1.1rem;
@@ -639,12 +649,12 @@ textarea.form-control {
     flex: 1;
 }
 
-#lab-offers .lab-offer-status {
+.lab-offer-status {
     margin-left: 1rem;
     flex-shrink: 0;
 }
 
-#lab-offers .status-badge {
+.status-badge {
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
     font-size: 0.75rem;
@@ -653,30 +663,30 @@ textarea.form-control {
     display: inline-block;
 }
 
-#lab-offers .status-active {
+.status-active {
     background: rgba(76, 175, 80, 0.15);
     color: #4CAF50;
     border: 1px solid rgba(76, 175, 80, 0.3);
 }
 
-#lab-offers .status-inactive {
+.status-inactive {
     background: rgba(158, 158, 158, 0.15);
     color: #9E9E9E;
     border: 1px solid rgba(158, 158, 158, 0.3);
 }
 
-#lab-offers .lab-offer-body {
+.lab-offer-body {
     margin-bottom: 1rem;
 }
 
-#lab-offers .lab-offer-description {
+.lab-offer-description {
     color: #7f8c8d;
     font-size: 0.9rem;
     line-height: 1.6;
     margin-bottom: 0.75rem;
 }
 
-#lab-offers .lab-offer-price {
+.lab-offer-price {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -685,22 +695,22 @@ textarea.form-control {
     color: #2563eb;
 }
 
-#lab-offers .lab-offer-price i {
+.lab-offer-price i {
     font-size: 1rem;
 }
 
-#lab-offers .lab-offer-actions {
+.lab-offer-actions {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
 }
 
-#lab-offers .lab-offer-actions .btn-sm {
+.lab-offer-actions .btn-sm {
     padding: 0.4rem 0.8rem;
     font-size: 0.85rem;
 }
 
-#lab-offers .empty-state {
+.empty-state {
     text-align: center;
     padding: 4rem 2rem;
     background: #ffffff;
@@ -709,27 +719,27 @@ textarea.form-control {
     margin-top: 1.5rem;
 }
 
-#lab-offers .empty-state i {
+.empty-state i {
     font-size: 5rem;
     color: rgba(37, 99, 235, 0.25);
     margin-bottom: 1.5rem;
     display: block;
 }
 
-#lab-offers .empty-state h4 {
+.empty-state h4 {
     color: #2c3e50;
     margin-bottom: 0.75rem;
     font-size: 1.3rem;
     font-weight: 600;
 }
 
-#lab-offers .empty-state p {
+.empty-state p {
     color: #7f8c8d;
     margin-bottom: 2rem;
     font-size: 1rem;
 }
 
-#lab-offers .empty-state .btn {
+.empty-state .btn {
     margin-top: 0.5rem;
 }
 

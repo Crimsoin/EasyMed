@@ -688,7 +688,7 @@ function loadDayDetails(date) {
                                 "address": apt.patient_address || pInfo.address || "N/A",
                                 "gender": (apt.patient_gender || "N/A").charAt(0).toUpperCase() + (apt.patient_gender || "N/A").slice(1),
                                 "age": apt.patient_dob ? calculateAgeJS(apt.patient_dob) : "N/A",
-                                "reason": apt.reason_for_visit || pInfo.laboratory || "Consultation",
+                                "reason": apt.illness || apt.reason_for_visit || pInfo.laboratory || "Consultation",
                                 "purpose": (pInfo.purpose || "Consultation").charAt(0).toUpperCase() + (pInfo.purpose || "Consultation").slice(1),
                                 "laboratory": pInfo.laboratory || "",
                                 "relationship": (pInfo.relationship || "Self").charAt(0).toUpperCase() + (pInfo.relationship || "Self").slice(1),
@@ -713,7 +713,7 @@ function loadDayDetails(date) {
                                 </div>
                                 <div class="list-item-content" style="flex: 1;">
                                     <div class="list-item-title" style="font-size: 1.05rem; font-weight: 700; color: #0f172a;">${apt.patient_first_name} ${apt.patient_last_name}</div>
-                                    <div class="list-item-subtitle" style="font-size: 0.85rem; color: #64748b; font-weight: 600; margin: 2px 0;">${formatTime(apt.appointment_time)} • ${apt.reason_for_visit || 'Routine Consultation'}</div>
+                                    <div class="list-item-subtitle" style="font-size: 0.85rem; color: #64748b; font-weight: 600; margin: 2px 0;">${formatTime(apt.appointment_time)} • ${apt.illness || apt.reason_for_visit || 'Routine Consultation'}</div>
                                     <div class="list-item-meta" style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
                                         <span style="font-size: 0.8rem; color: #94a3b8;"><i class="fas fa-phone"></i> ${apt.patient_phone || 'N/A'}</span>
                                         <span class="status-badge status-${apt.status}" style="font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; font-weight: 800; letter-spacing: 0.05em;">${apt.status.toUpperCase()}</span>

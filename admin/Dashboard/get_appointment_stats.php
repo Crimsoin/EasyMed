@@ -35,16 +35,16 @@ try {
             $currentDate = date('Y-m-d');
             $previousDate = date('Y-m-d', strtotime('-1 day'));
             
-            $currentStats = getAppointmentStatsByDate($db, $currentDate);
-            $previousStats = getAppointmentStatsByDate($db, $previousDate);
+            $currentStats = getAppointmentStatsByRange($db, $currentDate, $currentDate);
+            $previousStats = getAppointmentStatsByRange($db, $previousDate, $previousDate);
             break;
             
         case 'weekly':
-            // Current week (Sunday to Saturday)
-            $currentWeekStart = date('Y-m-d', strtotime('sunday last week'));
-            $currentWeekEnd = date('Y-m-d', strtotime('saturday this week'));
-            $previousWeekStart = date('Y-m-d', strtotime('sunday -2 weeks'));
-            $previousWeekEnd = date('Y-m-d', strtotime('saturday last week'));
+            // Standard Week: Monday to Sunday
+            $currentWeekStart = date('Y-m-d', strtotime('monday this week'));
+            $currentWeekEnd = date('Y-m-d', strtotime('sunday this week'));
+            $previousWeekStart = date('Y-m-d', strtotime('monday last week'));
+            $previousWeekEnd = date('Y-m-d', strtotime('sunday last week'));
             
             $currentStats = getAppointmentStatsByRange($db, $currentWeekStart, $currentWeekEnd);
             $previousStats = getAppointmentStatsByRange($db, $previousWeekStart, $previousWeekEnd);
@@ -73,50 +73,18 @@ try {
         'success' => true,
         'stats' => $currentStats,
         'changes' => $changes,
-        'period' => $period
+        'period' => $period,
+        'debug' => [
+            'range' => $period === 'daily' ? $currentDate : ($currentWeekStart ?? $currentMonthStart) . ' to ' . ($currentWeekEnd ?? $currentMonthEnd)
+        ]
     ]);
     
 } catch (Exception $e) {
     error_log("Error fetching appointment stats: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'Database error occurred'
+        'message' => 'Database error occurred: ' . $e->getMessage()
     ]);
-}
-
-function getAppointmentStatsByDate($db, $date) {
-    $stats = [
-        'total' => 0,
-        'completed' => 0,
-        'pending' => 0,
-        'cancelled' => 0
-    ];
-    
-    // Total appointments
-    $stats['total'] = $db->fetch(
-        "SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = ?",
-        [$date]
-    )['count'];
-    
-    // Completed appointments
-    $stats['completed'] = $db->fetch(
-        "SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = ? AND status = 'completed'",
-        [$date]
-    )['count'];
-    
-    // Pending/Scheduled appointments
-    $stats['pending'] = $db->fetch(
-        "SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = ? AND status IN ('pending', 'scheduled')",
-        [$date]
-    )['count'];
-    
-    // Cancelled appointments
-    $stats['cancelled'] = $db->fetch(
-        "SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = ? AND status = 'cancelled'",
-        [$date]
-    )['count'];
-    
-    return $stats;
 }
 
 function getAppointmentStatsByRange($db, $startDate, $endDate) {
@@ -124,30 +92,39 @@ function getAppointmentStatsByRange($db, $startDate, $endDate) {
         'total' => 0,
         'completed' => 0,
         'pending' => 0,
-        'cancelled' => 0
+        'cancelled' => 0,
+        'no_show' => 0
     ];
     
-    // Total appointments
+    // We use date() function in SQL to ensure we are comparing just the date part
+    
+    // Total appointments (all statuses within the range)
     $stats['total'] = $db->fetch(
         "SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) BETWEEN ? AND ?",
         [$startDate, $endDate]
     )['count'];
     
-    // Completed appointments
+    // Completed
     $stats['completed'] = $db->fetch(
         "SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) BETWEEN ? AND ? AND status = 'completed'",
         [$startDate, $endDate]
     )['count'];
     
-    // Pending/Scheduled appointments
+    // Pending/Upcoming (pending, scheduled, rescheduled, ongoing)
     $stats['pending'] = $db->fetch(
-        "SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) BETWEEN ? AND ? AND status IN ('pending', 'scheduled')",
+        "SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) BETWEEN ? AND ? AND status IN ('pending', 'scheduled', 'rescheduled', 'ongoing')",
         [$startDate, $endDate]
     )['count'];
     
-    // Cancelled appointments
+    // Cancelled
     $stats['cancelled'] = $db->fetch(
         "SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) BETWEEN ? AND ? AND status = 'cancelled'",
+        [$startDate, $endDate]
+    )['count'];
+
+    // No Show
+    $stats['no_show'] = $db->fetch(
+        "SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) BETWEEN ? AND ? AND status = 'no_show'",
         [$startDate, $endDate]
     )['count'];
     

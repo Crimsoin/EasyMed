@@ -212,9 +212,14 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
         </div>
 
         <div class="patient-content">
-            <div class="content-header">
-                <h1>My Profile</h1>
-                <p>Manage your account settings and health information</p>
+            <div class="content-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>My Profile</h1>
+                    <p>Manage your account settings and health information</p>
+                </div>
+                <button type="button" id="edit-profile-btn" class="btn-profile-save" style="background: white; color: var(--primary-cyan); border: 2px solid var(--primary-cyan); box-shadow: none;">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </button>
             </div>
 
             <div class="profile-container">
@@ -249,19 +254,19 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="first_name">First Name</label>
-                                    <input type="text" name="first_name" id="first_name" value="<?= htmlspecialchars($user['first_name'] ?? '') ?>" required>
+                                    <input type="text" name="first_name" id="first_name" value="<?= htmlspecialchars($user['first_name'] ?? '') ?>" required disabled>
                                 </div>
                                 <div class="form-group">
                                     <label for="last_name">Last Name</label>
-                                    <input type="text" name="last_name" id="last_name" value="<?= htmlspecialchars($user['last_name'] ?? '') ?>" required>
+                                    <input type="text" name="last_name" id="last_name" value="<?= htmlspecialchars($user['last_name'] ?? '') ?>" required disabled>
                                 </div>
                                 <div class="form-group">
                                     <label for="date_of_birth">Date of Birth</label>
-                                    <input type="date" name="date_of_birth" id="date_of_birth" value="<?= htmlspecialchars($user['date_of_birth'] ?? '') ?>">
+                                    <input type="date" name="date_of_birth" id="date_of_birth" value="<?= htmlspecialchars($user['date_of_birth'] ?? '') ?>" disabled>
                                 </div>
                                 <div class="form-group">
                                     <label for="gender">Gender</label>
-                                    <select name="gender" id="gender">
+                                    <select name="gender" id="gender" disabled>
                                         <option value="">Select gender</option>
                                         <option value="male" <?= (isset($user['gender']) && $user['gender'] === 'male') ? 'selected' : '' ?>>Male</option>
                                         <option value="female" <?= (isset($user['gender']) && $user['gender'] === 'female') ? 'selected' : '' ?>>Female</option>
@@ -281,15 +286,15 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="email">Email Address</label>
-                                    <input type="email" name="email" id="email" value="<?= htmlspecialchars($user['email'] ?? '') ?>" required>
+                                    <input type="email" name="email" id="email" value="<?= htmlspecialchars($user['email'] ?? '') ?>" required disabled>
                                 </div>
                                 <div class="form-group">
                                     <label for="phone">Phone Number</label>
-                                    <input type="text" name="phone" id="phone" value="<?= htmlspecialchars($user['phone'] ?? '') ?>">
+                                    <input type="text" name="phone" id="phone" value="<?= htmlspecialchars($user['phone'] ?? '') ?>" disabled>
                                 </div>
                                 <div class="form-group full-width">
                                     <label for="address">Residential Address</label>
-                                    <textarea name="address" id="address"><?= htmlspecialchars($user['address'] ?? '') ?></textarea>
+                                    <textarea name="address" id="address" disabled><?= htmlspecialchars($user['address'] ?? '') ?></textarea>
                                 </div>
                             </div>
                         </div>
@@ -304,7 +309,7 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="blood_type">Blood Type</label>
-                                    <select name="blood_type" id="blood_type">
+                                    <select name="blood_type" id="blood_type" disabled>
                                         <option value="">Select blood type</option>
                                         <?php $bl = $user['blood_type'] ?? ''; $types = ['A+','A-','B+','B-','AB+','AB-','O+','O-','Unknown']; foreach ($types as $t): ?>
                                             <option value="<?= $t ?>" <?= ($bl === $t) ? 'selected' : '' ?>><?= $t ?></option>
@@ -324,21 +329,21 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="emergency_name">Representative Name</label>
-                                    <input type="text" name="emergency_name" id="emergency_name" value="<?= htmlspecialchars($user['emergency_contact_name'] ?? '') ?>">
+                                    <input type="text" name="emergency_name" id="emergency_name" value="<?= htmlspecialchars($user['emergency_contact_name'] ?? '') ?>" disabled>
                                 </div>
                                 <div class="form-group">
                                     <label for="emergency_phone">Contact Phone</label>
-                                    <input type="text" name="emergency_phone" id="emergency_phone" value="<?= htmlspecialchars($user['emergency_contact_phone'] ?? '') ?>">
+                                    <input type="text" name="emergency_phone" id="emergency_phone" value="<?= htmlspecialchars($user['emergency_contact_phone'] ?? '') ?>" disabled>
                                 </div>
                                 <div class="form-group full-width">
                                     <label for="emergency_relation">Relationship to Patient</label>
-                                    <input type="text" name="emergency_relation" id="emergency_relation" value="<?= htmlspecialchars($user['emergency_contact_relationship'] ?? '') ?>">
+                                    <input type="text" name="emergency_relation" id="emergency_relation" value="<?= htmlspecialchars($user['emergency_contact_relationship'] ?? '') ?>" disabled>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="profile-actions-card">
+                    <div id="profile-actions" class="profile-actions-card" style="display: none;">
                         <a href="dashboard_patients.php" class="btn-profile-cancel">
                             <i class="fas fa-times"></i> Discard
                         </a>
@@ -352,5 +357,23 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
         </div>
     </div>
 
+    <script>
+        document.getElementById('edit-profile-btn').addEventListener('click', function() {
+            const formInputs = document.querySelectorAll('form input, form select, form textarea');
+            const actions = document.getElementById('profile-actions');
+            
+            formInputs.forEach(input => {
+                input.disabled = false;
+            });
+            
+            this.style.display = 'none';
+            actions.style.display = 'flex';
+        });
+
+        document.querySelector('.btn-profile-cancel').addEventListener('click', function(e) {
+            e.preventDefault();
+            location.reload();
+        });
+    </script>
 </body>
 </html>

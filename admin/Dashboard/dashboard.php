@@ -82,23 +82,23 @@ if (strtotime($start_date) > strtotime($end_date)) {
 // Generate key performance metrics
 $stats = [];
 
-// Core Appointment Statistics
+// Core Appointment Statistics (Lifetime Total for Dashboard Cards)
 $stats['appointments'] = [
-    'total' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ?", [$start_date, $end_date])['count'],
-    'completed' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'completed'", [$start_date, $end_date])['count'],
-    'cancelled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'cancelled'", [$start_date, $end_date])['count'],
-    'scheduled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'scheduled'", [$start_date, $end_date])['count'],
-    'pending' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'pending'", [$start_date, $end_date])['count'],
-    'no_show' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'no_show'", [$start_date, $end_date])['count'],
-    'rescheduled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status = 'rescheduled'", [$start_date, $end_date])['count']
+    'total' => $db->fetch("SELECT COUNT(*) as count FROM appointments")['count'],
+    'completed' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status = 'completed'")['count'],
+    'cancelled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status = 'cancelled'")['count'],
+    'scheduled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status = 'scheduled'")['count'],
+    'pending' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status = 'pending'")['count'],
+    'no_show' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status = 'no_show'")['count'],
+    'rescheduled' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE status = 'rescheduled'")['count']
 ];
 
-// Calculate rates
-$total_appointments = $stats['appointments']['total'];
+// Calculate rates based on RESOLVED appointments (those that have reached a terminal state)
+$resolved_appointments = $stats['appointments']['completed'] + $stats['appointments']['cancelled'] + $stats['appointments']['no_show'];
 $stats['rates'] = [
-    'cancellation_rate' => $total_appointments > 0 ? round(($stats['appointments']['cancelled'] / $total_appointments) * 100, 1) : 0,
-    'completion_rate' => $total_appointments > 0 ? round(($stats['appointments']['completed'] / $total_appointments) * 100, 1) : 0,
-    'no_show_rate' => $total_appointments > 0 ? round(($stats['appointments']['no_show'] / $total_appointments) * 100, 1) : 0
+    'cancellation_rate' => $resolved_appointments > 0 ? round(($stats['appointments']['cancelled'] / $resolved_appointments) * 100, 1) : 0,
+    'completion_rate' => $resolved_appointments > 0 ? round(($stats['appointments']['completed'] / $resolved_appointments) * 100, 1) : 0,
+    'no_show_rate' => $resolved_appointments > 0 ? round(($stats['appointments']['no_show'] / $resolved_appointments) * 100, 1) : 0
 ];
 
 $stats['users'] = [
@@ -530,6 +530,10 @@ require_once '../../includes/header.php';
 ?>
 
 <div class="admin-container">
+    <button class="sidebar-toggle" title="Toggle Sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+
     <div class="admin-sidebar">
         <div class="sidebar-header">
             <h3><i class="fas fa-user-shield"></i> Admin Panel</h3>
@@ -654,9 +658,9 @@ require_once '../../includes/header.php';
                     <i class="fas fa-clock"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?php echo $stats['appointments']['scheduled']; ?></h3>
-                    <p>Scheduled</p>
-                    <small><?php echo $stats['appointments']['pending']; ?> pending verification</small>
+                    <h3><?php echo $stats['appointments']['scheduled'] + $stats['appointments']['pending']; ?></h3>
+                    <p>Total Upcoming</p>
+                    <small><?php echo $stats['appointments']['scheduled']; ?> confirmed, <?php echo $stats['appointments']['pending']; ?> pending</small>
                 </div>
             </div>
             
@@ -667,7 +671,7 @@ require_once '../../includes/header.php';
                 <div class="stat-content">
                     <h3><?php echo $stats['appointments']['rescheduled']; ?></h3>
                     <p>Rescheduled</p>
-                    <small><?php echo $total_appointments > 0 ? round(($stats['appointments']['rescheduled'] / $total_appointments) * 100, 1) : 0; ?>% reschedule rate</small>
+                    <small><?php echo $stats['appointments']['total'] > 0 ? round(($stats['appointments']['rescheduled'] / $stats['appointments']['total']) * 100, 1) : 0; ?>% reschedule rate</small>
                 </div>
             </div>
             
@@ -742,7 +746,7 @@ require_once '../../includes/header.php';
                         <div class="stat-value" id="total-appointments">
                             <?php echo $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = date('now')")['count']; ?>
                         </div>
-                        <div class="stat-label">Total Volume</div>
+                        <div class="stat-label">Appointment</div>
                         <div class="stat-change" id="appointments-change">
                             <i class="fas fa-minus"></i> <span>0%</span>
                         </div>
@@ -752,7 +756,7 @@ require_once '../../includes/header.php';
                         <div class="stat-value" id="completed-appointments">
                             <?php echo $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = date('now') AND status = 'completed'")['count']; ?>
                         </div>
-                        <div class="stat-label">Success Count</div>
+                        <div class="stat-label">Success</div>
                         <div class="stat-change" id="completed-change">
                             <i class="fas fa-minus"></i> <span>0%</span>
                         </div>
@@ -760,9 +764,9 @@ require_once '../../includes/header.php';
                     
                     <div class="appointment-stat-item">
                         <div class="stat-value" id="pending-appointments">
-                            <?php echo $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = date('now') AND status IN ('pending', 'scheduled')")['count']; ?>
+                            <?php echo $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = date('now') AND status IN ('pending', 'scheduled', 'rescheduled', 'ongoing')")['count']; ?>
                         </div>
-                        <div class="stat-label">Active Queue</div>
+                        <div class="stat-label">Active</div>
                         <div class="stat-change" id="pending-change">
                             <i class="fas fa-minus"></i> <span>0%</span>
                         </div>
@@ -770,9 +774,9 @@ require_once '../../includes/header.php';
                     
                     <div class="appointment-stat-item">
                         <div class="stat-value" id="cancelled-appointments">
-                            <?php echo $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = date('now') AND status = 'cancelled'")['count']; ?>
+                            <?php echo $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE date(appointment_date) = date('now') AND status IN ('cancelled', 'no_show')")['count']; ?>
                         </div>
-                        <div class="stat-label">Loss Count</div>
+                        <div class="stat-label">Cancelled</div>
                         <div class="stat-change" id="cancelled-change">
                             <i class="fas fa-minus"></i> <span>0%</span>
                         </div>
@@ -955,16 +959,7 @@ require_once '../../includes/header.php';
                                                 </button>
                                             <?php endif; ?>
 
-                                            <?php if (in_array($appointment['status'], ['pending', 'scheduled', 'rescheduled', 'cancelled'])): ?>
-                                                <form method="POST" style="display: inline;" 
-                                                      onsubmit="return confirm('Dismantle this appointment record?')">
-                                                    <input type="hidden" name="action" value="delete">
-                                                    <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                                    <button type="submit" class="btn btn-delete" title="Terminate">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
-                                                </form>
-                                            <?php endif; ?>
+
                                         </div>
                                     </td>
                                 </tr>
@@ -1891,10 +1886,17 @@ function updatePeriodLabel(period) {
             });
             break;
         case 'weekly':
-            const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-            const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+            // Logic to get the Monday of the current week
+            const monday = new Date(now);
+            const day = now.getDay();
+            const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+            monday.setDate(diff);
+            
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            
             label.textContent = 'This Week';
-            dateRange.textContent = `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+            dateRange.textContent = `${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
             break;
         case 'monthly':
             label.textContent = 'This Month';
@@ -1942,12 +1944,14 @@ function updateAppointmentStats(stats, changes) {
     document.getElementById('total-appointments').textContent = stats.total || 0;
     document.getElementById('completed-appointments').textContent = stats.completed || 0;
     document.getElementById('pending-appointments').textContent = stats.pending || 0;
-    document.getElementById('cancelled-appointments').textContent = stats.cancelled || 0;
+    // Combine cancellations and no-shows for the loss count
+    document.getElementById('cancelled-appointments').textContent = (stats.cancelled || 0) + (stats.no_show || 0);
     
     // Update change indicators
     updateChangeIndicator('appointments-change', changes.total || 0);
     updateChangeIndicator('completed-change', changes.completed || 0);
     updateChangeIndicator('pending-change', changes.pending || 0);
+    // Combine changes for cancellations/no-shows if possible, otherwise use cancelled change
     updateChangeIndicator('cancelled-change', changes.cancelled || 0);
 }
 
@@ -2296,7 +2300,7 @@ function viewAppointment(id) {
                             <div style="display: flex; flex-direction: column; gap: 20px;">
                                 <div>
                                     <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Reason for Visit</label>
-                                    <div style="font-size: 0.95rem; color: #1e293b; font-weight: 500; line-height: 1.5;">${appointment.illness || 'General Consultation'}</div>
+                                    <div style="font-size: 0.95rem; color: #1e293b; font-weight: 500; line-height: 1.5;">${appointment.illness || appointment.reason_for_visit || 'General Consultation'}</div>
                                 </div>
                                 <div style="background: #eff6ff; border: 1px solid #dbeafe; border-radius: 12px; padding: 16px;">
                                     <label style="display: block; font-size: 0.75rem; color: #2563eb; font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">Doctor's Findings</label>

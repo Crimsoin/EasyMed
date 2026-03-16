@@ -251,7 +251,7 @@ require_once '../includes/header.php';
                                     "address" => $p_info['address'] ?? 'N/A',
                                     "gender" => $p_info['gender'] ?? ($_SESSION['gender'] ?? 'N/A'),
                                     "age" => $p_info['age'] ?? 'N/A',
-                                    "reason" => $appointment['reason_for_visit'],
+                                    "reason" => !empty($appointment['illness']) ? $appointment['illness'] : ($appointment['reason_for_visit'] ?: 'General Consultation'),
                                     "notes" => $appointment['notes'],
                                     "payment" => [
                                         "amount" => number_format($appointment['payment_amount'] ?? $appointment['display_fee'], 2),
@@ -271,10 +271,13 @@ require_once '../includes/header.php';
                                             <i class="fas fa-calendar"></i>
                                             <?php echo formatDate($appointment['appointment_date']); ?> at <?php echo formatTime($appointment['appointment_time']); ?>
                                         </div>
-                                        <?php if (!empty($appointment['reason_for_visit'])): ?>
+                                        <?php 
+                                        $display_reason = !empty($appointment['illness']) ? $appointment['illness'] : ($appointment['reason_for_visit'] ?: 'General Consultation');
+                                        if (!empty($display_reason)): 
+                                        ?>
                                         <div class="reason">
                                             <i class="fas fa-clipboard"></i>
-                                            <?php echo htmlspecialchars($appointment['reason_for_visit']); ?>
+                                            <?php echo htmlspecialchars($display_reason); ?>
                                         </div>
                                         <?php endif; ?>
 

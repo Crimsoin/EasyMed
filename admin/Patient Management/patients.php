@@ -228,6 +228,10 @@ require_once '../../includes/header.php';
 ?>
 
 <div class="admin-container">
+    <button class="sidebar-toggle" title="Toggle Sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+
     <div class="admin-sidebar">
         <div class="sidebar-header">
             <h3><i class="fas fa-user-shield"></i> Admin Panel</h3>
@@ -448,15 +452,7 @@ require_once '../../includes/header.php';
                                             <?php endif; ?>
                                         </form>
                                         
-                                        <form method="POST" style="display: inline;">
-                                            <input type="hidden" name="action" value="delete_patient">
-                                            <input type="hidden" name="patient_id" value="<?php echo $patient['id']; ?>">
-                                            <button type="submit" class="btn-action btn-danger" 
-                                                    title="Delete Account Permanently"
-                                                    onclick="return confirm('⚠️ WARNING: This will permanently delete the patient account and ALL related data (appointments, reviews, etc.).\n\nPatient: <?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']); ?>\n\nThis action CANNOT be undone. Are you absolutely sure?')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
+
                                     <?php endif; ?>
                                 </div>
                             </td>

@@ -45,10 +45,11 @@ $stats = [
 
 // Get recent appointments
 $recent_appointments = $db->fetchAll("
-    SELECT a.id, a.appointment_date, a.appointment_time, a.status, a.reason_for_visit,
-           (u.first_name || ' ' || u.last_name) as patient_name
+    SELECT a.id, a.appointment_date, a.appointment_time, a.status, a.reason_for_visit, a.illness,
+           (up.first_name || ' ' || up.last_name) as patient_name
     FROM appointments a
-    JOIN users u ON a.patient_id = u.id
+    JOIN patients p ON a.patient_id = p.id
+    JOIN users up ON p.user_id = up.id
     WHERE a.doctor_id = (SELECT id FROM doctors WHERE user_id = ?)
     ORDER BY a.appointment_date DESC, a.appointment_time DESC
     LIMIT 5
@@ -287,9 +288,9 @@ require_once '../../includes/header.php';
                                             <?php echo date("M j, Y", strtotime($appointment["appointment_date"])); ?>
                                             at <?php echo date("g:i A", strtotime($appointment["appointment_time"])); ?>
                                         </p>
-                                        <?php if ($appointment["reason_for_visit"]): ?>
+                                        <?php if ($appointment["illness"] || $appointment["reason_for_visit"]): ?>
                                             <p class="appointment-reason">
-                                                <?php echo htmlspecialchars($appointment["reason_for_visit"]); ?>
+                                                <?php echo htmlspecialchars($appointment["illness"] ?: $appointment["reason_for_visit"]); ?>
                                             </p>
                                         <?php endif; ?>
                                     </div>
@@ -523,7 +524,7 @@ function viewAppointment(id) {
                                     <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Service Requested</label>
                                     <div style="font-size: 1rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 8px;">
                                         <i class="fas fa-stethoscope" style="color: #cbd5e1; font-size: 0.9rem;"></i>
-                                        ${appointment.purpose === 'consultation' ? 'Medical Consultation' : (appointment.reason_for_visit || 'General Consultation')}
+                                        ${appointment.illness || appointment.reason_for_visit || (appointment.purpose === 'consultation' ? 'Medical Consultation' : 'General Consultation')}
                                     </div>
                                 </div>
                             </div>
@@ -623,7 +624,7 @@ function viewAppointment(id) {
                             <div style="display: flex; flex-direction: column; gap: 20px;">
                                 <div>
                                     <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Reason for Visit</label>
-                                    <div style="font-size: 0.95rem; color: #1e293b; font-weight: 500; line-height: 1.5;">${appointment.reason_for_visit || 'General Consultation'}</div>
+                                    <div style="font-size: 0.95rem; color: #1e293b; font-weight: 500; line-height: 1.5;">${appointment.illness || appointment.reason_for_visit || 'General Consultation'}</div>
                                 </div>
                                 <div style="background: #eff6ff; border: 1px solid #dbeafe; border-radius: 12px; padding: 16px;">
                                     <label style="display: block; font-size: 0.75rem; color: #2563eb; font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">Doctor's Findings</label>

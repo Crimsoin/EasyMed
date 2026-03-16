@@ -115,9 +115,14 @@ require_once '../../includes/header.php';
     </div>
 
     <div class="admin-content">
-        <div class="content-header">
-            <h1>Edit Patient</h1>
-            <p>Update user information for <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></p>
+        <div class="content-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>Edit Patient</h1>
+                <p>Update user information for <?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']); ?></p>
+            </div>
+            <button type="button" id="edit-mode-btn" class="btn btn-primary" style="background: white; color: var(--primary-cyan); border: 2px solid var(--primary-cyan); box-shadow: none;">
+                <i class="fas fa-edit"></i> Edit Patient Information
+            </button>
         </div>
 
         <?php if ($error): ?>
@@ -132,14 +137,14 @@ require_once '../../includes/header.php';
                             <i class="fas fa-user"></i> First Name
                         </label>
                         <input type="text" name="first_name" class="form-control" 
-                               value="<?php echo htmlspecialchars($_POST['first_name'] ?? $patient['first_name']); ?>" required>
+                               value="<?php echo htmlspecialchars($_POST['first_name'] ?? $patient['first_name']); ?>" required disabled>
                     </div>
                     <div class="form-group">
                         <label class="form-label">
                             <i class="fas fa-user"></i> Last Name
                         </label>
                         <input type="text" name="last_name" class="form-control" 
-                               value="<?php echo htmlspecialchars($_POST['last_name'] ?? $patient['last_name']); ?>" required>
+                               value="<?php echo htmlspecialchars($_POST['last_name'] ?? $patient['last_name']); ?>" required disabled>
                     </div>
                 </div>
                 
@@ -149,14 +154,14 @@ require_once '../../includes/header.php';
                             <i class="fas fa-at"></i> Username
                         </label>
                         <input type="text" name="username" class="form-control" 
-                               value="<?php echo htmlspecialchars($_POST['username'] ?? $patient['username']); ?>" required>
+                               value="<?php echo htmlspecialchars($_POST['username'] ?? $patient['username']); ?>" required disabled>
                     </div>
                     <div class="form-group">
                         <label class="form-label">
                             <i class="fas fa-envelope"></i> Email
                         </label>
                         <input type="email" name="email" class="form-control" 
-                               value="<?php echo htmlspecialchars($_POST['email'] ?? $patient['email']); ?>" required>
+                               value="<?php echo htmlspecialchars($_POST['email'] ?? $patient['email']); ?>" required disabled>
                     </div>
                 </div>
                 
@@ -165,7 +170,7 @@ require_once '../../includes/header.php';
                         <label class="form-label">
                             <i class="fas fa-lock"></i> New Password
                         </label>
-                        <input type="password" name="password" class="form-control">
+                        <input type="password" name="password" class="form-control" disabled>
                         <small style="color: #666;">Leave blank to keep current password</small>
                     </div>
                     <div class="form-group">
@@ -173,7 +178,7 @@ require_once '../../includes/header.php';
                             <i class="fas fa-phone"></i> Phone
                         </label>
                         <input type="tel" name="phone" class="form-control" 
-                               value="<?php echo htmlspecialchars($_POST['phone'] ?? $patient['phone'] ?? ''); ?>">
+                               value="<?php echo htmlspecialchars($_POST['phone'] ?? $patient['phone'] ?? ''); ?>" disabled>
                     </div>
                 </div>
                 
@@ -183,13 +188,13 @@ require_once '../../includes/header.php';
                             <i class="fas fa-calendar"></i> Date of Birth
                         </label>
                         <input type="date" name="date_of_birth" class="form-control" 
-                               value="<?php echo htmlspecialchars($_POST['date_of_birth'] ?? $patient['date_of_birth'] ?? ''); ?>">
+                               value="<?php echo htmlspecialchars($_POST['date_of_birth'] ?? $patient['date_of_birth'] ?? ''); ?>" disabled>
                     </div>
                     <div class="form-group">
                         <label class="form-label">
                             <i class="fas fa-venus-mars"></i> Gender
                         </label>
-                        <select name="gender" class="form-control">
+                        <select name="gender" class="form-control" disabled>
                             <option value="">Select Gender</option>
                             <option value="male" <?php echo ($patient['gender'] === 'male') ? 'selected' : ''; ?>>Male</option>
                             <option value="female" <?php echo ($patient['gender'] === 'female') ? 'selected' : ''; ?>>Female</option>
@@ -202,13 +207,13 @@ require_once '../../includes/header.php';
                     <label class="form-label">
                         <i class="fas fa-map-marker-alt"></i> Address
                     </label>
-                    <textarea name="address" class="form-control" rows="3"><?php echo htmlspecialchars($_POST['address'] ?? $patient['address'] ?? ''); ?></textarea>
+                    <textarea name="address" class="form-control" rows="3" disabled><?php echo htmlspecialchars($_POST['address'] ?? $patient['address'] ?? ''); ?></textarea>
                 </div>
                 
                 <div class="form-group">
                     <div class="form-check">
                         <input type="checkbox" name="is_active" id="is_active" class="form-check-input" 
-                               <?php echo $patient['is_active'] ? 'checked' : ''; ?>>
+                               <?php echo $patient['is_active'] ? 'checked' : ''; ?> disabled>
                         <label for="is_active" class="form-check-label">
                             <i class="fas fa-check-circle"></i> Account Active
                         </label>
@@ -216,7 +221,7 @@ require_once '../../includes/header.php';
                 </div>
                 
                 <div class="form-group" style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" id="save-btn" class="btn btn-primary" style="display: none;">
                         <i class="fas fa-save"></i> Update Patient
                     </button>
                     <a href="../Patient Management/patients.php" class="btn btn-secondary">
@@ -231,5 +236,18 @@ require_once '../../includes/header.php';
     </div>
 </div>
 
+    <script>
+        document.getElementById('edit-mode-btn').addEventListener('click', function() {
+            const formInputs = document.querySelectorAll('form input, form select, form textarea');
+            const saveBtn = document.getElementById('save-btn');
+            
+            formInputs.forEach(input => {
+                input.disabled = false;
+            });
+            
+            this.style.display = 'none';
+            saveBtn.style.display = 'inline-flex';
+        });
+    </script>
 </body>
 </html>
