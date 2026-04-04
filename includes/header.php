@@ -254,6 +254,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <div class="progress-step">3</div>
                         <div class="progress-step-label">Details & Terms</div>
                     </div>
+                    <div class="progress-step-wrap">
+                        <div class="progress-step">4</div>
+                        <div class="progress-step-label">Verification</div>
+                    </div>
                 </div>
 
                 <!-- Step 1: Personal Information -->
@@ -341,8 +345,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
                                 <i class="fas fa-eye"></i>
                             </span>
                         </div>
-                        <small style="color: #666; font-size: 0.8rem;">
-                            Password must be at least 6 characters long
+                        <small style="color: #666; font-size: 0.8rem; display: block; margin-top: 5px;">
+                            Must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 special character
                         </small>
                     </div>
                     
@@ -399,21 +403,49 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     </div>
                 </div>
                 
+                <!-- OTP Verification Step -->
+                <div class="form-step" id="step4" style="display: none;">
+                    <div class="verification-code-container text-center">
+                        <div style="font-size: 2.5rem; color: var(--primary-cyan); margin-bottom: 0.5rem;">
+                            <i class="fas fa-envelope-open-text"></i>
+                        </div>
+                        <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; color: #1e293b;">Check Your Email</h3>
+                        <p style="color: #64748b; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1rem;">
+                            We've sent a 6-digit verification code to
+                            <strong id="verification-email" style="color: #2563eb; display: block; margin-top: 4px;">your email</strong>
+                        </p>
+                        
+                        <div class="form-group" style="max-width: 250px; margin: 0 auto; padding-left: 0;">
+                            <input type="text" id="regOTP" name="otp" class="form-control" 
+                                   placeholder="000000" maxlength="6" autocomplete="one-time-code" style="padding-left: 1rem;">
+                        </div>
+                        
+                        <p style="color: #94a3b8; font-size: 0.8rem; margin-top: 1rem;">
+                            <i class="fas fa-info-circle"></i> Don't see it? Check your spam folder.
+                        </p>
+                    </div>
+                </div>
+                
                 <input type="hidden" name="role" value="patient">
+                <input type="hidden" id="verified_email" name="verified_email" value="">
                 
                 <!-- Navigation Buttons -->
-                <div class="form-group" style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="button" id="prevBtn" class="btn btn-secondary" style="display: none;" 
+                <div class="form-group" style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: center; align-items: center;">
+                    <button type="button" id="prevBtn" class="btn btn-secondary btn-lg" style="display: none;" 
                             onclick="EasyMed.previousStep()">
                         <i class="fas fa-arrow-left"></i> Previous
                     </button>
-                    <button type="button" id="nextBtn" class="btn btn-primary" 
+                    <button type="button" id="nextBtn" class="btn btn-primary btn-lg" 
                             onclick="EasyMed.nextStep()">
                         Next <i class="fas fa-arrow-right"></i>
                     </button>
                     <button type="submit" id="submitBtn" class="btn btn-primary btn-lg" 
                             style="display: none;" data-original-text="Create Account">
                         <i class="fas fa-user-plus"></i> Create Account
+                    </button>
+                    <button type="button" id="verifyBtn" class="btn btn-primary btn-lg" 
+                            style="display: none;" onclick="EasyMed.verifyOTP()">
+                        <i class="fas fa-check-double"></i> Verify & Complete
                     </button>
                 </div>
                 

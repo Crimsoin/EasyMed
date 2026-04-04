@@ -86,8 +86,12 @@ if ($verify_result['count'] == 0) {
 // Get user data
 $user = $db->fetch("
     SELECT u.*, 
-           p.phone, p.date_of_birth, p.gender, p.id as patient_record_id,
-           p.address, p.blood_type, p.allergies, p.medical_history, p.emergency_contact, p.emergency_phone
+           COALESCE(p.phone, u.phone) as phone, 
+           COALESCE(p.date_of_birth, u.date_of_birth) as date_of_birth, 
+           COALESCE(p.gender, u.gender) as gender,
+           COALESCE(p.address, u.address) as address,
+           p.id as patient_record_id,
+           p.blood_type, p.allergies, p.medical_history, p.emergency_contact, p.emergency_phone
     FROM users u 
     JOIN patients p ON u.id = p.user_id
     WHERE p.id = ?", [$patientId]);
@@ -228,7 +232,7 @@ require_once '../includes/header.php';
                                 'phone' => $user['phone'] ?? 'N/A',
                                 'address' => $user['address'] ?? 'N/A',
                                 'gender' => ucfirst($user['gender'] ?? 'N/A'),
-                                'age' => !empty($user['date_of_birth']) ? calculateAge($user['date_of_birth']) : 'N/A',
+                                'dob' => !empty($user['date_of_birth']) ? formatDate($user['date_of_birth']) : 'N/A',
                                 'reason' => $activity['illness'] ?? $activity['reason_for_visit'] ?? 'Consultation',
                                 'purpose' => ucfirst($activity['purpose'] ?? 'Consultation'),
                                 'relationship' => ucfirst($activity['relationship'] ?? 'Self'),
@@ -341,280 +345,11 @@ require_once '../includes/header.php';
 </div>
 
 <!-- Appointment Details Modal -->
-<div id="appointmentModal" class="modal">
-    <div class="modal-content" style="max-width: 1000px; width: 95%; max-height: 90vh; overflow-y: auto; border-radius: 20px; border: none; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
-        <div class="modal-header" style="background: linear-gradient(135deg, #2563eb, #1e3a8a); color: white; padding: 24px 40px; border-radius: 20px 20px 0 0; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 12px;">
-                <i class="fas fa-file-medical"></i> Appointment Overview
-            </h3>
-            <span class="close-modal" onclick="closeModal()" style="color: rgba(255, 255, 255, 0.8); font-size: 1.5rem; cursor: pointer; transition: all 0.2s;"><i class="fas fa-times"></i></span>
-        </div>
-        <div class="modal-body" id="modalContent" style="padding: 0; background: #fdfdfd;">
-            <!-- Content injected by JavaScript -->
-        </div>
-        <div class="modal-footer" id="modalFooter" style="background: #f8fafc; border-top: 1px solid #edf2f7; padding: 24px 40px; border-radius: 0 0 20px 20px; display: flex; gap: 12px; align-items: center; justify-content: flex-end;">
-            <!-- Buttons injected by JavaScript -->
-        </div>
-    </div>
-</div>
-
-<div id="findingsModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3><i class="fas fa-clipboard-check"></i> Final Findings</h3>
-            <span class="close-modal" onclick="closeFindingsModal()"><i class="fas fa-times"></i></span>
-        </div>
-        <form method="POST">
-            <div class="modal-body">
-                <input type="hidden" name="action" value="update_findings">
-                <input type="hidden" name="appointment_id" id="findingsAptId">
-                <div class="modal-section">
-                    <div class="modal-section-title"><i class="fas fa-pen"></i> Doctor's Notes & Findings</div>
-                    <textarea name="notes" id="findingsNotesArea" class="findings-textarea" placeholder="Enter patient diagnosis, prescriptions, or summary here..." required></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="modal-btn modal-btn-secondary" onclick="closeFindingsModal()">Cancel</button>
-                <button type="submit" class="modal-btn modal-btn-primary">Save Findings</button>
-            </div>
-        </form>
-    </div>
-</div>
+<?php include_once '../includes/shared_appointment_details.php'; ?>
 
 <script>
-// Auto-submit form when filters change
-document.addEventListener('DOMContentLoaded', function() {
-    const filterSelects = document.querySelectorAll('#status, #date');
-    filterSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            this.form.submit();
-        });
-    });
-    
-    // Add search functionality with debounce
-    const searchInput = document.getElementById('search');
-    let searchTimeout;
-    
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            this.form.submit();
-        }, 500);
-    });
-});
-
 function showAppointmentDetails(data) {
-    const modal = document.getElementById('appointmentModal');
-    const content = document.getElementById('modalContent');
-    const footer = document.getElementById('modalFooter');
-    
-    // Helper for initials
-    const initials = data.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-    
-    content.innerHTML = `
-        <div class="appointment-details-premium" style="background: #fdfdfd; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
-            
-            <!-- 1. Patient Hero Banner -->
-            <div style="background: white; border-bottom: 1px solid #edf2f7; padding: 32px 40px; display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 24px;">
-                    <div style="width: 72px; height: 72px; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.75rem; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.15);">
-                        ${initials}
-                    </div>
-                    <div>
-                        <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; margin: 0; letter-spacing: -0.04em;">${data.name}</h1>
-                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
-                            <span style="color: #64748b; font-size: 0.95rem; font-weight: 600;">ID: <span style="color: #2563eb; font-weight: 700;">#APT-${data.id.toString().padStart(5, '0')}</span></span>
-                            <span style="width: 4px; height: 4px; background: #cbd5e1; border-radius: 50%;"></span>
-                            <span class="status-badge status-${data.status.toLowerCase()}" style="font-size: 0.8rem; padding: 4px 12px; border-radius: 6px; font-weight: 800; letter-spacing: 0.05em;">${data.status.toUpperCase()}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div style="padding: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px;">
-                
-                <!-- 2. Appointment Schedule Card -->
-                <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-calendar-alt" style="color: white; font-size: 0.9rem;"></i> Core Schedule
-                    </h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Date</label>
-                            <div style="font-size: 1rem; font-weight: 600; color: #1e293b;">${data.date}</div>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Time Slot</label>
-                            <div style="font-size: 1rem; font-weight: 600; color: #1e293b;">${data.time}</div>
-                        </div>
-                        <div style="grid-column: span 2;">
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Service Requested</label>
-                            <div style="font-size: 1rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-stethoscope" style="color: #cbd5e1; font-size: 0.9rem;"></i>
-                                ${data.purpose}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3. Expert Consultation Card -->
-                <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-user-md" style="color: white; font-size: 0.9rem;"></i> Medical Expert
-                    </h3>
-                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-                        <div style="width: 52px; height: 52px; background: #f8fafc; border: 1px solid #e2e8f0; color: #2563eb; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 700;">
-                            ${data.doctor_first_name[0]}${data.doctor_last_name[0]}
-                        </div>
-                        <div>
-                            <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">Dr. ${data.doctor_first_name} ${data.doctor_last_name}</div>
-                            <div style="font-size: 0.85rem; font-weight: 600; color: #2563eb; text-transform: uppercase; letter-spacing: 0.05em;">${data.specialty}</div>
-                        </div>
-                    </div>
-                    <div style="padding-top: 16px; border-top: 1px dashed #e2e8f0; display: flex; justify-content: flex-end;">
-                        <div style="text-align: right;">
-                            <label style="display: block; font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Portal Status</label>
-                            <span style="font-size: 0.9rem; font-weight: 600; color: #1e293b;">Verified Doctor</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 4. Patient Information Card -->
-                <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-info-circle" style="color: white; font-size: 0.9rem;"></i> Information Details
-                    </h3>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;">
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Age Group</label>
-                            <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b;">${data.age} Years</div>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Gender</label>
-                            <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b; text-transform: capitalize;">${data.gender}</div>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Relationship</label>
-                            <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b; text-transform: capitalize;">${data.relationship}</div>
-                        </div>
-                        <div style="grid-column: span 3; padding-top: 16px; border-top: 1px solid #f1f5f9; display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 32px;">
-                            <div>
-                                <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Email Address</label>
-                                <div style="font-size: 0.9rem; color: #475569;">${data.email || 'N/A'}</div>
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Phone Contact</label>
-                                <div style="font-size: 0.9rem; color: #475569;">${data.phone || 'N/A'}</div>
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Home Address</label>
-                                <div style="font-size: 0.9rem; color: #475569; line-height: 1.5;">${data.address || 'N/A'}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                ${data.laboratory_image_path ? `
-                <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;">
-                        <i class="fas fa-flask" style="color: white; margin-right: 10px;"></i> Laboratory Request
-                    </h3>
-                    <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 32px; text-align: center;">
-                        <img src="../${data.laboratory_image_path}" alt="Laboratory Request" style="max-width: 100%; max-height: 500px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); cursor: pointer;" onclick="window.open('../${data.laboratory_image_path}', '_blank')">
-                    </div>
-                </div>
-                ` : ''}
-
-                <!-- 5. Transaction Summary Card -->
-                <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-receipt" style="color: white; font-size: 0.9rem;"></i> Payment Summary
-                    </h3>
-                    <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                            <span style="font-weight: 700; color: #64748b; font-size: 0.8rem; text-transform: uppercase;">Amount Recieved</span>
-                            <span style="font-size: 1.5rem; font-weight: 900; color: #059669;">₱${parseFloat(data.payment_amount).toFixed(2)}</span>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
-                            <div>
-                                <label style="display: block; font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Status</label>
-                                <span class="status-badge status-${data.payment_status.toLowerCase()}" style="font-weight: 800; font-size: 0.75rem;">${data.payment_status.toUpperCase()}</span>
-                            </div>
-                            <div style="text-align: right;">
-                                <label style="display: block; font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">GCash Ref</label>
-                                <span style="font-size: 0.95rem; font-weight: 700; color: #2563eb; font-family: monospace;">${data.gcash_reference}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 6. Proof of Payment (Half Width) -->
-                ${data.receipt_path ? `
-                <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;">
-                        <i class="fas fa-search-dollar" style="color: white; margin-right: 10px;"></i> Evidence of Transaction
-                    </h3>
-                    <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 32px; text-align: center;">
-                        <img src="../${data.receipt_path}" alt="Receipt" style="max-width: 100%; max-height: 500px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); cursor: pointer;" onclick="window.open('../${data.receipt_path}', '_blank')">
-                    </div>
-                </div>
-                ` : ''}
-
-            <!-- 7. Observations Card (Full Width) -->
-                <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-file-medical-alt" style="color: white; font-size: 0.9rem;"></i> Clinical Records
-                    </h3>
-                    <div style="display: flex; flex-direction: column; gap: 20px;">
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Reason for Visit</label>
-                            <div style="font-size: 0.95rem; color: #1e293b; font-weight: 500; line-height: 1.5;">${data.reason}</div>
-                        </div>
-                        <div style="background: #eff6ff; border: 1px solid #dbeafe; border-radius: 12px; padding: 16px;">
-                            <label style="display: block; font-size: 0.75rem; color: #2563eb; font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">Doctor's Findings</label>
-                            <div style="font-size: 0.95rem; color: #1e40af; line-height: 1.6; font-weight: 600; font-style: italic;">
-                                ${data.notes || '"No findings recorded yet."'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                </div>
-        </div>
-    `;
-
-    // Footer actions
-    let footerHtml = `
-        <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal()" style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: #475569; transition: all 0.2s;">Close</button>
-        <button type="button" class="modal-btn modal-btn-secondary" onclick="window.print()" style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: #475569; transition: all 0.2s;"><i class="fas fa-print"></i> Print</button>
-    `;
-
-    if (data.can_complete) {
-        footerHtml = `
-            <div style="flex: 1; display: flex; gap: 12px;">
-                <button type="button" class="modal-btn" onclick='markAsNoShow(${data.id})' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid #ef4444; background: #fef2f2; color: #dc2626; transition: all 0.2s;">
-                    <i class="fas fa-user-slash"></i> No Show
-                </button>
-                <button type="button" class="modal-btn modal-btn-primary" onclick='openFindingsModal(${data.id}, ${JSON.stringify(data.notes || "")}, "complete")' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: all 0.2s;">
-                    <i class="fas fa-check-circle"></i> Mark as Completed
-                </button>
-            </div>
-            ${footerHtml}
-        `;
-    } else if (data.can_add_findings) {
-        footerHtml = `
-            <div style="flex: 1;"></div>
-            <button type="button" class="modal-btn modal-btn-primary" onclick='openFindingsModal(${data.id}, ${JSON.stringify(data.notes || "")}, "update_findings")' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; background: linear-gradient(135deg, #2563eb, #1e3a8a); color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); transition: all 0.2s;">
-                <i class="fas fa-pen"></i> Add/Edit Findings
-            </button>
-            ${footerHtml}
-        `;
-    }
-
-    footer.innerHTML = footerHtml;
-    
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
+    showAppointmentOverview(data, 'doctor');
 }
 
 function openFindingsModal(id, currentNotes, action = 'complete') {
@@ -627,38 +362,17 @@ function openFindingsModal(id, currentNotes, action = 'complete') {
     const submitBtn = form.querySelector('button[type="submit"]');
     const headerTitle = document.querySelector('#findingsModal .modal-header h3');
     
-    actionInput.value = action;
+    if (actionInput) actionInput.value = action;
     if (action === 'complete') {
-        submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Save Findings';
-        headerTitle.innerHTML = '<i class="fas fa-clipboard-check"></i> Save Findings';
+        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Save Findings';
+        if (headerTitle) headerTitle.innerHTML = '<i class="fas fa-clipboard-check"></i> Save Findings';
     } else {
-        submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Findings';
-        headerTitle.innerHTML = '<i class="fas fa-pen"></i> Update Findings';
+        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Findings';
+        if (headerTitle) headerTitle.innerHTML = '<i class="fas fa-pen"></i> Update Findings';
     }
 
     document.getElementById('findingsModal').style.display = 'block';
     document.getElementById('appointmentModal').style.zIndex = '999';
-}
-
-function markAsNoShow(id) {
-    if (confirm('Are you sure you want to mark this appointment as No Show?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.style.display = 'none';
-        
-        const actionInput = document.createElement('input');
-        actionInput.name = 'action';
-        actionInput.value = 'no_show';
-        
-        const idInput = document.createElement('input');
-        idInput.name = 'appointment_id';
-        idInput.value = id;
-        
-        form.appendChild(actionInput);
-        form.appendChild(idInput);
-        document.body.appendChild(form);
-        form.submit();
-    }
 }
 
 function closeFindingsModal() {
@@ -666,22 +380,9 @@ function closeFindingsModal() {
     document.getElementById('appointmentModal').style.zIndex = '1000';
 }
 
-function closeModal() {
-    const modal = document.getElementById('appointmentModal');
-    modal.style.display = 'none';
+function closeAptModal() {
+    document.getElementById('appointmentModal').style.display = 'none';
     document.body.style.overflow = 'auto';
-}
-
-// Close modals when clicking outside
-window.onclick = function(event) {
-    const aptModal = document.getElementById('appointmentModal');
-    const findModal = document.getElementById('findingsModal');
-    if (event.target == aptModal) {
-        closeModal();
-    }
-    if (event.target == findModal) {
-        closeFindingsModal();
-    }
 }
 </script>
 

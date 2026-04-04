@@ -28,6 +28,8 @@ try {
     $schedule_day = trim($_POST['schedule_day'] ?? '');
     $schedule_time = trim($_POST['schedule_time'] ?? '');
     $address = trim($_POST['address'] ?? '');
+    $patient_dob = trim($_POST['patient_dob'] ?? '');
+    $patient_gender = trim($_POST['patient_gender'] ?? '');
     $relationship = trim($_POST['relationship'] ?? '');
     $illness = trim($_POST['illness'] ?? '');
     $purpose = trim($_POST['purpose'] ?? '');
@@ -72,6 +74,14 @@ try {
 
     if (empty($address)) {
         $errors[] = 'Address is required.';
+    }
+    
+    if (empty($patient_dob)) {
+        $errors[] = 'Date of birth is required.';
+    }
+
+    if (empty($patient_gender)) {
+        $errors[] = 'Gender is required.';
     }
 
     if (empty($relationship)) {
@@ -224,6 +234,8 @@ try {
         'email' => $email,
         'schedule_day' => $schedule_day,
         'address' => $address,
+        'dob' => $patient_dob,
+        'gender' => $patient_gender,
         'relationship' => $relationship,
         'illness' => $illness,
         'purpose' => $purpose,
@@ -245,6 +257,8 @@ try {
         'phone_number' => $phone_number,
         'email' => $email,
         'address' => $address,
+        'patient_dob' => $patient_dob,
+        'patient_gender' => $patient_gender,
         'relationship' => $relationship,
         'illness' => $illness,
         'purpose' => $purpose,

@@ -36,7 +36,8 @@ if ($_POST && isset($_POST['action']) && isset($_POST['appointment_id'])) {
                 $notes = $_POST['notes'] ?? '';
                 $db->update('appointments', [
                     'status' => 'completed',
-                    'notes' => $notes
+                    'notes' => $notes,
+                    'updated_at' => date('Y-m-d H:i:s')
                 ], 'id = ?', [$appointment_id]);
                 $success_message = "Appointment marked as completed successfully.";
                 // Redirect to avoid form resubmission and refresh list
@@ -49,9 +50,13 @@ if ($_POST && isset($_POST['action']) && isset($_POST['appointment_id'])) {
                 exit();
             case 'update_findings':
                 $notes = $_POST['notes'] ?? '';
-                $db->update('appointments', ['notes' => $notes], 'id = ?', [$appointment_id]);
+                $db->update('appointments', [
+                    'notes' => $notes,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ], 'id = ?', [$appointment_id]);
                 $success_message = "Appointment findings updated successfully.";
-                break;
+                header("Location: appointments.php?success=" . urlencode($success_message));
+                exit();
         }
     }
 }
@@ -113,11 +118,11 @@ $appointments = $db->fetchAll("
     SELECT a.*, 
            u.first_name as patient_first_name, 
            u.last_name as patient_last_name, 
-           u.email as patient_email,
-           p.phone as patient_phone,
-           p.gender as patient_gender,
-           p.date_of_birth as patient_dob,
-           p.address as patient_address,
+           u.email as patient_email, 
+           COALESCE(p.phone, u.phone) as patient_phone, 
+           COALESCE(p.gender, u.gender) as patient_gender, 
+           COALESCE(p.date_of_birth, u.date_of_birth) as patient_dob, 
+           COALESCE(p.address, u.address) as patient_address,
            pay.status as payment_status, pay.amount as payment_amount, pay.gcash_reference, pay.receipt_file
     FROM appointments a
     JOIN patients p ON a.patient_id = p.id
@@ -184,9 +189,9 @@ require_once '../includes/header.php';
         </div>
 
         <?php if (isset($success_message)): ?>
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i>
-                <?php echo $success_message; ?>
+            <div class="alert alert-success" style="margin-bottom: 25px; padding: 18px 25px; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; border-radius: 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); font-weight: 600;">
+                <i class="fas fa-check-circle" style="font-size: 1.25rem;"></i>
+                <span><?php echo $success_message; ?></span>
             </div>
         <?php endif; ?>
 
@@ -314,7 +319,7 @@ require_once '../includes/header.php';
                                             <div class="patient-cell">
                                                 <span class="name"><?php echo htmlspecialchars($appointment['patient_first_name'] . ' ' . $appointment['patient_last_name']); ?></span>
                                                 <span class="meta">
-                                                    <?php echo !empty($appointment['date_of_birth']) ? calculateAge($appointment['date_of_birth']) . ' yrs' : ''; ?>
+                                                    <?php echo !empty($appointment['patient_dob']) ? '<i class="fas fa-birthday-cake"></i> ' . formatDate($appointment['patient_dob']) : ''; ?>
                                                     <?php echo !empty($appointment['patient_gender']) ? ' • ' . ucfirst($appointment['patient_gender']) : ''; ?>
                                                 </span>
                                             </div>
@@ -362,15 +367,15 @@ require_once '../includes/header.php';
                                                             'phone' => $appointment['patient_phone'] ?? 'N/A',
                                                             'address' => $appointment['patient_address'] ?? 'N/A',
                                                             'gender' => ucfirst($appointment['patient_gender'] ?? 'N/A'),
-                                                            'age' => !empty($appointment['patient_dob']) ? calculateAge($appointment['patient_dob']) : 'N/A',
+                                                            'dob' => !empty($appointment['patient_dob']) ? formatDate($appointment['patient_dob']) : 'N/A',
                                                             'reason' => $appointment['illness'] ?? $appointment['reason_for_visit'] ?? 'Consultation',
                                                             'purpose' => ucfirst($appointment['purpose'] ?? 'Consultation'),
                                                             'relationship' => ucfirst($appointment['relationship'] ?? 'Self'),
                                                              'status' => ucfirst($appointment['status']),
                                                              'id' => $appointment['id'],
                                                              'notes' => $appointment['notes'] ?? '',
-                                                             'can_complete' => in_array(strtolower($appointment['status']), ['scheduled', 'ongoing', 'confirmed', 'pending']),
-                                                             'can_no_show' => in_array(strtolower($appointment['status']), ['scheduled', 'ongoing', 'confirmed', 'pending']),
+                                                             'can_complete' => (strtolower($appointment['status']) === 'scheduled' && $appointment['appointment_date'] <= date('Y-m-d')),
+                                                             'can_no_show' => strtolower($appointment['status']) === 'scheduled',
                                                              'can_add_findings' => strtolower($appointment['status']) === 'completed',
                                                              'doctor_first_name' => $_SESSION['first_name'],
                                                              'doctor_last_name' => $_SESSION['last_name'],
@@ -379,7 +384,8 @@ require_once '../includes/header.php';
                                                             'payment_amount' => $appointment['payment_amount'] ?? 0,
                                                             'gcash_reference' => $appointment['gcash_reference'] ?? 'N/A',
                                                             'receipt_path' => $receipt_path,
-                                                            'laboratory_image_path' => $p_info['laboratory_image'] ?? null
+                                                            'laboratory_image_path' => $p_info['laboratory_image'] ?? null,
+                                                            'updated_at' => $appointment['updated_at']
                                                         ]), ENT_QUOTES, 'UTF-8'); ?>)">
                                                     <i class="fas fa-eye"></i> View Details
                                                 </button>
@@ -428,280 +434,34 @@ require_once '../includes/header.php';
 </div>
 
 <!-- Appointment Details Modal -->
-<div id="appointmentModal" class="modal">
-    <div class="modal-content" style="max-width: 1000px; width: 95%; max-height: 90vh; overflow-y: auto; border-radius: 20px; border: none; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
-        <div class="modal-header" style="background: linear-gradient(135deg, #2563eb, #1e3a8a); color: white; padding: 24px 40px; border-radius: 20px 20px 0 0; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 12px;">
-                <i class="fas fa-file-medical"></i> Appointment Overview
-            </h3>
-            <span class="close-modal" onclick="closeModal()" style="color: rgba(255, 255, 255, 0.8); font-size: 1.5rem; cursor: pointer; transition: all 0.2s;"><i class="fas fa-times"></i></span>
-        </div>
-        <div class="modal-body" id="modalContent" style="padding: 0; background: #fdfdfd;">
-            <!-- Content injected by JavaScript -->
-        </div>
-        <div class="modal-footer" id="modalFooter" style="background: #f8fafc; border-top: 1px solid #edf2f7; padding: 24px 40px; border-radius: 0 0 20px 20px; display: flex; gap: 12px; align-items: center; justify-content: flex-end;">
-            <!-- Buttons injected by JavaScript -->
-        </div>
-    </div>
-</div>
+<?php include_once '../includes/shared_appointment_details.php'; ?>
 
-<div id="findingsModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3><i class="fas fa-clipboard-check"></i> Final Findings</h3>
-            <span class="close-modal" onclick="closeFindingsModal()"><i class="fas fa-times"></i></span>
+<div id="findingsModal" class="modal" style="display: none; z-index: 10001;">
+    <div class="modal-content" style="max-width: 600px; width: 90%; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+        <div class="modal-header" style="background: linear-gradient(135deg, #2563eb, #1e3a8a); color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin:0; display: flex; align-items: center; gap: 10px;"><i class="fas fa-clipboard-check"></i> Final Findings</h3>
+            <span class="close-modal" onclick="closeFindingsModal()" style="cursor: pointer; opacity: 0.8; transition: opacity 0.2s;"><i class="fas fa-times"></i></span>
         </div>
         <form method="POST">
-            <div class="modal-body">
+            <div class="modal-body" style="padding: 30px; background: white;">
                 <input type="hidden" name="action" value="update_findings">
                 <input type="hidden" name="appointment_id" id="findingsAptId">
-                <div class="modal-section">
-                    <div class="modal-section-title"><i class="fas fa-pen"></i> Doctor's Notes & Findings</div>
-                    <textarea name="notes" id="findingsNotesArea" class="findings-textarea" placeholder="Enter patient diagnosis, prescriptions, or summary here..." required></textarea>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.05em;">Doctor's Notes & Findings</label>
+                    <textarea name="notes" id="findingsNotesArea" style="width: 100%; height: 200px; padding: 15px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; resize: none; focus: border-color #2563eb; outline: none; transition: border-color 0.2s;" placeholder="Enter patient diagnosis, prescriptions, or summary here..." required></textarea>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="modal-btn modal-btn-secondary" onclick="closeFindingsModal()">Cancel</button>
-                <button type="submit" class="modal-btn modal-btn-primary">Save Findings</button>
+            <div class="modal-footer" style="padding: 20px 30px; background: #f8fafc; border-top: 1px solid #edf2f7; display: flex; justify-content: flex-end; gap: 12px;">
+                <button type="button" class="modal-btn modal-btn-secondary" onclick="closeFindingsModal()" style="padding: 10px 20px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; color: #475569; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="submit" class="modal-btn modal-btn-primary" style="padding: 10px 25px; border-radius: 10px; border: none; background: linear-gradient(135deg, #2563eb, #1e3a8a); color: white; font-weight: 700; cursor: pointer; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);">Save Findings</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-// Auto-submit form when filters change
-document.addEventListener('DOMContentLoaded', function() {
-    const filterSelects = document.querySelectorAll('#status, #date');
-    filterSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            this.form.submit();
-        });
-    });
-    
-    // Add search functionality with debounce
-    const searchInput = document.getElementById('search');
-    let searchTimeout;
-    
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            this.form.submit();
-        }, 500);
-    });
-});
-
 function showAppointmentDetails(data) {
-    const modal = document.getElementById('appointmentModal');
-    const content = document.getElementById('modalContent');
-    const footer = document.getElementById('modalFooter');
-    
-    // Helper for initials
-    const initials = data.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-    
-    content.innerHTML = `
-        <div class="appointment-details-premium" style="background: #fdfdfd; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
-            
-            <!-- 1. Patient Hero Banner -->
-            <div style="background: white; border-bottom: 1px solid #edf2f7; padding: 32px 40px; display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 24px;">
-                    <div style="width: 72px; height: 72px; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.75rem; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.15);">
-                        ${initials}
-                    </div>
-                    <div>
-                        <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; margin: 0; letter-spacing: -0.04em;">${data.name}</h1>
-                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
-                            <span style="color: #64748b; font-size: 0.95rem; font-weight: 600;">ID: <span style="color: #2563eb; font-weight: 700;">#APT-${data.id.toString().padStart(5, '0')}</span></span>
-                            <span style="width: 4px; height: 4px; background: #cbd5e1; border-radius: 50%;"></span>
-                            <span class="status-badge status-${data.status.toLowerCase()}" style="font-size: 0.8rem; padding: 4px 12px; border-radius: 6px; font-weight: 800; letter-spacing: 0.05em;">${data.status.toUpperCase()}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div style="padding: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px;">
-                
-                <!-- 2. Appointment Schedule Card -->
-                <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-calendar-alt" style="color: white; font-size: 0.9rem;"></i> Core Schedule
-                    </h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Date</label>
-                            <div style="font-size: 1rem; font-weight: 600; color: #1e293b;">${data.date}</div>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Time Slot</label>
-                            <div style="font-size: 1rem; font-weight: 600; color: #1e293b;">${data.time}</div>
-                        </div>
-                        <div style="grid-column: span 2;">
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Service Requested</label>
-                            <div style="font-size: 1rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-stethoscope" style="color: #cbd5e1; font-size: 0.9rem;"></i>
-                                ${data.purpose}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3. Expert Consultation Card -->
-                <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-user-md" style="color: white; font-size: 0.9rem;"></i> Medical Expert
-                    </h3>
-                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-                        <div style="width: 52px; height: 52px; background: #f8fafc; border: 1px solid #e2e8f0; color: #2563eb; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 700;">
-                            ${data.doctor_first_name[0]}${data.doctor_last_name[0]}
-                        </div>
-                        <div>
-                            <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">Dr. ${data.doctor_first_name} ${data.doctor_last_name}</div>
-                            <div style="font-size: 0.85rem; font-weight: 600; color: #2563eb; text-transform: uppercase; letter-spacing: 0.05em;">${data.specialty}</div>
-                        </div>
-                    </div>
-                    <div style="padding-top: 16px; border-top: 1px dashed #e2e8f0; display: flex; justify-content: flex-end;">
-                        <div style="text-align: right;">
-                            <label style="display: block; font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Portal Status</label>
-                            <span style="font-size: 0.9rem; font-weight: 600; color: #1e293b;">Verified Doctor</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 4. Patient Information Card -->
-                <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-info-circle" style="color: white; font-size: 0.9rem;"></i> Information Details
-                    </h3>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;">
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Age Group</label>
-                            <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b;">${data.age} Years</div>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Gender</label>
-                            <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b; text-transform: capitalize;">${data.gender}</div>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Relationship</label>
-                            <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b; text-transform: capitalize;">${data.relationship}</div>
-                        </div>
-                        <div style="grid-column: span 3; padding-top: 16px; border-top: 1px solid #f1f5f9; display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 32px;">
-                            <div>
-                                <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Email Address</label>
-                                <div style="font-size: 0.9rem; color: #475569;">${data.email || 'N/A'}</div>
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Phone Contact</label>
-                                <div style="font-size: 0.9rem; color: #475569;">${data.phone || 'N/A'}</div>
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Home Address</label>
-                                <div style="font-size: 0.9rem; color: #475569; line-height: 1.5;">${data.address || 'N/A'}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                ${data.laboratory_image_path ? `
-                <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;">
-                        <i class="fas fa-flask" style="color: white; margin-right: 10px;"></i> Laboratory Request
-                    </h3>
-                    <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 32px; text-align: center;">
-                        <img src="../${data.laboratory_image_path}" alt="Laboratory Request" style="max-width: 100%; max-height: 500px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); cursor: pointer;" onclick="window.open('../${data.laboratory_image_path}', '_blank')">
-                    </div>
-                </div>
-                ` : ''}
-
-                <!-- 5. Transaction Summary Card -->
-                <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-receipt" style="color: white; font-size: 0.9rem;"></i> Payment Summary
-                    </h3>
-                    <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                            <span style="font-weight: 700; color: #64748b; font-size: 0.8rem; text-transform: uppercase;">Amount Recieved</span>
-                            <span style="font-size: 1.5rem; font-weight: 900; color: #059669;">₱${parseFloat(data.payment_amount).toFixed(2)}</span>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
-                            <div>
-                                <label style="display: block; font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Status</label>
-                                <span class="status-badge status-${data.payment_status.toLowerCase()}" style="font-weight: 800; font-size: 0.75rem;">${data.payment_status.toUpperCase()}</span>
-                            </div>
-                            <div style="text-align: right;">
-                                <label style="display: block; font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">GCash Ref</label>
-                                <span style="font-size: 0.95rem; font-weight: 700; color: #2563eb; font-family: monospace;">${data.gcash_reference}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 6. Proof of Payment (Half Width) -->
-                ${data.receipt_path ? `
-                <div style="background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;">
-                        <i class="fas fa-search-dollar" style="color: white; margin-right: 10px;"></i> Evidence of Transaction
-                    </h3>
-                    <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 32px; text-align: center;">
-                        <img src="../${data.receipt_path}" alt="Receipt" style="max-width: 100%; max-height: 500px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); cursor: pointer;" onclick="window.open('../${data.receipt_path}', '_blank')">
-                    </div>
-                </div>
-                ` : ''}
-
-            <!-- 7. Observations Card (Full Width) -->
-                <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
-                    <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-file-medical-alt" style="color: white; font-size: 0.9rem;"></i> Clinical Records
-                    </h3>
-                    <div style="display: flex; flex-direction: column; gap: 20px;">
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Reason for Visit</label>
-                            <div style="font-size: 0.95rem; color: #1e293b; font-weight: 500; line-height: 1.5;">${data.reason}</div>
-                        </div>
-                        <div style="background: #eff6ff; border: 1px solid #dbeafe; border-radius: 12px; padding: 16px;">
-                            <label style="display: block; font-size: 0.75rem; color: #2563eb; font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">Doctor's Findings</label>
-                            <div style="font-size: 0.95rem; color: #1e40af; line-height: 1.6; font-weight: 600; font-style: italic;">
-                                ${data.notes || '"No findings recorded yet."'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                </div>
-        </div>
-    `;
-
-    // Footer actions
-    let footerHtml = `
-        <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal()" style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: #475569; transition: all 0.2s;">Close</button>
-        <button type="button" class="modal-btn modal-btn-secondary" onclick="window.print()" style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: #475569; transition: all 0.2s;"><i class="fas fa-print"></i> Print</button>
-    `;
-
-    if (data.can_complete) {
-        footerHtml = `
-            <div style="flex: 1; display: flex; gap: 12px;">
-                <button type="button" class="modal-btn" onclick='markAsNoShow(${data.id})' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid #ef4444; background: #fef2f2; color: #dc2626; transition: all 0.2s;">
-                    <i class="fas fa-user-slash"></i> No Show
-                </button>
-                <button type="button" class="modal-btn modal-btn-primary" onclick='openFindingsModal(${data.id}, ${JSON.stringify(data.notes || "")}, "complete")' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: all 0.2s;">
-                    <i class="fas fa-check-circle"></i> Mark as Completed
-                </button>
-            </div>
-            ${footerHtml}
-        `;
-    } else if (data.can_add_findings) {
-        footerHtml = `
-            <div style="flex: 1;"></div>
-            <button type="button" class="modal-btn modal-btn-primary" onclick='openFindingsModal(${data.id}, ${JSON.stringify(data.notes || "")}, "update_findings")' style="padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; background: linear-gradient(135deg, #2563eb, #1e3a8a); color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); transition: all 0.2s;">
-                <i class="fas fa-pen"></i> Add/Edit Findings
-            </button>
-            ${footerHtml}
-        `;
-    }
-
-    footer.innerHTML = footerHtml;
-    
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
+    showAppointmentOverview(data, 'doctor');
 }
 
 function openFindingsModal(id, currentNotes, action = 'complete') {
@@ -727,26 +487,6 @@ function openFindingsModal(id, currentNotes, action = 'complete') {
     document.getElementById('appointmentModal').style.zIndex = '999';
 }
 
-function markAsNoShow(id) {
-    if (confirm('Are you sure you want to mark this appointment as No Show?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.style.display = 'none';
-        
-        const actionInput = document.createElement('input');
-        actionInput.name = 'action';
-        actionInput.value = 'no_show';
-        
-        const idInput = document.createElement('input');
-        idInput.name = 'appointment_id';
-        idInput.value = id;
-        
-        form.appendChild(actionInput);
-        form.appendChild(idInput);
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
 
 function closeFindingsModal() {
     document.getElementById('findingsModal').style.display = 'none';
@@ -754,9 +494,7 @@ function closeFindingsModal() {
 }
 
 function closeModal() {
-    const modal = document.getElementById('appointmentModal');
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
+    closeBaseModal();
 }
 
 // Close modals when clicking outside
@@ -770,6 +508,30 @@ window.onclick = function(event) {
         closeFindingsModal();
     }
 }
+
+// Auto-submit form when filters change
+document.addEventListener('DOMContentLoaded', function() {
+    const filterSelects = document.querySelectorAll('#status, #date');
+    if (filterSelects.length > 0) {
+        filterSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                this.form.submit();
+            });
+        });
+    }
+    
+    // Add search functionality with debounce
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.form.submit();
+            }, 500);
+        });
+    }
+});
 </script>
 
 </body>

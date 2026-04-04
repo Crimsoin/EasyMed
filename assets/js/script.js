@@ -170,7 +170,7 @@ function togglePassword(inputId, button) {
 // Multi-step Form Functions
 function initializeMultiStepForm() {
     currentStep = 1;
-    totalSteps = 3;
+    totalSteps = 4;
 }
 
 function resetMultiStepForm() {
@@ -257,13 +257,20 @@ function updateNavigationButtons() {
         prevBtn.style.display = currentStep > 1 ? 'inline-flex' : 'none';
     }
 
-    if (nextBtn && submitBtn) {
-        if (currentStep === totalSteps) {
-            nextBtn.style.display = 'none';
-            submitBtn.style.display = 'inline-flex';
-        } else {
+    if (nextBtn && submitBtn && verifyBtn) {
+        if (currentStep < 3) {
             nextBtn.style.display = 'inline-flex';
             submitBtn.style.display = 'none';
+            verifyBtn.style.display = 'none';
+        } else if (currentStep === 3) {
+            nextBtn.style.display = 'none';
+            submitBtn.style.display = 'inline-flex';
+            verifyBtn.style.display = 'none';
+        } else if (currentStep === 4) {
+            nextBtn.style.display = 'none';
+            submitBtn.style.display = 'none';
+            verifyBtn.style.display = 'inline-flex';
+            if (prevBtn) prevBtn.style.display = 'none'; // Disable going back once submitted
         }
     }
 }
@@ -288,12 +295,26 @@ function validateCurrentStep() {
         if (!input.value.trim()) {
             showFieldError(input, 'This field is required');
             isValid = false;
-        } else if (input.type === 'email' && !isValidEmail(input.value)) {
-            showFieldError(input, 'Please enter a valid email address');
-            isValid = false;
-        } else if (input.type === 'password' && currentStep === 2) {
+        } else if (input.type === 'email') {
+            if (!isValidEmail(input.value)) {
+                showFieldError(input, 'Please enter a valid email address');
+                isValid = false;
+            } else if (input.dataset.exists === 'true') {
+                showFieldError(input, 'This email address is already in use');
+                isValid = false;
+            }
+        } else if ((input.type === 'password' || input.name === 'password' || input.name === 'confirm_password') && currentStep === 2) {
             if (input.value.length < 8) {
-                showFieldError(input, 'Password must be at least 8 characters long');
+                showFieldError(input, 'Must be at least 8 characters');
+                isValid = false;
+            } else if (!/[A-Z]/.test(input.value)) {
+                showFieldError(input, 'Requires 1 uppercase letter');
+                isValid = false;
+            } else if (!/[a-z]/.test(input.value)) {
+                showFieldError(input, 'Requires 1 lowercase letter');
+                isValid = false;
+            } else if (!/[^A-Za-z0-9]/.test(input.value)) {
+                showFieldError(input, 'Requires 1 special character');
                 isValid = false;
             }
         }
@@ -318,16 +339,32 @@ function showFieldError(input, message) {
     clearFieldError(input);
 
     const errorDiv = document.createElement('div');
-    errorDiv.className = 'form-error show';
-    errorDiv.textContent = message;
+    errorDiv.className = 'error-message show';
+    errorDiv.style.color = '#ef4444';
+    errorDiv.style.fontSize = '0.85rem';
+    errorDiv.style.marginTop = '0.5rem';
+    errorDiv.style.display = 'block';
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle" style="margin-right: 0.5rem;"></i>${message}`;
 
-    input.parentNode.insertBefore(errorDiv, input.nextSibling);
+    // Get the input-group parent
+    const inputGroup = input.closest('.input-group');
+    if (inputGroup) {
+        inputGroup.insertAdjacentElement('afterend', errorDiv);
+    } else {
+        input.insertAdjacentElement('afterend', errorDiv);
+    }
+    
     input.style.borderColor = 'var(--error)';
 }
 
 function clearFieldError(input) {
-    const existingError = input.parentNode.querySelector('.form-error');
-    if (existingError) {
+    if (!input) return;
+    
+    const inputGroup = input.closest('.input-group');
+    const parent = inputGroup || input;
+    const existingError = parent.nextElementSibling;
+    
+    if (existingError && existingError.classList.contains('error-message')) {
         existingError.remove();
     }
     input.style.borderColor = '';
@@ -546,10 +583,21 @@ function handleRegistration(event) {
             hideSpinner(event.target);
 
             if (data.success) {
-                // Close registration modal immediately
-                closeModal();
-                // Show success message
-                showAlert('Registration successful! Please login.', 'success');
+                // Store email for verification
+                const verifiedEmail = document.getElementById('verified_email');
+                if (verifiedEmail) verifiedEmail.value = data.email || '';
+                
+                // Show email in verification step UI
+                const emailDisplay = document.getElementById('verification-email');
+                if (emailDisplay) emailDisplay.textContent = data.email || 'your email';
+                
+                // Move to OTP step (Step 4)
+                currentStep = 4;
+                updateFormStep();
+                updateProgressIndicator();
+                updateNavigationButtons();
+                
+                showModalAlert('registerModalAlert', data.message, 'success');
             } else {
                 showModalAlert('registerModalAlert', data.message, 'error');
             }
@@ -558,6 +606,52 @@ function handleRegistration(event) {
             console.error('Registration error:', error);
             hideSpinner(event.target);
             showModalAlert('registerModalAlert', 'An error occurred. Please try again.', 'error');
+        });
+}
+
+function verifyOTP() {
+    const email = document.getElementById('verified_email').value;
+    const otp = document.getElementById('regOTP').value;
+    const verifyBtn = document.getElementById('verifyBtn');
+
+    if (!otp || otp.length !== 6) {
+        showModalAlert('registerModalAlert', 'Please enter a valid 6-digit verification code', 'error');
+        return;
+    }
+
+    const originalText = verifyBtn.innerHTML;
+    verifyBtn.disabled = true;
+    verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('otp', otp);
+
+    const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+
+    fetch(baseUrl + '/includes/ajax/verify-otp.php', {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => response.json())
+        .then(data => {
+            verifyBtn.disabled = false;
+            verifyBtn.innerHTML = originalText;
+
+            if (data.success) {
+                showModalAlert('registerModalAlert', data.message, 'success');
+                setTimeout(() => {
+                    location.reload(); 
+                }, 2000);
+            } else {
+                showModalAlert('registerModalAlert', data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Verification error:', error);
+            verifyBtn.disabled = false;
+            verifyBtn.innerHTML = originalText;
+            showModalAlert('registerModalAlert', 'An error occurred during verification. Please try again.', 'error');
         });
 }
 
@@ -581,29 +675,56 @@ function validateInput(event) {
         return false;
     }
 
+    // Email validation and uniqueness check
+    if (name === 'email' && value) {
+        if (!isValidEmail(value)) {
+            showValidationError(input, 'Please enter a valid email address');
+            return false;
+        } else {
+            // Check if email already exists via AJAX
+            const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+            fetch(`${baseUrl}/includes/ajax/check-exists.php?type=email&value=${encodeURIComponent(value)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists) {
+                        showValidationError(input, 'This email address is already in use');
+                        input.dataset.exists = 'true';
+                    } else {
+                        input.dataset.exists = 'false';
+                    }
+                })
+                .catch(err => console.error('Error checking email:', err));
+        }
+    }
+
     // Email and phone are optional - skip validation for these fields
     // Only validate if they have the 'required' attribute
 
-    if (type === 'password' && value && value.length < 6) {
-        showValidationError(input, 'Password must be at least 6 characters');
-        return false;
+    if (input.closest('#registerForm') && (type === 'password' || name === 'password' || name === 'confirm_password') && value) {
+        if (value.length < 8) {
+            showValidationError(input, 'Must be at least 8 characters');
+            return false;
+        } else if (!/[A-Z]/.test(value)) {
+            showValidationError(input, 'Requires 1 uppercase letter');
+            return false;
+        } else if (!/[a-z]/.test(value)) {
+            showValidationError(input, 'Requires 1 lowercase letter');
+            return false;
+        } else if (!/[^A-Za-z0-9]/.test(value)) {
+            showValidationError(input, 'Requires 1 special character');
+            return false;
+        }
     }
 
     return true;
 }
 
 function showValidationError(input, message) {
+    clearValidationError(input);
     input.classList.add('error');
 
-    // Remove existing error message
-    const existingError = input.parentNode.querySelector('.error-message');
-    if (existingError) {
-        existingError.remove();
-    }
-
-    // Add new error message below the input
     const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-message';
+    errorDiv.className = 'error-message show';
     errorDiv.style.color = '#ef4444';
     errorDiv.style.fontSize = '0.85rem';
     errorDiv.style.marginTop = '0.5rem';
@@ -613,24 +734,26 @@ function showValidationError(input, message) {
     errorDiv.innerHTML = `<i class="fas fa-exclamation-circle" style="margin-right: 0.5rem;"></i>${message}`;
 
     // Insert after the input group
-    input.parentNode.insertAdjacentElement('afterend', errorDiv);
+    const inputGroup = input.closest('.input-group');
+    if (inputGroup) {
+        inputGroup.insertAdjacentElement('afterend', errorDiv);
+    } else {
+        input.insertAdjacentElement('afterend', errorDiv);
+    }
 }
 
 function clearValidationError(input) {
-    if (!input || !input.parentNode) return;
+    if (!input) return;
 
     input.classList.remove('error');
 
     // Look for error message after the input group
-    const errorMessage = input.parentNode.parentNode?.querySelector('.error-message');
-    if (errorMessage) {
-        errorMessage.remove();
-    }
-
-    // Also check for error message within the input group (fallback)
-    const inlineError = input.parentNode.querySelector('.error-message');
-    if (inlineError) {
-        inlineError.remove();
+    const inputGroup = input.closest('.input-group');
+    const parent = inputGroup || input;
+    const existingError = parent.nextElementSibling;
+    
+    if (existingError && existingError.classList.contains('error-message')) {
+        existingError.remove();
     }
 }
 
@@ -1005,5 +1128,6 @@ window.EasyMed = {
     formatDate,
     formatTime,
     isValidEmail,
-    isValidPhone
+    isValidPhone,
+    verifyOTP
 };

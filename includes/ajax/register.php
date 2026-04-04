@@ -95,8 +95,16 @@ try {
         $errors[] = 'Username must be at least 3 characters long';
     }
     
-    if (empty($userData['password']) || strlen($userData['password']) < 6) {
-        $errors[] = 'Password must be at least 6 characters long';
+    if (empty($userData['password'])) {
+        $errors[] = 'Password is required';
+    } elseif (strlen($userData['password']) < 8) {
+        $errors[] = 'Password must be at least 8 characters long';
+    } elseif (!preg_match('/[A-Z]/', $userData['password'])) {
+        $errors[] = 'Password must contain at least one uppercase letter';
+    } elseif (!preg_match('/[a-z]/', $userData['password'])) {
+        $errors[] = 'Password must contain at least one lowercase letter';
+    } elseif (!preg_match('/[^A-Za-z0-9]/', $userData['password'])) {
+        $errors[] = 'Password must contain at least one special character';
     }
     
     if ($userData['password'] !== $confirmPassword) {
@@ -154,27 +162,26 @@ try {
             // Continue anyway - notification failure shouldn't stop registration
         }
         
-        // Try to send welcome email (non-critical)
+        // Send OTP email
         try {
-            $emailSubject = 'Welcome to EasyMed Private Clinic';
+            $emailSubject = 'Verify Your Email - EasyMed';
+            $otp = $result['otp_code'];
             $emailMessage = "
-                <h2>Welcome to EasyMed!</h2>
-                <p>Dear {$userData['first_name']} {$userData['last_name']},</p>
-                <p>Thank you for registering with EasyMed Private Clinic. Your account has been successfully created.</p>
-                <p>You can now:</p>
-                <ul>
-                    <li>Book appointments with our doctors</li>
-                    <li>View your medical history</li>
-                    <li>Manage your profile</li>
-                    <li>Submit feedback and reviews</li>
-                </ul>
-                <p>To get started, please log in to your account using your username and password.</p>
-                <p>If you have any questions, please don't hesitate to contact us.</p>
-                <br>
-                <p>Best regards,<br>EasyMed Team</p>
+                <div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'>
+                    <h2>Verify Your Email</h2>
+                    <p>Dear {$userData['first_name']} {$userData['last_name']},</p>
+                    <p>Thank you for registering with EasyMed Private Clinic. To complete your registration, please use the following One-Time Password (OTP):</p>
+                    <div style='background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;'>
+                        {$otp}
+                    </div>
+                    <p>This OTP will expire in 10 minutes.</p>
+                    <p>If you did not request this, please ignore this email.</p>
+                    <br>
+                    <p>Best regards,<br>EasyMed Team</p>
+                </div>
             ";
             
-            @sendEmail($userData['email'], $emailSubject, $emailMessage, true);
+            sendEmail($userData['email'], $emailSubject, $emailMessage, true);
         } catch (Exception $e) {
             error_log("Failed to send welcome email: " . $e->getMessage());
             // Continue anyway - email failure shouldn't stop registration
@@ -183,7 +190,8 @@ try {
         ob_end_clean();
         echo json_encode([
             'success' => true,
-            'message' => 'Registration successful! Please login to continue.'
+            'message' => 'OTP sent to your email. Please verify to complete registration.',
+            'email' => $userData['email']
         ]);
         exit();
     } else {

@@ -117,11 +117,34 @@ class Auth {
         try {
             // Check if username or email already exists
             $existing = $this->db->fetch(
-                "SELECT id FROM users WHERE username = ? OR email = ?",
+                "SELECT id, status FROM users WHERE username = ? OR email = ?",
                 [$userData['username'], $userData['email']]
             );
             
             if ($existing) {
+                // If the user exists but is still pending, allow them to refresh their OTP
+                if ($existing['status'] === 'pending') {
+                    $userId = $existing['id'];
+                    $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
+                    $otpCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+                    $otpExpiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+                    
+                    $this->db->update('users', [
+                        'password' => $hashedPassword,
+                        'first_name' => $userData['first_name'],
+                        'last_name' => $userData['last_name'],
+                        'otp_code' => $otpCode,
+                        'otp_expires_at' => $otpExpiresAt
+                    ], 'id = ?', [$userId]);
+                    
+                    return [
+                        'success' => true,
+                        'user_id' => $userId,
+                        'otp_code' => $otpCode,
+                        'message' => 'Your OTP has been refreshed. Please verify with the new code.'
+                    ];
+                }
+
                 return [
                     'success' => false,
                     'message' => 'Username or email already exists'
@@ -131,17 +154,23 @@ class Auth {
             // Hash password
             $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
             
+            // Generate 6-digit OTP
+            $otpCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $otpExpiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+            
             // Prepare data for insertion (exclude confirm_password)
             $insertData = [
-                'username'     => $userData['username'],
-                'email'        => $userData['email'],
-                'password'     => $hashedPassword,
-                'first_name'   => $userData['first_name'],
-                'last_name'    => $userData['last_name'],
-                'role'         => 'patient',
-                'is_active'    => 1,
-                'status'       => 'active',
-                'email_verified' => 0
+                'username'       => $userData['username'],
+                'email'          => $userData['email'],
+                'password'       => $hashedPassword,
+                'first_name'     => $userData['first_name'],
+                'last_name'      => $userData['last_name'],
+                'role'           => $userData['role'] ?? 'patient',
+                'is_active'      => 0, // Inactive until OTP is verified
+                'status'         => 'pending',
+                'email_verified' => 0,
+                'otp_code'       => $otpCode,
+                'otp_expires_at' => $otpExpiresAt
             ];
 
             // Include optional profile fields if provided
@@ -162,6 +191,13 @@ class Auth {
                         'user_id' => $userId,
                         'status' => 'active'
                     ];
+
+                    // Sync demographic fields to patients table
+                    if (!empty($userData['date_of_birth'])) $patientData['date_of_birth'] = $userData['date_of_birth'];
+                    if (!empty($userData['gender']))        $patientData['gender']        = $userData['gender'];
+                    if (!empty($userData['phone']))         $patientData['phone']         = $userData['phone'];
+                    if (!empty($userData['address']))       $patientData['address']       = $userData['address'];
+
                     $patientId = $this->db->insert('patients', $patientData);
                     error_log("Patient record created with ID: " . $patientId);
                     
@@ -186,7 +222,8 @@ class Auth {
                 return [
                     'success' => true,
                     'user_id' => $userId,
-                    'message' => 'Registration successful'
+                    'otp_code' => $otpCode, // Include OTP for sending email
+                    'message' => 'Registration initiated. Please verify with OTP.'
                 ];
             } else {
                 error_log("Database insert failed - no user ID returned");
@@ -201,6 +238,51 @@ class Auth {
             return [
                 'success' => false,
                 'message' => 'An error occurred during registration. Please try again.'
+            ];
+        }
+    }
+
+    public function verifyOTP($email, $otp) {
+        try {
+            $user = $this->db->fetch(
+                "SELECT * FROM users WHERE email = ? AND otp_code = ? AND otp_expires_at > CURRENT_TIMESTAMP",
+                [$email, $otp]
+            );
+            
+            if ($user) {
+                // Update user status
+                $this->db->update(
+                    'users',
+                    [
+                        'is_active' => 1,
+                        'status' => 'active',
+                        'email_verified' => 1,
+                        'otp_code' => null,
+                        'otp_expires_at' => null
+                    ],
+                    'id = ?',
+                    [$user['id']]
+                );
+                
+                // Log activity
+                logActivity($user['id'], 'verify_email', 'Email verified with OTP');
+                
+                return [
+                    'success' => true,
+                    'user_id' => $user['id'],
+                    'message' => 'Email verified successfully! You can now login.'
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid or expired OTP. Please try again.'
+                ];
+            }
+        } catch (Exception $e) {
+            error_log("OTP Verification error: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'An error occurred during verification.'
             ];
         }
     }
@@ -262,7 +344,27 @@ function generateToken($length = 32) {
 }
 
 function sendEmail($to, $subject, $message, $isHTML = true) {
-    // Basic email function - can be enhanced with PHPMailer
+    global $site_url;
+    
+    // Check if we can use the advanced EmailService
+    $email_file = __DIR__ . '/email.php';
+    if (file_exists($email_file)) {
+        require_once $email_file;
+        if (class_exists('EmailService')) {
+            $emailService = new EmailService();
+            // sendEmail($to_email, $to_name, $subject, $body, $is_html = true)
+            $result = $emailService->sendEmail($to, '', $subject, $message, $isHTML);
+            
+            if ($result['success']) {
+                return true;
+            } else {
+                error_log("EmailService failed to send to $to: " . $result['message']);
+                // Fallback to basic mail if SMTP fails
+            }
+        }
+    }
+
+    // Basic email function fallback
     $headers = "From: " . SMTP_FROM_NAME . " <" . SMTP_FROM_EMAIL . ">\r\n";
     $headers .= "Reply-To: " . SMTP_FROM_EMAIL . "\r\n";
     
@@ -270,7 +372,11 @@ function sendEmail($to, $subject, $message, $isHTML = true) {
         $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
     }
     
-    return mail($to, $subject, $message, $headers);
+    $result = mail($to, $subject, $message, $headers);
+    if (!$result) {
+        error_log("Fallback mail() failed to send to $to");
+    }
+    return $result;
 }
 
 function createNotification($userId, $title, $message, $type = 'info') {
@@ -328,9 +434,20 @@ function isValidTime($time, $format = 'H:i') {
 }
 
 function calculateAge($birthDate) {
-    $today = new DateTime();
-    $birth = new DateTime($birthDate);
-    return $today->diff($birth)->y;
+    if (empty($birthDate)) return 'N/A';
+    
+    try {
+        $today = new DateTime();
+        $birth = new DateTime($birthDate);
+        
+        if ($birth > $today) {
+             return 'N/A'; // Invalid future date
+        }
+        
+        return $today->diff($birth)->y;
+    } catch (Exception $e) {
+        return 'N/A';
+    }
 }
 
 function uploadFile($file, $uploadDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'pdf']) {

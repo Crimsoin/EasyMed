@@ -33,23 +33,29 @@ $db = Database::getInstance();
 <section class="hero">
     <div class="container">
         <div class="hero-content">
-            <h1>Welcome to Patient Appointment<br>Private Clinic</h1>
+            <h1>Welcome to Patient<br>Appointment Private Clinic</h1>
             <p>Providing exceptional healthcare services with modern convenience and professional care</p>
-            <div style="margin-top: 2rem;">
+            <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
                 <?php if (!isset($_SESSION['user_id'])): ?>
-                    <button class="btn btn-primary btn-lg" onclick="EasyMed.openModal('registerModal')" style="margin-right: 1rem;">
+                    <button class="btn btn-primary btn-lg" onclick="EasyMed.openModal('registerModal')" style="min-width: 220px;">
                         <i class="fas fa-user-plus"></i> Register as Patient
                     </button>
-                    <button class="btn btn-secondary btn-lg" onclick="EasyMed.openModal('loginModal')">
+                    <button class="btn btn-primary btn-lg" onclick="EasyMed.openModal('loginModal')" style="min-width: 220px;">
                         <i class="fas fa-calendar-check"></i> Book Appointment
                     </button>
+                    <button class="btn btn-primary btn-lg" style="cursor: default; min-width: 220px;">
+                        <i class="fas fa-microscope"></i> Laboratory
+                    </button>
                 <?php elseif ($_SESSION['role'] === 'patient'): ?>
-                    <a href="<?php echo SITE_URL; ?>/patient/book-appointment.php" class="btn btn-primary btn-lg">
+                    <a href="<?php echo SITE_URL; ?>/patient/book-appointment.php" class="btn btn-primary btn-lg" style="min-width: 220px;">
                         <i class="fas fa-calendar-check"></i> Book Appointment
                     </a>
-                    <a href="<?php echo SITE_URL; ?>/patient/dashboard_patients.php" class="btn btn-secondary btn-lg" style="margin-left: 1rem;">
+                    <a href="<?php echo SITE_URL; ?>/patient/dashboard_patients.php" class="btn btn-primary btn-lg" style="min-width: 220px;">
                         <i class="fas fa-tachometer-alt"></i> My Dashboard
                     </a>
+                    <button class="btn btn-primary btn-lg" style="cursor: default; min-width: 220px;">
+                        <i class="fas fa-microscope"></i> Laboratory
+                    </button>
                 <?php else: ?>
                     <?php if ($_SESSION['role'] === 'doctor'): ?>
                         <a href="<?php echo SITE_URL; ?>/doctor/dashboard_doctor.php" class="btn btn-primary btn-lg">

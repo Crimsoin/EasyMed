@@ -212,7 +212,12 @@ $where_clause = implode(' AND ', $where_conditions);
 
 // Get patients with filters
 $patients = $db->fetchAll("
-    SELECT u.*, p.date_of_birth, p.gender, p.phone, p.address, p.emergency_contact, p.emergency_phone, p.blood_type, p.allergies, p.medical_history
+    SELECT u.*, 
+           COALESCE(p.date_of_birth, u.date_of_birth) AS date_of_birth, 
+           COALESCE(p.gender, u.gender) AS gender, 
+           COALESCE(p.phone, u.phone) AS phone, 
+           COALESCE(p.address, u.address) AS address, 
+           p.emergency_contact, p.emergency_phone, p.blood_type, p.allergies, p.medical_history
     FROM users u 
     LEFT JOIN patients p ON u.id = p.user_id
     WHERE $where_clause
@@ -312,7 +317,7 @@ require_once '../../includes/header.php';
                     
                     <div class="form-group">
                         <label class="form-label">
-                            <i class="fas fa-birthday-cake"></i> Age Group
+                            <i class="fas fa-birthday-cake"></i> Age
                         </label>
                         <select name="age" class="form-select">
                             <option value="">All Ages</option>

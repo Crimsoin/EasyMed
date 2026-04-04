@@ -20,8 +20,13 @@ if (!$patientId) {
 
 // Get patient data (only patients)
 $patient = $db->fetch("
-    SELECT u.* 
+    SELECT u.*, 
+           COALESCE(p.phone, u.phone) AS phone, 
+           COALESCE(p.date_of_birth, u.date_of_birth) AS date_of_birth, 
+           COALESCE(p.gender, u.gender) AS gender, 
+           COALESCE(p.address, u.address) AS address
     FROM users u 
+    LEFT JOIN patients p ON u.id = p.user_id
     WHERE u.id = ? AND u.role = 'patient'", [$patientId]);
 
 if (!$patient) {
@@ -75,6 +80,24 @@ if ($_POST) {
             }
             
             $db->update('users', $userData, 'id = ?', [$patientId]);
+            
+            // Sync to patients table
+            $patientRecord = $db->fetch("SELECT id FROM patients WHERE user_id = ?", [$patientId]);
+            $patientDataSync = [
+                'phone' => $phone,
+                'date_of_birth' => $dateOfBirth ?: null,
+                'gender' => $gender ?: null,
+                'address' => $address
+            ];
+            
+            if ($patientRecord) {
+                $db->update('patients', $patientDataSync, 'user_id = ?', [$patientId]);
+            } else {
+                $patientDataSync['user_id'] = $patientId;
+                $patientDataSync['status'] = 'active';
+                $patientDataSync['created_at'] = date('Y-m-d H:i:s');
+                $db->insert('patients', $patientDataSync);
+            }
             
             $db->commit();
             $_SESSION['success'] = 'Patient updated successfully';

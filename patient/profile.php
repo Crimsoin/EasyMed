@@ -79,7 +79,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Load current user + patient data
 // Note: SQLite patients table uses `emergency_contact` and `emergency_phone` columns
-$user = $db->fetch("SELECT u.*, p.date_of_birth, p.gender, p.emergency_contact AS emergency_contact_name, p.emergency_phone AS emergency_contact_phone, NULL AS emergency_contact_relationship, p.blood_type FROM users u LEFT JOIN patients p ON p.user_id = u.id WHERE u.id = ?", [$user_id]);
+$user = $db->fetch("SELECT u.*, 
+                    COALESCE(p.date_of_birth, u.date_of_birth) AS date_of_birth, 
+                    COALESCE(p.gender, u.gender) AS gender,
+                    p.emergency_contact AS emergency_contact_name, 
+                    p.emergency_phone AS emergency_contact_phone, 
+                    NULL AS emergency_contact_relationship, 
+                    p.blood_type 
+                    FROM users u 
+                    LEFT JOIN patients p ON p.user_id = u.id 
+                    WHERE u.id = ?", [$user_id]);
 
 // Flash messages
 $success = $_SESSION['profile_success'] ?? null;
@@ -300,48 +309,7 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
                         </div>
                     </div>
 
-                    <!-- 3. Health Profile -->
-                    <div class="content-section">
-                        <div class="section-header">
-                            <h2><i class="fas fa-heartbeat"></i> Health Profile</h2>
-                        </div>
-                        <div class="section-content">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="blood_type">Blood Type</label>
-                                    <select name="blood_type" id="blood_type" disabled>
-                                        <option value="">Select blood type</option>
-                                        <?php $bl = $user['blood_type'] ?? ''; $types = ['A+','A-','B+','B-','AB+','AB-','O+','O-','Unknown']; foreach ($types as $t): ?>
-                                            <option value="<?= $t ?>" <?= ($bl === $t) ? 'selected' : '' ?>><?= $t ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- 4. Emergency Contact -->
-                    <div class="content-section">
-                        <div class="section-header">
-                            <h2><i class="fas fa-ambulance"></i> Emergency Contact</h2>
-                        </div>
-                        <div class="section-content">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="emergency_name">Representative Name</label>
-                                    <input type="text" name="emergency_name" id="emergency_name" value="<?= htmlspecialchars($user['emergency_contact_name'] ?? '') ?>" disabled>
-                                </div>
-                                <div class="form-group">
-                                    <label for="emergency_phone">Contact Phone</label>
-                                    <input type="text" name="emergency_phone" id="emergency_phone" value="<?= htmlspecialchars($user['emergency_contact_phone'] ?? '') ?>" disabled>
-                                </div>
-                                <div class="form-group full-width">
-                                    <label for="emergency_relation">Relationship to Patient</label>
-                                    <input type="text" name="emergency_relation" id="emergency_relation" value="<?= htmlspecialchars($user['emergency_contact_relationship'] ?? '') ?>" disabled>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <div id="profile-actions" class="profile-actions-card" style="display: none;">
                         <a href="dashboard_patients.php" class="btn-profile-cancel">

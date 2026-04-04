@@ -22,8 +22,12 @@ try {
     $appointment = $db->fetch("
         SELECT a.*, 
                pu.first_name as patient_first_name, pu.last_name as patient_last_name, 
-               pu.email as patient_email, pu.phone as patient_phone, pu.profile_image as patient_image,
-               p.date_of_birth, p.gender, p.address,
+               pu.email as patient_email, 
+               COALESCE(a.phone_number, p.phone, pu.phone) as patient_phone, 
+               pu.profile_image as patient_image,
+               COALESCE(a.patient_dob, p.date_of_birth, pu.date_of_birth) as patient_dob, 
+               COALESCE(a.patient_gender, p.gender, pu.gender) as patient_gender, 
+               COALESCE(a.address, p.address, pu.address) as patient_address,
                du.first_name as doctor_first_name, du.last_name as doctor_last_name,
                du.email as doctor_email, du.profile_image as doctor_image,
                d.id as doctor_internal_id, d.specialty, d.license_number, d.consultation_fee, d.phone as doctor_phone

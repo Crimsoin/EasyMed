@@ -91,14 +91,14 @@ body {
 .modal-header {
     background: var(--primary-cyan);
     color: var(--white);
-    padding: 2rem 2rem 1.75rem;
+    padding: 1.5rem 1.5rem 1.25rem;
     text-align: center;
     position: relative;
 }
 
 .modal-header h2 {
     margin: 0 0 0.4rem 0;
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 700;
     letter-spacing: -0.3px;
 }
@@ -126,7 +126,7 @@ body {
 }
 
 .modal-body {
-    padding: 2rem;
+    padding: 1.5rem;
 }
 
 /* Form Styles */
@@ -236,21 +236,25 @@ body {
 }
 
 /* Style for error messages below inputs */
-.modal .error-message {
-    color: #ef4444;
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
-    display: block;
+.error-message {
+    color: #ef4444 !important;
+    font-size: 0.85rem !important;
+    margin-top: 0.5rem !important;
+    display: none;
     width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    animation: fadeIn 0.3s ease forwards;
 }
 
-.error-message {
-    color: #ef4444;
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
-    display: block;
-    width: 100%;
+.error-message.show {
+    display: flex !important;
 }
+
+.error-message i {
+    font-size: 0.8rem;
+}
+
 
 .password-toggle {
     position: absolute;
@@ -432,7 +436,7 @@ input[type="text"]#regConfirmPassword {
     align-items: flex-start;
     justify-content: center;
     gap: 0;
-    margin-bottom: 2rem;
+    margin-bottom: 1.25rem;
     padding: 0 0.5rem;
 }
 
@@ -595,8 +599,56 @@ input[type="text"]#regConfirmPassword {
     display: flex;
 }
 
-.align-center {
-    align-items: center;
+/* Compact Registration Modal */
+#registerModal .modal-content {
+    max-width: 500px;
+}
+
+#registerModal .modal-body {
+    padding: 1.25rem 1.5rem;
+    min-height: auto;
+}
+
+#registerModal .form-group {
+    margin-bottom: 1rem;
+}
+
+#registerModal .form-progress {
+    margin-bottom: 1.5rem;
+}
+
+#registerModal .modal-header {
+    padding: 1.25rem 1.5rem 1rem;
+}
+
+#registerModal .modal-subtitle {
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+.verification-code-container {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+#regOTP {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 1.5rem !important;
+    letter-spacing: 0.5rem !important;
+    text-align: center !important;
+    height: 60px;
+    background: #fff;
+    border: 2px solid #2563eb;
+    color: #1e3a8a;
+}
+
+#regOTP::placeholder {
+    letter-spacing: 0.5rem;
+    font-size: 1.25rem;
+    opacity: 0.3;
 }
 
 .justify-center {

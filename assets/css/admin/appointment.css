@@ -490,6 +490,28 @@
     transform: scale(1.1);
 }
 
+.btn-schedule {
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--primary-cyan);
+}
+
+.btn-schedule:hover {
+    background: var(--primary-cyan);
+    color: var(--white);
+    transform: scale(1.1);
+}
+
+.btn-payment-verify {
+    background: rgba(251, 191, 36, 0.1);
+    color: #d97706;
+}
+
+.btn-payment-verify:hover {
+    background: #fbbf24;
+    color: var(--white);
+    transform: scale(1.1);
+}
+
 /* Patient/Doctor Info Display */
 .user-info {
     display: flex;

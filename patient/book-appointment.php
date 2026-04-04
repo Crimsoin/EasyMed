@@ -30,7 +30,9 @@ if (empty($appointment_data)) {
     $user_details = $db_instance->fetch("
         SELECT u.first_name, u.last_name, u.email, 
                COALESCE(p.phone, u.phone) as phone_number,
-               COALESCE(p.address, u.address) as address 
+               COALESCE(p.address, u.address) as address,
+               COALESCE(p.date_of_birth, u.date_of_birth) as date_of_birth,
+               COALESCE(p.gender, u.gender) as gender
         FROM users u 
         LEFT JOIN patients p ON u.id = p.user_id 
         WHERE u.id = ?
@@ -42,7 +44,9 @@ if (empty($appointment_data)) {
             'last_name' => $user_details['last_name'],
             'email' => $user_details['email'],
             'phone_number' => $user_details['phone_number'],
-            'address' => $user_details['address']
+            'address' => $user_details['address'],
+            'date_of_birth' => $user_details['date_of_birth'],
+            'gender' => $user_details['gender']
         ];
     }
 }
@@ -297,6 +301,27 @@ if (empty($appointment_data)) {
                 <div class="input-icon-wrapper">
                     <i class="fas fa-map-marker-alt" style="top: 1.2rem;"></i>
                     <textarea name="address" id="modal_address" class="form-control" rows="2" required></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="modal_dob">Date of Birth</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-birthday-cake"></i>
+                    <input type="date" name="patient_dob" id="modal_dob" class="form-control" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="modal_gender">Gender</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-venus-mars"></i>
+                    <select name="patient_gender" id="modal_gender" class="form-control" required>
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
                 </div>
               </div>
             </div>
@@ -1325,6 +1350,8 @@ function prefillFormData() {
   document.getElementById('modal_phone_number').value = '<?php echo htmlspecialchars($appointment_data['phone_number'] ?? ''); ?>';
   document.getElementById('modal_email').value = '<?php echo htmlspecialchars($appointment_data['email'] ?? ''); ?>';
   document.getElementById('modal_address').value = '<?php echo htmlspecialchars($appointment_data['address'] ?? ''); ?>';
+  document.getElementById('modal_dob').value = '<?php echo htmlspecialchars($appointment_data['date_of_birth'] ?? ''); ?>';
+  document.getElementById('modal_gender').value = '<?php echo htmlspecialchars($appointment_data['gender'] ?? ''); ?>';
   document.getElementById('modal_relationship').value = '<?php echo htmlspecialchars($appointment_data['relationship'] ?? 'self'); ?>';
   document.getElementById('modal_illness').value = '<?php echo htmlspecialchars($appointment_data['illness'] ?? ''); ?>';
   
@@ -1399,6 +1426,32 @@ document.addEventListener('DOMContentLoaded', function() {
   if (noRefundCheckbox && submitBtn) {
     noRefundCheckbox.addEventListener('change', function() {
       submitBtn.disabled = !this.checked;
+    });
+  }
+
+  // Handle Relationship change to auto-fill or clear fields
+  var relationshipSelect = document.getElementById('modal_relationship');
+  if (relationshipSelect) {
+    relationshipSelect.addEventListener('change', function() {
+      if (this.value.toLowerCase() === 'self') {
+        // Refill with account data
+        document.getElementById('modal_first_name').value = '<?php echo htmlspecialchars($user_details['first_name'] ?? ''); ?>';
+        document.getElementById('modal_last_name').value = '<?php echo htmlspecialchars($user_details['last_name'] ?? ''); ?>';
+        document.getElementById('modal_phone_number').value = '<?php echo htmlspecialchars($user_details['phone_number'] ?? ''); ?>';
+        document.getElementById('modal_email').value = '<?php echo htmlspecialchars($user_details['email'] ?? ''); ?>';
+        document.getElementById('modal_address').value = '<?php echo htmlspecialchars($user_details['address'] ?? ''); ?>';
+        document.getElementById('modal_dob').value = '<?php echo htmlspecialchars($user_details['date_of_birth'] ?? ''); ?>';
+        document.getElementById('modal_gender').value = '<?php echo htmlspecialchars($user_details['gender'] ?? ''); ?>';
+      } else {
+        // Clear fields for dependent entry
+        document.getElementById('modal_first_name').value = '';
+        document.getElementById('modal_last_name').value = '';
+        document.getElementById('modal_phone_number').value = '';
+        document.getElementById('modal_email').value = '';
+        document.getElementById('modal_address').value = '';
+        document.getElementById('modal_dob').value = '';
+        document.getElementById('modal_gender').value = '';
+      }
     });
   }
 
