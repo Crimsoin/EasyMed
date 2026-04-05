@@ -91,9 +91,9 @@ $patients_sql = "
         p.created_at,
         u.first_name || ' ' || u.last_name as name,
         u.email,
-        COALESCE(p.phone, u.phone) as phone,
-        COALESCE(p.date_of_birth, u.date_of_birth) as date_of_birth,
-        COALESCE(p.gender, u.gender) as gender,
+        COALESCE(p.phone, u.phone, a.phone_number) as phone,
+        COALESCE(p.date_of_birth, u.date_of_birth, a.patient_dob) as date_of_birth,
+        COALESCE(p.gender, u.gender, a.patient_gender) as gender,
         COUNT(a.id) as appointment_count,
         MAX(a.appointment_date) as last_appointment,
         SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) as completed_appointments,
@@ -103,7 +103,7 @@ $patients_sql = "
     JOIN users u ON p.user_id = u.id
     JOIN appointments a ON a.patient_id = p.id
     WHERE $where_clause
-    GROUP BY p.id, p.status, p.created_at, u.first_name, u.last_name, u.email, p.phone, p.date_of_birth, p.gender
+    GROUP BY p.id, p.status, p.created_at, u.first_name, u.last_name, u.email
     ORDER BY $order_by
     LIMIT $per_page OFFSET $offset
 ";
@@ -130,8 +130,9 @@ function getPatientDetails($db, $patient_id, $doctor_id) {
             p.*,
             u.first_name || ' ' || u.last_name as name,
             u.email,
-            COALESCE(p.phone, u.phone) as phone,
-            COALESCE(p.gender, u.gender) as gender,
+            COALESCE(p.phone, u.phone, a.phone_number) as phone,
+            COALESCE(p.gender, u.gender, a.patient_gender) as gender,
+            COALESCE(p.date_of_birth, u.date_of_birth, a.patient_dob) as date_of_birth,
             COUNT(a.id) as total_appointments,
             SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) as completed_appointments,
             SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) as pending_appointments,
@@ -140,7 +141,7 @@ function getPatientDetails($db, $patient_id, $doctor_id) {
         JOIN users u ON p.user_id = u.id
         LEFT JOIN appointments a ON a.patient_id = p.id AND a.doctor_id = (SELECT id FROM doctors WHERE user_id = ?)
         WHERE p.id = ?
-        GROUP BY p.id
+        GROUP BY p.id, u.first_name, u.last_name, u.email
     ";
     
     return $db->fetch($sql, [$doctor_id, $patient_id]);
@@ -314,10 +315,8 @@ function getInitials($name) {
                         <thead>
                             <tr>
                                 <th>Patient</th>
-                                <th>ID</th>
                                 <th>Age/Gender</th>
                                 <th>Contact Info</th>
-                                <th>Appointments</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -331,7 +330,6 @@ function getInitials($name) {
                                             <div class="patient-name"><?= htmlspecialchars($patient['name']) ?></div>
                                         </div>
                                     </td>
-                                    <td class="id-cell">#<?= str_pad($patient['id'], 4, '0', STR_PAD_LEFT) ?></td>
                                     <td>
                                         <div class="info-cell">
                                             <span><?= !empty($patient['date_of_birth']) ? calculateAge($patient['date_of_birth']) : 'N/A'; ?> yrs</span>
@@ -345,21 +343,14 @@ function getInitials($name) {
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="stats-cell">
-                                            <span class="stat-badge total" title="Total Appointments">T: <?= $patient['appointment_count'] ?></span>
-                                            <span class="stat-badge completed" title="Completed Appointments">C: <?= $patient['completed_appointments'] ?></span>
-                                            <span class="stat-badge pending" title="Pending Appointments">P: <?= $patient['pending_appointments'] ?></span>
-                                        </div>
-                                    </td>
-                                    <td>
                                         <span class="patient-status <?= $patient['status'] ?>">
                                             <?= ucfirst($patient['status']) ?>
                                         </span>
                                     </td>
                                     <td>
                                         <div class="table-actions">
-                                            <a href="view-patient.php?id=<?= $patient['id'] ?>" class="table-action-btn primary" style="background-color: #2563eb; color: white;" title="View Profile">
-                                                <i class="fas fa-user-circle"></i>
+                                            <a href="view-patient.php?id=<?= $patient['id'] ?>" class="table-action-btn view" title="View Patient Profile" style="background-color: #eff6ff; color: #2563eb; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#dbeafe'; this.style.transform='scale(1.05)';" onmouseout="this.style.backgroundColor='#eff6ff'; this.style.transform='scale(1)';" >
+                                                <i class="fas fa-eye"></i>
                                             </a>
                                         </div>
                                     </td>

@@ -50,7 +50,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
             
             <!-- Navigation Menu -->
-            <?php if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'doctor')): ?>
+            <?php if ((!isset($_SESSION['role']) || ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'doctor')) && !isset($is_portal)): ?>
                 <ul class="nav-menu">
                     <li>
                         <a href="<?php echo SITE_URL; ?>/index.php" 

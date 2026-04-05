@@ -1,19 +1,7 @@
 /* Doctor Appointments Page Styles */
 
-.doctor-container {
-    display: flex;
-    min-height: calc(100vh - 75px);
-    background-color: var(--light-gray);
-}
-
-.doctor-content {
-    flex: 1;
-    margin-left: 280px;
-    padding: 2rem;
-    background-color: var(--light-gray);
-    min-height: calc(100vh - 75px);
-    overflow-x: hidden;
-}
+/* Doctor Content Area adjustments can go here if needed specifically for appointments, 
+   but base layout is now managed in sidebar-doctor.css */
 
 /* Content Header */
 .content-header {

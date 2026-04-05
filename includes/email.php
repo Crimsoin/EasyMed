@@ -147,6 +147,22 @@ class EmailService {
     }
     
     /**
+     * Send appointment rescheduled notification to doctor
+     */
+    public function sendDoctorAppointmentRescheduled($doctor_email, $doctor_name, $appointment_data) {
+        $subject = "Schedule Update: Appointment #" . $appointment_data['appointment_id'] . " Rescheduled";
+        $body = $this->getDoctorAppointmentRescheduledTemplate($appointment_data);
+        
+        return $this->sendEmail(
+            $doctor_email,
+            $doctor_name,
+            $subject,
+            $body,
+            true
+        );
+    }
+    
+    /**
      * Send appointment cancelled notification
      */
     public function sendAppointmentCancelled($patient_email, $patient_name, $appointment_data) {
@@ -358,7 +374,7 @@ class EmailService {
                         <h3>📅 New Appointment Details</h3>
                         <p><strong>Date:</strong> ' . date('F j, Y', strtotime($data['appointment_date'])) . '</p>
                         <p><strong>Time:</strong> ' . date('g:i A', strtotime($data['appointment_time'])) . '</p>
-                        <p><strong>Doctor:</strong> Dr. ' . htmlspecialchars($data['doctor_name']) . '</p>
+                        <p><strong>Doctor:</strong> ' . htmlspecialchars($data['doctor_name']) . '</p>
                         <p><strong>Specialty:</strong> ' . htmlspecialchars($data['specialty'] ?? 'General Medicine') . '</p>
                         <p><strong>Reason:</strong> ' . htmlspecialchars($data['reason']) . '</p>
                         <p><strong>Reference:</strong> #' . $data['appointment_id'] . '</p>
@@ -423,6 +439,59 @@ class EmailService {
                 
                 <div class="footer">
                     <p>EasyMed Clinic | 📞 ' . getEmailClinicSetting('clinic_phone', '+63-2-8123-4567') . ' | 📧 ' . getEmailClinicSetting('clinic_email', 'info@easymed.com') . '</p>
+                </div>
+            </div>
+        </body>
+        </html>';
+    }
+
+    /**
+     * Get doctor appointment rescheduled email template
+     */
+    private function getDoctorAppointmentRescheduledTemplate($data) {
+        return '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Schedule Update</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
+                .content { padding: 20px; background: #f9f9f9; }
+                .appointment-details { background: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
+                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🏥 EasyMed Clinic</h1>
+                    <h2>Schedule Update</h2>
+                </div>
+                
+                <div class="content">
+                    <p>Dear ' . htmlspecialchars($data['doctor_name']) . ',</p>
+                    
+                    <p>One of your clinical appointments has been rescheduled by an administrator. Below are the updated details:</p>
+                    
+                    <div class="appointment-details">
+                        <h3>👤 Patient Information</h3>
+                        <p><strong>Patient:</strong> ' . htmlspecialchars($data['patient_name']) . '</p>
+                        <p><strong>Reference:</strong> #' . $data['appointment_id'] . '</p>
+                        
+                        <h3 style="margin-top: 20px;">📅 New Schedule</h3>
+                        <p><strong>New Date:</strong> ' . date('F j, Y', strtotime($data['appointment_date'])) . '</p>
+                        <p><strong>New Time:</strong> ' . date('g:i A', strtotime($data['appointment_time'])) . '</p>
+                        <p><strong>Reason for Change:</strong> ' . htmlspecialchars($data['reason']) . '</p>
+                    </div>
+                    
+                    <p>This change has been updated in your doctor portal dashboard.</p>
+                </div>
+                
+                <div class="footer">
+                    <p>EasyMed Clinic | Administrative Notification Service</p>
                 </div>
             </div>
         </body>

@@ -69,6 +69,7 @@ if (isset($_GET['success'])) {
 // Get doctor's appointments for today
 $today_appointments = $db->fetchAll("
     SELECT a.*,
+           a.updated_at as updated_at,
            a.reason_for_visit as reason_for_visit,
            u.first_name as patient_first_name, u.last_name as patient_last_name,
            u.email as patient_email, 
@@ -82,13 +83,14 @@ $today_appointments = $db->fetchAll("
     JOIN patients p ON a.patient_id = p.id
     JOIN users u ON p.user_id = u.id
     LEFT JOIN payments pay ON a.id = pay.appointment_id
-    WHERE a.doctor_id = ? AND date(a.appointment_date) = date('now')
+    WHERE a.doctor_id = ? AND date(a.appointment_date) = ?
     ORDER BY a.appointment_time ASC
-", [$doctor_id]);
+", [$doctor_id, date('Y-m-d')]);
 
 // Get upcoming appointments (next 7 days)
 $upcoming_appointments = $db->fetchAll("
     SELECT a.*,
+           a.updated_at as updated_at,
            a.reason_for_visit as reason_for_visit,
            u.first_name as patient_first_name, u.last_name as patient_last_name,
            u.email as patient_email, 
@@ -103,12 +105,12 @@ $upcoming_appointments = $db->fetchAll("
     JOIN users u ON p.user_id = u.id
     LEFT JOIN payments pay ON a.id = pay.appointment_id
     WHERE a.doctor_id = ?
-    AND date(a.appointment_date) > date('now')
-    AND date(a.appointment_date) <= date('now', '+7 days')
+    AND date(a.appointment_date) > ?
+    AND date(a.appointment_date) <= ?
     AND a.status IN ('scheduled', 'confirmed', 'pending', 'rescheduled')
     ORDER BY a.appointment_date ASC, a.appointment_time ASC
     LIMIT 10
-", [$doctor_id]);
+", [$doctor_id, date('Y-m-d'), date('Y-m-d', strtotime('+7 days'))]);
 
 // Normalize appointment arrays to include all data from patient_info if missing
 foreach ($today_appointments as &$appt) {
@@ -179,7 +181,7 @@ unset($appt);
 $stats = [
     'today' => count($today_appointments),
     'pending' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND status = 'pending'", [$doctor_id])['count'],
-    'this_week' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND date(appointment_date) > date('now') AND date(appointment_date) <= date('now', '+7 days')", [$doctor_id])['count'],
+    'this_week' => $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ? AND date(appointment_date) > ? AND date(appointment_date) <= ?", [$doctor_id, date('Y-m-d'), date('Y-m-d', strtotime('+7 days'))])['count'],
     'total_patients' => $db->fetch("SELECT COUNT(DISTINCT patient_id) as count FROM appointments WHERE doctor_id = ?", [$doctor_id])['count']
 ];
 

@@ -66,6 +66,21 @@ function showAppointmentOverview(data, portalType = 'patient') {
     const status = (data.status || 'pending').toLowerCase();
     const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
     
+    // Handle Rescheduling Reason
+    let rescheduleInfoHtml = '';
+    if (data.reschedule_reason) {
+        rescheduleInfoHtml = `
+            <div style="grid-column: span 2; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 20px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); overflow: hidden;">
+                <h3 style="color: #92400e; margin: 0 0 12px 0; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-info-circle" style="color: #f59e0b;"></i> Rescheduling Justification
+                </h3>
+                <div style="font-size: 0.95rem; color: #78350f; font-weight: 600; line-height: 1.6; font-style: italic; background: rgba(255,255,255,0.5); padding: 12px; border-radius: 12px;">
+                    ${data.reschedule_reason}
+                </div>
+            </div>
+        `;
+    }
+
     // Handle clinical records (Findings)
     let clinicalRecordsHtml = '';
     if (portalType === 'doctor' || portalType === 'admin' || (portalType === 'patient' && status === 'completed')) {
@@ -242,6 +257,7 @@ function showAppointmentOverview(data, portalType = 'patient') {
                 </div>
                 ` : ''}
 
+                ${rescheduleInfoHtml}
                 ${clinicalRecordsHtml}
 
             </div>
@@ -332,7 +348,7 @@ function showAppointmentOverview(data, portalType = 'patient') {
     }
 
     footer.innerHTML = footerHtml;
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
 
@@ -352,10 +368,10 @@ window.addEventListener('click', function(event) {
 </script>
 
 <!-- Shared Modal HTML Structure -->
-<div id="appointmentModal" class="modal" style="z-index: 10000; display: none;">
-    <div class="modal-content" style="max-width: 1000px; width: 95%; max-height: 90vh; overflow-y: auto; border-radius: 20px; border: none; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
-        <div class="modal-header" style="background: linear-gradient(135deg, #2563eb, #1e3a8a); color: white; padding: 24px 40px; border-radius: 20px 20px 0 0; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 12px;">
+<div id="appointmentModal" class="modal" style="z-index: 10000; display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+    <div class="modal-content" style="max-width: 1000px; width: 95%; max-height: 85vh; overflow-y: auto; border-radius: 20px; border: none; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative; margin: 0 auto; background: white;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 20px 40px; border-radius: 20px 20px 0 0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100;">
+            <h3 style="margin: 0; font-size: 1.4rem; font-weight: 700; display: flex; align-items: center; gap: 12px;">
                 <i class="fas fa-file-medical"></i> Appointment Overview
             </h3>
             <span class="close-modal" onclick="closeBaseModal()" style="color: rgba(255, 255, 255, 0.8); font-size: 1.5rem; cursor: pointer; transition: all 0.2s;"><i class="fas fa-times"></i></span>

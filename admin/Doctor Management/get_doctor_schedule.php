@@ -63,7 +63,36 @@ $appointments = $db->fetchAll("
     LEFT JOIN users    pu ON p.user_id = pu.id
     WHERE a.doctor_id = ?
       AND a.appointment_date BETWEEN ? AND ?
+      AND a.status NOT IN ('cancelled', 'no_show')
     ORDER BY a.appointment_date, a.appointment_time
+", [$doctor_id, $start, $end]);
+
+// Weekly schedule (legacy/base)
+$base_schedule = $db->fetch("
+    SELECT schedule_days, schedule_time_start, schedule_time_end
+    FROM doctors
+    WHERE id = ?
+", [$doctor_id]);
+
+// Detailed weekly schedule
+$detailed_schedule = $db->fetchAll("
+    SELECT day_of_week, start_time, end_time, is_available
+    FROM doctor_schedules
+    WHERE doctor_id = ?
+", [$doctor_id]);
+
+// Breaks for this month
+$breaks = $db->fetchAll("
+    SELECT break_date, start_time, end_time, reason
+    FROM doctor_breaks
+    WHERE doctor_id = ? AND break_date BETWEEN ? AND ?
+", [$doctor_id, $start, $end]);
+
+// Unavailable dates for this month
+$unavailable = $db->fetchAll("
+    SELECT unavailable_date, reason
+    FROM doctor_unavailable
+    WHERE doctor_id = ? AND unavailable_date BETWEEN ? AND ?
 ", [$doctor_id, $start, $end]);
 
 // Group by date
@@ -72,12 +101,26 @@ foreach ($appointments as $appt) {
     $by_date[$appt['appointment_date']][] = $appt;
 }
 
+$breaks_by_date = [];
+foreach ($breaks as $b) {
+    $breaks_by_date[$b['break_date']][] = $b;
+}
+
+$unavailable_dates = [];
+foreach ($unavailable as $u) {
+    $unavailable_dates[$u['unavailable_date']] = $u['reason'];
+}
+
 echo json_encode([
-    'doctor'      => $doctor,
-    'year'        => $year,
-    'month'       => $month,
-    'days_in_month' => (int) date('t', strtotime($start)),
+    'doctor'            => $doctor,
+    'year'              => $year,
+    'month'             => $month,
+    'days_in_month'     => (int) date('t', strtotime($start)),
     'first_day_of_week' => (int) date('w', strtotime($start)), // 0=Sun
-    'appointments'=> $by_date
+    'base_schedule'     => $base_schedule,
+    'detailed_schedule' => $detailed_schedule,
+    'appointments'      => $by_date,
+    'breaks'            => $breaks_by_date,
+    'unavailable'       => $unavailable_dates
 ]);
 ?>

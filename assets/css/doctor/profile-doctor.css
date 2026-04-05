@@ -13,23 +13,8 @@ body {
     padding: 0;
 }
 
-/* Ensure proper layout inheritance */
-.doctor-container {
-    display: flex;
-    min-height: calc(100vh - 75px);
-    background-color: var(--light-gray);
-}
-
-.doctor-content {
-    flex: 1;
-    margin-left: 280px;
-    /* more outer spacing on larger screens */
-    padding: 3rem 4rem;
-    background-color: var(--light-gray);
-    min-height: calc(100vh - 75px);
-    overflow-x: hidden;
-    overflow-y: auto;
-}
+/* Doctor Content Area adjustments can go here if needed specifically for profile, 
+   but base layout is now managed in sidebar-doctor.css */
 
 /* Content Header */
 .content-header {
@@ -451,11 +436,6 @@ textarea.form-control {
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-    .doctor-content {
-        margin-left: 0;
-        padding: 1.5rem;
-    }
-    
     .profile-summary-card {
         flex-direction: column;
         text-align: center;

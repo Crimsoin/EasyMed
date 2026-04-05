@@ -402,21 +402,19 @@ input[type="text"]#regConfirmPassword {
     background-color: rgba(37, 99, 235, 0.05);
 }
 
-.role-btn.selected {
+.role-btn.active {
     border-color: var(--primary-cyan);
     background-color: rgba(37, 99, 235, 0.1);
 }
 
 .role-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: rgba(37, 99, 235, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--primary-cyan);
-    font-size: 1.5rem;
+    font-size: 2rem;
+    background: transparent;
+    width: 40px;
 }
 
 .role-title {
@@ -602,6 +600,15 @@ input[type="text"]#regConfirmPassword {
 /* Compact Registration Modal */
 #registerModal .modal-content {
     max-width: 500px;
+}
+
+/* Specific styling for Login Modal to make it less wide */
+#loginModal .modal-content {
+    max-width: 400px;
+}
+
+#loginModal .modal-body {
+    padding: 2rem 2.5rem;
 }
 
 #registerModal .modal-body {

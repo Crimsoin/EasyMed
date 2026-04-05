@@ -328,7 +328,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $appointment_details = $db->fetch("
                 SELECT a.*, 
                        pu.first_name as patient_first_name, pu.last_name as patient_last_name, pu.email as patient_email,
-                       du.first_name as doctor_first_name, du.last_name as doctor_last_name,
+                       du.first_name as doctor_first_name, du.last_name as doctor_last_name, du.email as doctor_email, du.id as doctor_user_id,
                        d.specialty, d.consultation_fee
                 FROM appointments a
                 LEFT JOIN patients p ON a.patient_id = p.id
@@ -370,11 +370,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // For completed, cancelled, no_show - reschedule shouldn't be available
             
             // Update appointment with new date/time and appropriate status
+            $reschedule_reason = $_POST['reschedule_reason'] ?? '';
             $db->query("
                 UPDATE appointments 
-                SET appointment_date = ?, appointment_time = ?, status = ?, updated_at = datetime('now') 
+                SET appointment_date = ?, appointment_time = ?, status = ?, reschedule_reason = ?, updated_at = datetime('now') 
                 WHERE id = ?
-            ", [$new_date, $new_time, $new_status, $appointment_id]);
+            ", [$new_date, $new_time, $new_status, $reschedule_reason, $appointment_id]);
             
             // Send reschedule email notification
             if ($appointment_details && $appointment_details['patient_email']) {
@@ -391,11 +392,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'appointment_time' => formatTime($new_time), // Use new time
                     'old_date' => formatDate($appointment_details['appointment_date']), // Include old date for reference
                     'old_time' => formatTime($appointment_details['appointment_time']), // Include old time for reference
-                    'reason' => $appointment_details['reason_for_visit'] ?? 'General consultation',
+                    'reason' => $reschedule_reason ?: ($appointment_details['reason_for_visit'] ?? 'General consultation'),
                     'fee' => number_format($appointment_details['consultation_fee'], 2)
                 ];
                 
                 $emailService->sendAppointmentRescheduled($patient_email, $patient_name, $appointment_data);
+                
+                // Also notify the doctor via email if they have one
+                if (!empty($appointment_details['doctor_email'])) {
+                    $emailService->sendDoctorAppointmentRescheduled($appointment_details['doctor_email'], $doctor_name, $appointment_data);
+                }
+
+                // Create a system notification for the doctor
+                if (!empty($appointment_details['doctor_user_id'])) {
+                    createNotification(
+                        $appointment_details['doctor_user_id'], 
+                        "Appointment Rescheduled", 
+                        "Patient $patient_name has been rescheduled to " . formatDate($new_date) . " at " . formatTime($new_time) . ".",
+                        'info'
+                    );
+                }
             }
             
             // Log activity
@@ -946,6 +962,39 @@ require_once '../../includes/header.php';
                                                     title="View Full Profile">
                                                 <i class="fas fa-eye"></i>
                                             </button>
+
+                                            <?php if (in_array($appointment['status'], ['scheduled', 'rescheduled'])): ?>
+                                                <?php 
+                                                    $appointment_datetime = strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']);
+                                                    $is_past = (time() >= $appointment_datetime);
+                                                ?>
+                                                <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to mark this appointment as No Show?')">
+                                                    <input type="hidden" name="action" value="update_status">
+                                                    <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                    <input type="hidden" name="status" value="no_show">
+                                                    <button type="submit" class="btn btn-delete" 
+                                                            title="<?php echo $is_past ? 'Mark as No Show' : 'Appointment time not yet reached'; ?>"
+                                                            <?php echo !$is_past ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''; ?>>
+                                                        <i class="fas fa-user-times"></i>
+                                                    </button>
+                                                </form>
+
+                                                <button type="button" class="btn btn-reschedule" 
+                                                        onclick="openRescheduleModal(<?php echo $appointment['id']; ?>, <?php echo $appointment['doctor_internal_id']; ?>, '<?php echo $appointment['appointment_date']; ?>', '<?php echo $appointment['appointment_time']; ?>')" 
+                                                        title="Reschedule Appointment">
+                                                    <i class="fas fa-calendar-alt"></i>
+                                                </button>
+                                            <?php endif; ?>
+
+                                            <?php if (!in_array($appointment['status'], ['completed', 'cancelled', 'no_show'])): ?>
+                                                <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this clinical appointment?')">
+                                                    <input type="hidden" name="action" value="delete">
+                                                    <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                    <button type="submit" class="btn btn-delete" title="Cancel Appointment" style="background: #fee2e2; color: #ef4444;">
+                                                        <i class="fas fa-ban"></i>
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
@@ -1585,6 +1634,189 @@ require_once '../../includes/header.php';
     transform: none;
 }
 
+.modal-btn-primary:disabled {
+    background: #cbd5e1 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    opacity: 0.7;
+}
+
+/* Reschedule Modal Calendar Styles */
+#reschedule-calendar-container {
+    padding: 1rem;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 2rem;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+}
+
+.calendar-month-year {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 1.1rem;
+}
+
+.calendar-nav-btn {
+    background: #f1f5f9;
+    border: none;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #475569;
+    transition: all 0.2s;
+}
+
+.calendar-nav-btn:hover {
+    background: #e2e8f0;
+    color: #2563eb;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.calendar-day-head {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    padding: 0.5rem 0;
+    text-transform: uppercase;
+}
+
+.calendar-day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    border: 2px solid transparent;
+}
+
+.calendar-day-cell:not(.disabled):hover {
+    background: #eff6ff;
+    border-color: #dbeafe;
+}
+
+.calendar-day-cell.original-date {
+    border: 2px dashed #2563eb;
+}
+
+.calendar-day-cell.original-date::before {
+    content: 'ORIGINAL';
+    position: absolute;
+    top: 4px;
+    font-size: 0.55rem;
+    font-weight: 800;
+    color: #2563eb;
+}
+
+.calendar-day-cell.selected.original-date::before {
+    color: white;
+}
+
+.calendar-day-cell.disabled {
+    color: #cbd5e1;
+    cursor: not-allowed;
+    background: #f8fafc;
+    pointer-events: none;
+}
+
+.calendar-day-cell.available {
+    color: #1e293b;
+}
+
+.calendar-day-cell.selected {
+    background: #2563eb !important;
+    color: #fff !important;
+    border-color: #1d4ed8;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.calendar-day-cell.today {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.calendar-day-cell.has-indicator::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #10b981;
+}
+
+#reschedule-time-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    margin-top: 1rem;
+}
+
+.time-slot-btn {
+    padding: 0.6rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.time-slot-btn:hover:not(.disabled) {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.time-slot-btn.selected {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+
+.time-slot-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f8fafc;
+}
+
+.reschedule-info-banner {
+    padding: 0.75rem 1rem;
+    background: #f0f9ff;
+    border-left: 4px solid #0ea5e9;
+    color: #0369a1;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 0 8px 8px 0;
+}
+
 /* Appointments Overview Card Styles */
 .appointments-overview-card {
     background: var(--white);
@@ -2047,59 +2279,76 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
-
 <!-- Reschedule Modal -->
 <div id="rescheduleModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3><i class="fas fa-calendar-alt"></i> Reschedule Appointment</h3>
-            <span class="close-modal" onclick="closeModal('rescheduleModal')"><i class="fas fa-times"></i></span>
+    <div class="modal-content" style="max-width: 650px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: white; padding: 1.5rem 2rem;">
+            <h3 style="margin: 0; font-size: 1.4rem; font-weight: 700;"><i class="fas fa-calendar-alt"></i> Reschedule Appointment</h3>
+            <span class="close-modal" onclick="closeModal('rescheduleModal')" style="color: white; opacity: 0.8; cursor: pointer;"><i class="fas fa-times"></i></span>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="padding: 2rem;">
             <form id="rescheduleForm" method="POST">
                 <input type="hidden" name="action" value="reschedule">
                 <input type="hidden" name="appointment_id" id="rescheduleAppointmentId">
+                <input type="hidden" name="appointment_date" id="rescheduleDateInput">
+                <input type="hidden" name="appointment_time" id="rescheduleTimeInput">
                 
-                <div class="modal-section" style="display: grid; gap: 1.5rem; border-bottom: none;">
-                    <div class="form-group">
-                        <label for="rescheduleDate" class="form-label" style="font-weight: 600; color: #475569;">New Date</label>
-                        <input type="date" name="appointment_date" id="rescheduleDate" class="form-control" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; color: #1e293b; background-color: #f8fafc;" required 
-                                min="<?php echo date('Y-m-d'); ?>">
+                <div id="rescheduleLoader" style="display: none; text-align: center; padding: 3rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; color: #2563eb; margin-bottom: 1rem;"></i>
+                    <p style="color: #64748b; font-weight: 600;">Fetching doctor availability...</p>
+                </div>
+
+                <div id="rescheduleContent">
+                    <div class="reschedule-info-banner">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Picking a new date will show available time slots for the selected doctor.</span>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="rescheduleTime" class="form-label" style="font-weight: 600; color: #475569;">New Time</label>
-                        <select name="appointment_time" id="rescheduleTime" class="form-control" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; color: #1e293b; background-color: #f8fafc;" required>
-                            <option value="">Select Time</option>
-                            <option value="09:00:00">9:00 AM</option>
-                            <option value="09:30:00">9:30 AM</option>
-                            <option value="10:00:00">10:00 AM</option>
-                            <option value="10:30:00">10:30 AM</option>
-                            <option value="11:00:00">11:00 AM</option>
-                            <option value="11:30:00">11:30 AM</option>
-                            <option value="12:00:00">12:00 PM</option>
-                            <option value="12:30:00">12:30 PM</option>
-                            <option value="13:00:00">1:00 PM</option>
-                            <option value="13:30:00">1:30 PM</option>
-                            <option value="14:00:00">2:00 PM</option>
-                            <option value="14:30:00">2:30 PM</option>
-                            <option value="15:00:00">3:00 PM</option>
-                            <option value="15:30:00">3:30 PM</option>
-                            <option value="16:00:00">4:00 PM</option>
-                            <option value="16:30:00">4:30 PM</option>
-                            <option value="17:00:00">5:00 PM</option>
-                        </select>
+
+                    <div id="reschedule-calendar-container">
+                        <div class="calendar-header">
+                            <button type="button" class="calendar-nav-btn" onclick="changeRescheduleMonth(-1)"><i class="fas fa-chevron-left"></i></button>
+                            <div class="calendar-month-year" id="rescheduleMonthYear">April 2026</div>
+                            <button type="button" class="calendar-nav-btn" onclick="changeRescheduleMonth(1)"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="calendar-grid" id="rescheduleCalendarGrid">
+                            <!-- Headers -->
+                            <div class="calendar-day-head">Sun</div>
+                            <div class="calendar-day-head">Mon</div>
+                            <div class="calendar-day-head">Tue</div>
+                            <div class="calendar-day-head">Wed</div>
+                            <div class="calendar-day-head">Thu</div>
+                            <div class="calendar-day-head">Fri</div>
+                            <div class="calendar-day-head">Sat</div>
+                            <!-- Days will be injected here -->
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="rescheduleTimeGroup" style="display: none;">
+                        <label class="form-label" style="font-weight: 700; color: #1e293b; margin-bottom: 0.75rem;">
+                            <i class="fas fa-clock"></i> Select Available Time Slot
+                        </label>
+                        <div id="reschedule-time-slots">
+                            <!-- Slots will be injected here -->
+                        </div>
+                    </div>
+                    <div class="form-group" id="rescheduleReasonGroup" style="margin-top: 1.5rem;">
+                        <label class="form-label" style="font-weight: 700; color: #1e293b; margin-bottom: 0.75rem;">
+                            <i class="fas fa-edit"></i> Reason for Rescheduling
+                        </label>
+                        <textarea name="reschedule_reason" class="form-control" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1rem; font-size: 0.95rem; min-height: 80px; resize: none; background: #fff;" placeholder="Type the reason for rescheduling..."></textarea>
                     </div>
                 </div>
                 
-                <div class="modal-footer" style="padding: 1.5rem 2rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 1rem; border-radius: 0 0 12px 12px;">
-                    <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('rescheduleModal')">Cancel</button>
-                    <button type="submit" class="modal-btn modal-btn-primary">Reschedule Appointment</button>
+                <div class="modal-footer" style="padding: 1.5rem 0 0 0; background: transparent; border-top: 1px solid #e2e8f0; margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                    <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('rescheduleModal')" style="padding: 0.8rem 1.5rem; border-radius: 10px; font-weight: 600;">Cancel</button>
+                    <button type="submit" id="rescheduleSubmitBtn" class="modal-btn modal-btn-primary" disabled style="padding: 0.8rem 2rem; border-radius: 10px; font-weight: 700; background: #2563eb; color: white;">
+                        Reschedule Appointment
+                    </button>
                 </div>
             </form>
         </div>
     </div>
-</div>
+</div>v>
 
 <script>
 // Modal functionality
@@ -2199,11 +2448,221 @@ function editAppointment(id, currentStatus) {
     document.getElementById('statusModal').style.display = 'block';
 }
 
-function openRescheduleModal(id, currentDate, currentTime) {
-    document.getElementById('rescheduleAppointmentId').value = id;
-    document.getElementById('rescheduleDate').value = currentDate;
-    document.getElementById('rescheduleTime').value = currentTime;
+let currentRescheduleData = null;
+let currentRescheduleDoctorId = null;
+let currentRescheduleYear = null;
+let currentRescheduleMonth = null;
+let selectedRescheduleDate = null;
+let originalRescheduleDate = null;
+
+function openRescheduleModal(appointmentId, doctorId, currentDate, currentTime) {
+    currentRescheduleDoctorId = doctorId;
+    document.getElementById('rescheduleAppointmentId').value = appointmentId;
+    originalRescheduleDate = currentDate;
+    
+    // Set initial view to current month of appointment OR today
+    const d = new Date(currentDate);
+    currentRescheduleYear = d.getFullYear();
+    currentRescheduleMonth = d.getMonth() + 1; // 1-indexed for the API
+    selectedRescheduleDate = currentDate;
+
+    // Reset UI
+    document.getElementById('rescheduleDateInput').value = '';
+    document.getElementById('rescheduleTimeInput').value = '';
+    document.getElementById('rescheduleTimeGroup').style.display = 'none';
+    document.querySelector('[name="reschedule_reason"]').value = '';
+    document.getElementById('rescheduleSubmitBtn').disabled = true;
+
+    // Open modal and show loader
     document.getElementById('rescheduleModal').style.display = 'block';
+    fetchRescheduleAvailability();
+}
+
+function fetchRescheduleAvailability() {
+    const loader = document.getElementById('rescheduleLoader');
+    const content = document.getElementById('rescheduleContent');
+    
+    loader.style.display = 'block';
+    content.style.opacity = '0.3';
+    content.style.pointerEvents = 'none';
+
+    fetch(`../Doctor Management/get_doctor_schedule.php?doctor_id=${currentRescheduleDoctorId}&year=${currentRescheduleYear}&month=${currentRescheduleMonth}`)
+        .then(res => res.json())
+        .then(data => {
+            loader.style.display = 'none';
+            content.style.opacity = '1';
+            content.style.pointerEvents = 'all';
+
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+
+            currentRescheduleData = data;
+            renderRescheduleCalendar();
+        })
+        .catch(err => {
+            loader.style.display = 'none';
+            alert('Failed to fetch availability.');
+        });
+}
+
+function changeRescheduleMonth(delta) {
+    currentRescheduleMonth += delta;
+    if (currentRescheduleMonth < 1) {
+        currentRescheduleMonth = 12;
+        currentRescheduleYear--;
+    } else if (currentRescheduleMonth > 12) {
+        currentRescheduleMonth = 1;
+        currentRescheduleYear++;
+    }
+    fetchRescheduleAvailability();
+}
+
+function renderRescheduleCalendar() {
+    const grid = document.getElementById('rescheduleCalendarGrid');
+    const monthYear = document.getElementById('rescheduleMonthYear');
+    
+    // Clear previous days (keep headers)
+    const headers = grid.querySelectorAll('.calendar-day-head');
+    grid.innerHTML = '';
+    headers.forEach(h => grid.appendChild(h));
+
+    // Update title
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    monthYear.textContent = `${monthNames[currentRescheduleMonth - 1]} ${currentRescheduleYear}`;
+
+    const { days_in_month, first_day_of_week, base_schedule, unavailable, breaks } = currentRescheduleData;
+    
+    // Empty cells
+    for (let i = 0; i < first_day_of_week; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-cell disabled';
+        grid.appendChild(cell);
+    }
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const availableDays = base_schedule.schedule_days ? base_schedule.schedule_days.split(',') : [];
+
+    for (let day = 1; day <= days_in_month; day++) {
+        const dateStr = `${currentRescheduleYear}-${String(currentRescheduleMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dateObj = new Date(dateStr);
+        const originalDateObj = new Date(originalRescheduleDate);
+        const dayOfWeekName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+        
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-cell';
+        cell.textContent = day;
+
+        const isUnavailable = unavailable[dateStr];
+        const isWorkingDay = availableDays.includes(dayOfWeekName);
+        const isPast = dateObj < today;
+        const isBeforeOriginal = dateObj < originalDateObj;
+
+        if (isPast || isBeforeOriginal || !isWorkingDay || isUnavailable) {
+            cell.classList.add('disabled');
+            cell.title = isPast ? "Cannot reschedule to a past date" : (isBeforeOriginal ? "Cannot reschedule to a date before original appointment" : (!isWorkingDay ? "Doctor not available on this day" : "Doctor is marked unavailable"));
+        } else {
+            cell.classList.add('available');
+            cell.onclick = () => selectRescheduleDate(dateStr, cell);
+            
+            if (dateStr === selectedRescheduleDate) {
+                cell.classList.add('selected');
+                selectRescheduleDate(dateStr, cell); 
+            }
+        }
+
+        if (dateStr === originalRescheduleDate) {
+            cell.classList.add('original-date');
+            cell.title = "Original Appointment Date";
+        }
+
+        if (dateObj.getTime() === today.getTime()) {
+            cell.classList.add('today');
+        }
+
+        grid.appendChild(cell);
+    }
+}
+
+function selectRescheduleDate(dateStr, cellElement) {
+    selectedRescheduleDate = dateStr;
+    document.getElementById('rescheduleDateInput').value = dateStr;
+    
+    // Reset time selection when date changes
+    document.getElementById('rescheduleTimeInput').value = '';
+    document.getElementById('rescheduleSubmitBtn').disabled = true;
+    
+    // Update UI selection
+    const allCells = document.querySelectorAll('.calendar-day-cell');
+    allCells.forEach(c => c.classList.remove('selected'));
+    cellElement.classList.add('selected');
+
+    renderRescheduleTimeSlots(dateStr);
+}
+
+function renderRescheduleTimeSlots(dateStr) {
+    const container = document.getElementById('reschedule-time-slots');
+    const group = document.getElementById('rescheduleTimeGroup');
+    container.innerHTML = '';
+    group.style.display = 'block';
+
+    const { base_schedule, appointments, breaks } = currentRescheduleData;
+    const startStr = base_schedule.schedule_time_start || "09:00:00";
+    const endStr = base_schedule.schedule_time_end || "17:00:00";
+    
+    const startTimeArr = startStr.split(':');
+    const endTimeArr = endStr.split(':');
+    
+    let start = parseInt(startTimeArr[0]) * 60 + parseInt(startTimeArr[1]);
+    const end = parseInt(endTimeArr[0]) * 60 + parseInt(endTimeArr[1]);
+    
+    const interval = 60; // 1 hour slots
+    const dayAppointments = appointments[dateStr] || [];
+    const dayBreaks = breaks[dateStr] || [];
+
+    while (start < end) {
+        const hour = Math.floor(start / 60);
+        const min = start % 60;
+        const timeVal = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}:00`;
+        const timeDisplay = formatTime(timeVal);
+        
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'time-slot-btn';
+        btn.textContent = timeDisplay;
+        
+        // Check if slot is taken by appointment or break
+        const isBooked = dayAppointments.some(a => a.appointment_time === timeVal);
+        const isBreak = dayBreaks.some(b => {
+             const bStartArr = b.start_time.split(':');
+             const bEndArr = b.end_time.split(':');
+             const bStart = parseInt(bStartArr[0]) * 60 + parseInt(bStartArr[1]);
+             const bEnd = parseInt(bEndArr[0]) * 60 + parseInt(bEndArr[1]);
+             return start >= bStart && start < bEnd;
+        });
+
+        if (isBooked || isBreak) {
+            btn.classList.add('disabled');
+            btn.title = isBooked ? "Already booked" : "Doctor's break";
+        } else {
+            btn.onclick = () => {
+                document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                document.getElementById('rescheduleTimeInput').value = timeVal;
+                document.getElementById('rescheduleSubmitBtn').disabled = false;
+            };
+        }
+        
+        container.appendChild(btn);
+        start += interval;
+    }
+    
+    if (container.children.length === 0) {
+        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 1rem;">No available slots for this day.</p>';
+    }
 }
 
 function closeModal(modalId) {

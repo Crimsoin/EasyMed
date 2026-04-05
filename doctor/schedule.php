@@ -67,6 +67,7 @@ $month_unavailable = $db->fetchAll("
 // Get appointments for current month with detailed information
 $month_appointments_detailed = $db->fetchAll("
     SELECT a.*,
+           a.updated_at as updated_at,
            a.reason_for_visit as reason_for_visit,
            u.first_name as patient_first_name, u.last_name as patient_last_name,
            u.email as patient_email,
@@ -121,13 +122,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         switch ($action) {
             case 'complete':
                 $notes = $_POST['notes'] ?? '';
-                $db->update('appointments', ['notes' => $notes], 'id = ?', [$appointment_id]);
+                $db->update('appointments', ['notes' => $notes, 'updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$appointment_id]);
                 $success_message = "Appointment marked as completed.";
                 header("Location: " . $_SERVER['PHP_SELF'] . "?month=" . $month_str . "&year=" . $year_str . "&success=" . urlencode($success_message));
                 exit();
             case 'update_findings':
                 $notes = $_POST['notes'] ?? '';
-                $db->update('appointments', ['notes' => $notes], 'id = ?', [$appointment_id]);
+                $db->update('appointments', ['notes' => $notes, 'updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$appointment_id]);
                 $success_message = "Appointment findings updated successfully.";
                 header("Location: " . $_SERVER['PHP_SELF'] . "?month=" . $month_str . "&year=" . $year_str . "&success=" . urlencode($success_message));
                 exit();
@@ -142,25 +143,6 @@ if ($_POST) {
     try {
         if (isset($_POST['action'])) {
             switch ($_POST['action']) {
-                case 'add_availability':
-                    $day_of_week = (int)$_POST['day_of_week'];
-                    $start_time = $_POST['start_time'];
-                    $end_time = $_POST['end_time'];
-                    $slot_duration = (int)$_POST['slot_duration'];
-                    
-                    // Check if schedule already exists for this day
-                    $existing = $db->fetch("SELECT id FROM doctor_schedules WHERE doctor_id = ? AND day_of_week = ?", 
-                                         [$doctor_id, $day_of_week]);
-                    
-                    if ($existing) {
-                        $db->query("UPDATE doctor_schedules SET start_time = ?, end_time = ?, slot_duration = ?, is_available = 1 WHERE doctor_id = ? AND day_of_week = ?",
-                                   [$start_time, $end_time, $slot_duration, $doctor_id, $day_of_week]);
-                    } else {
-                        $db->query("INSERT INTO doctor_schedules (doctor_id, day_of_week, start_time, end_time, slot_duration, is_available) VALUES (?, ?, ?, ?, ?, 1)",
-                                   [$doctor_id, $day_of_week, $start_time, $end_time, $slot_duration]);
-                    }
-                    $success_message = "Schedule updated successfully!";
-                    break;
                     
                 case 'add_break':
                     $date = $_POST['break_date'];
@@ -286,48 +268,6 @@ require_once '../includes/header.php';
 
 
         <!-- Set Availability Card -->
-        <div class="content-section">
-            <div class="section-header">
-                <h2>Set Availability</h2>
-            </div>
-            <div class="section-content">
-                <div class="schedule-form">
-                    <form method="POST">
-                        <input type="hidden" name="action" value="add_availability">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="availability_day">Day of Week</label>
-                                <select id="availability_day" name="day_of_week">
-                                    <?php foreach ($days_of_week as $idx => $dname): ?>
-                                        <option value="<?php echo $idx; ?>"><?php echo $dname; ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="start_time">Start Time</label>
-                                <input id="start_time" type="time" name="start_time" required />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="end_time">End Time</label>
-                                <input id="end_time" type="time" name="end_time" required />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="slot_duration">Slot Duration (minutes)</label>
-                                <input id="slot_duration" type="number" name="slot_duration" min="5" step="5" value="15" required />
-                            </div>
-                        </div>
-
-                        <div style="display:flex; gap:0.5rem; align-items:center; margin-top:1rem;">
-                            <button type="submit" class="btn btn-primary">Save Availability</button>
-                            <button type="button" id="clearAvailability" class="btn btn-secondary">Clear Fields</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
 
         <!-- Calendar View -->
         <div class="content-section">
@@ -349,16 +289,7 @@ require_once '../includes/header.php';
                         </div>
 
                         <div class="calendar-title">
-                            <h3><i class="far fa-calendar-alt"></i> <?php echo $month_name; ?> <?php echo $current_year; ?>
-                                <?php if ($current_month == date('n') && $current_year == date('Y')): ?>
-                                    <span class="current-indicator">Current</span>
-                                <?php endif; ?>
-                            </h3>
-                            <div class="calendar-controls">
-                                <button type="button" id="btnToday" class="nav-btn" style="margin: 0 auto; background: rgba(255,255,255,0.25); border: none;">
-                                    <i class="fas fa-calendar-day"></i> Today
-                                </button>
-                            </div>
+                            <h3><i class="far fa-calendar-alt"></i> <?php echo $month_name; ?></h3>
                         </div>
 
                         <div class="calendar-nav">
@@ -413,7 +344,9 @@ require_once '../includes/header.php';
                             if ($is_past) $classes[] = 'past';
                         ?>
                             <div class="<?php echo implode(' ', $classes); ?>" onclick="showDayDetails('<?php echo $current_date; ?>')">
-                                <div class="day-number"><?php echo $day; ?></div>
+                                <div class="day-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div class="day-number <?php echo $is_today ? 'today-highlight' : ''; ?>"><?php echo $day; ?></div>
+                                </div>
                                 <div class="day-schedule">
                                     <?php if ($has_unavailable): ?>
                                         <div class="schedule-block unavailable">
@@ -541,6 +474,7 @@ require_once '../includes/header.php';
 function showAppointmentDetails(data) {
     showAppointmentOverview(data, 'doctor');
 }
+</script>
 
 <div id="findingsModal" class="modal" style="z-index: 2200;">
     <div class="modal-content">
@@ -694,7 +628,8 @@ function loadDayDetails(date) {
                                 "payment_amount": apt.payment_amount || 0,
                                 "gcash_reference": apt.gcash_reference || "N/A",
                                 "receipt_path": apt.receipt_path || null,
-                                "laboratory_image_path": pInfo.laboratory_image || null
+                                "laboratory_image_path": pInfo.laboratory_image || null,
+                                "updated_at": apt.updated_at || null
                             }).replace(/'/g, "&apos;");
 
                             return `
@@ -763,6 +698,16 @@ function formatTime(timeString) {
     h = h % 12;
     h = h ? h : 12;
     return h + ':' + m + ' ' + ampm;
+}
+
+function closeDayModal() {
+    const modal = document.querySelector('.day-details-modal');
+    if (modal) modal.remove();
+}
+
+function closeFindingsModal() {
+    const modal = document.getElementById('findingsModal');
+    if (modal) modal.style.display = 'none';
 }
 
 function goToToday() {
@@ -907,70 +852,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Prefill availability form when a calendar day is clicked
-document.addEventListener('click', function(e) {
-    const day = e.target.closest && e.target.closest('.calendar-day');
-    if (day) {
-        // Determine day index from the day element's inner number and current calendar month/year
-        const dayNumEl = day.querySelector('.day-number');
-        if (!dayNumEl) return;
-        const dayNum = parseInt(dayNumEl.textContent, 10);
-        if (isNaN(dayNum)) return;
-
-        // Compute the day-of-week for the currently displayed month/year
-        const month = <?php echo $current_month; ?>;
-        const year = <?php echo $current_year; ?>;
-        const dow = new Date(year, month - 1, dayNum).getDay();
-
-        // Attempt to find schedule for this dow using window.__scheduleByDay or embedded schedule
-        const embeddedSchedule = <?php echo json_encode($schedule_by_day); ?>;
-        const scheduleSource = (window.__scheduleByDay !== undefined) ? window.__scheduleByDay : embeddedSchedule;
-
-        // Use the same finder as loadDayDetails
-        function findScheduleForDay(scheduleObj, dow) {
-            if (!scheduleObj) return null;
-            if (scheduleObj[dow]) return scheduleObj[dow];
-            if (scheduleObj.hasOwnProperty && scheduleObj.hasOwnProperty(String(dow))) return scheduleObj[String(dow)];
-            if (Array.isArray(scheduleObj)) {
-                for (const item of scheduleObj) {
-                    if (item && (item.day_of_week == dow || item.day_of_week === String(dow))) return item;
-                }
-            }
-            try {
-                for (const k in scheduleObj) {
-                    const item = scheduleObj[k];
-                    if (item && (item.day_of_week == dow || item.day_of_week === String(dow))) return item;
-                }
-            } catch (e) { }
-            return null;
-        }
-
-        const s = findScheduleForDay(scheduleSource, dow);
-        if (s) {
-            const st = s.start_time || '';
-            const et = s.end_time || '';
-            const sd = s.slot_duration || document.getElementById('slot_duration').value || 15;
-            document.getElementById('availability_day').value = String(dow);
-            if (st && document.getElementById('start_time')) document.getElementById('start_time').value = st;
-            if (et && document.getElementById('end_time')) document.getElementById('end_time').value = et;
-            if (sd && document.getElementById('slot_duration')) document.getElementById('slot_duration').value = sd;
-        } else {
-            // clear
-            document.getElementById('availability_day').value = String(dow);
-        }
-    }
-});
-
-// Clear availability form
-document.getElementById && document.addEventListener('click', function(e) {
-    const clear = e.target.closest && e.target.closest('#clearAvailability');
-    if (clear) {
-        e.preventDefault();
-        if (document.getElementById('start_time')) document.getElementById('start_time').value = '';
-        if (document.getElementById('end_time')) document.getElementById('end_time').value = '';
-        if (document.getElementById('slot_duration')) document.getElementById('slot_duration').value = '15';
-    }
-});
 </script>
 
 </body>

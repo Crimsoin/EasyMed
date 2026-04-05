@@ -3,21 +3,8 @@
 /* Import base styles */
 
 
-/* Doctor Container Layout */
-.doctor-container {
-    display: flex;
-    min-height: calc(100vh - 75px); /* Account for main site header */
-    background-color: var(--light-gray);
-}
-
-/* Doctor Content Area */
-.doctor-content {
-    flex: 1;
-    margin-left: 280px;
-    padding: 2rem;
-    background-color: var(--light-gray);
-    min-height: calc(100vh - 75px); /* Account for header */
-}
+/* Doctor Content Area adjustments can go here if needed specifically for dashboard, 
+   but base layout is now managed in sidebar-doctor.css */
 
 /* Content Header */
 .content-header {
@@ -491,10 +478,6 @@
 
 /* Responsive Design */
 @media (max-width: 1200px) {
-    .doctor-content {
-        margin-left: 250px;
-    }
-    
     .stats-row {
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     }
@@ -505,10 +488,6 @@
 }
 
 @media (max-width: 768px) {
-    .doctor-content {
-        margin-left: 0;
-        padding: 1rem;
-    }
     
     .content-header {
         padding: 1.5rem;

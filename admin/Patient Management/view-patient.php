@@ -111,229 +111,11 @@ require_once '../../includes/header.php';
     </div>
 
     <div class="admin-content">
-        <!-- Profile Header -->
-        <div class="content-header">
-            <div class="profile-avatar">
-                <?php if (isset($user['avatar']) && $user['avatar']): ?>
-                    <img src="../../uploads/avatars/<?php echo htmlspecialchars($user['avatar']); ?>" alt="Patient Avatar">
-                <?php else: ?>
-                    <div class="avatar-placeholder">
-                        <?php echo strtoupper(substr($user['first_name'], 0, 1) . substr($user['last_name'], 0, 1)); ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-            
-            <div class="profile-info">
-                <h1><?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></h1>
-                <p><?php echo ucfirst($user['role']); ?> Profile</p>
-                
-                <div class="profile-badges">
-                    <span class="status-badge <?php echo $user['is_active'] ? 'active' : 'inactive'; ?>">
-                        <i class="fas fa-<?php echo $user['is_active'] ? 'check-circle' : 'times-circle'; ?>"></i>
-                        <?php echo $user['is_active'] ? 'Active' : 'Inactive'; ?>
-                    </span>
-                    <span class="role-badge role-<?php echo $user['role']; ?>">
-                        <i class="fas fa-<?php echo $user['role'] === 'patient' ? 'user' : ($user['role'] === 'doctor' ? 'user-md' : 'user-shield'); ?>"></i>
-                        <?php echo ucfirst($user['role']); ?>
-                    </span>
-                    <?php if ($user['role'] === 'doctor' && isset($user['is_available'])): ?>
-                    <span class="status-badge <?php echo $user['is_available'] ? 'available' : 'unavailable'; ?>">
-                        <i class="fas fa-<?php echo $user['is_available'] ? 'calendar-check' : 'calendar-times'; ?>"></i>
-                        <?php echo $user['is_available'] ? 'Available' : 'Unavailable'; ?>
-                    </span>
-                    <?php endif; ?>
-                </div>
-            </div>
-            
-            <div class="header-actions">
-                <a href="patients.php" class="btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Users
-                </a>
-            </div>
-        </div>
-
-        <!-- Profile Content -->
-        <div class="profile-content">
-            <!-- User Information Section -->
-            <div class="info-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-user"></i> User Information</h2>
-                </div>
-                
-                <div class="info-grid">
-                    <div class="info-item">
-                        <label>User ID</label>
-                        <span><?php echo $user['id']; ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Username</label>
-                        <span><?php echo htmlspecialchars($user['username']); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>First Name</label>
-                        <span><?php echo htmlspecialchars($user['first_name']); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Last Name</label>
-                        <span><?php echo htmlspecialchars($user['last_name']); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Email</label>
-                        <span><?php echo htmlspecialchars($user['email']); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Phone</label>
-                        <span><?php echo htmlspecialchars($user['phone'] ?: 'Not provided'); ?></span>
-                    </div>
-                    <?php if ($user['role'] === 'patient'): ?>
-                    <div class="info-item">
-                        <label>Date of Birth</label>
-                        <span><?php echo $user['date_of_birth'] ? date('M j, Y', strtotime($user['date_of_birth'])) : 'Not provided'; ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Gender</label>
-                        <span><?php echo $user['gender'] ? ucfirst($user['gender']) : 'Not provided'; ?></span>
-                    </div>
-                    <?php endif; ?>
-                    <div class="info-item">
-                        <label>Role</label>
-                        <span class="role-badge role-<?php echo $user['role']; ?>">
-                            <?php echo ucfirst($user['role']); ?>
-                        </span>
-                    </div>
-                    <div class="info-item">
-                        <label>Status</label>
-                        <span class="status-badge <?php echo $user['is_active'] ? 'active' : 'inactive'; ?>">
-                            <?php echo $user['is_active'] ? 'Active' : 'Inactive'; ?>
-                        </span>
-                    </div>
-                    <?php if ($user['role'] === 'doctor' && $user['specialty']): ?>
-                    <div class="info-item">
-                        <label>Specialty</label>
-                        <span><?php echo htmlspecialchars($user['specialty']); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Availability</label>
-                        <span class="status-badge <?php echo $user['is_available'] ? 'active' : 'inactive'; ?>">
-                            <?php echo $user['is_available'] ? 'Available' : 'Unavailable'; ?>
-                        </span>
-                    </div>
-                    <?php endif; ?>
-                    <div class="info-item">
-                        <label>Created</label>
-                        <span><?php echo date('M j, Y g:i A', strtotime($user['created_at'])); ?></span>
-                    </div>
-                    <?php if ($user['updated_at']): ?>
-                    <div class="info-item">
-                        <label>Last Updated</label>
-                        <span><?php echo date('M j, Y g:i A', strtotime($user['updated_at'])); ?></span>
-                    </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- Quick Actions Sidebar -->
-            <div class="info-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
-                </div>
-                
-                <div class="quick-actions">
-                    <?php if ($user['role'] === 'patient'): ?>
-                    <a href="../Appointment/book-appointment.php?patient_id=<?php echo $user['id']; ?>" class="action-btn">
-                        <i class="fas fa-calendar-plus"></i>
-                        Book Appointment
-                    </a>
-                    <?php elseif ($user['role'] === 'doctor'): ?>
-                    <a href="../Doctor Management/doctor-schedule.php?id=<?php echo $user['id']; ?>" class="action-btn">
-                        <i class="fas fa-calendar"></i>
-                        View Schedule
-                    </a>
-                    <?php endif; ?>
-                    <a href="#" class="action-btn" onclick="toggleUserStatus(<?php echo $user['id']; ?>)">
-                        <i class="fas fa-<?php echo $user['is_active'] ? 'ban' : 'check'; ?>"></i>
-                        <?php echo $user['is_active'] ? 'Deactivate' : 'Activate'; ?> User
-                    </a>
-                    <a href="patients.php" class="action-btn">
-                        <i class="fas fa-list"></i>
-                        All Patients
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Statistics -->
-        <?php if (!empty($stats)): ?>
-        <div class="stats-grid">
-            <?php foreach ($stats as $key => $value): ?>
-            <div class="stat-card">
-                <div class="stat-icon stat-icon-<?php echo str_replace('_', '-', $key); ?>">
-                    <i class="fas fa-<?php echo $key === 'total_appointments' ? 'calendar' : ($key === 'completed_appointments' ? 'check' : ($key === 'pending_appointments' ? 'clock' : 'times')); ?>"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?php echo $value; ?></h3>
-                    <p><?php echo ucwords(str_replace('_', ' ', $key)); ?></p>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
-
-        <!-- Recent Activity -->
-        <?php if (!empty($recentActivity)): ?>
-        <div class="info-section history-section">
-            <div class="section-header">
-                <h2>Patient History</h2>
-                <a href="../Dashboard/dashboard.php" class="view-all-btn">
-                    <i class="fas fa-list-ul"></i> View All
-                </a>
-            </div>
-            
-            <div class="appointments-list">
-                <?php foreach ($recentActivity as $activity): ?>
-                <div class="appointment-item clickable" onclick="viewAppointment(<?php echo $activity['id']; ?>)">
-                    <div class="appointment-main">
-                        <div class="doctor-brief">
-                            <h4>Dr. <?php echo htmlspecialchars($activity['doctor_first_name'] . ' ' . $activity['doctor_last_name']); ?></h4>
-                            <span class="specialty"><?php echo htmlspecialchars($activity['specialty'] ?? 'Medical Practitioner'); ?></span>
-                        </div>
-                        
-                        <div class="appointment-meta">
-                            <div class="meta-item">
-                                <i class="fas fa-calendar-alt"></i>
-                                <span><?php echo date('F j, Y', strtotime($activity['appointment_date'])) . ' at ' . date('g:i A', strtotime($activity['appointment_time'])); ?></span>
-                            </div>
-                            <div class="meta-item">
-                                <i class="fas fa-clipboard-list"></i>
-                                <span><?php echo htmlspecialchars(!empty($activity['illness']) ? $activity['illness'] : ($activity['reason_for_visit'] ?: 'Consultation Only')); ?></span>
-                            </div>
-                            <div class="meta-item amount">
-                                <i class="fas fa-coins"></i>
-                                <span>₱<?php echo number_format($activity['paid_amount'] ?: $activity['consultation_fee'] ?: 0, 2); ?></span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="appointment-side">
-                        <span class="status-badge status-<?php echo strtolower($activity['status']); ?>">
-                            <?php echo strtoupper($activity['status']); ?>
-                        </span>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php else: ?>
-        <div class="info-section history-section">
-            <div class="section-header">
-                <h2>Patient History</h2>
-            </div>
-            <div class="no-appointments">
-                <i class="fas fa-calendar-times"></i>
-                <p>No recent appointments found.</p>
-            </div>
-        </div>
-        <?php endif; ?>
+        <?php 
+        $viewMode = 'admin';
+        // Ensure stats and recentActivity are prepared as expected by template
+        include_once '../../includes/components/patient_details_template.php'; 
+        ?>
     </div>
 </div>
 
@@ -355,6 +137,29 @@ require_once '../../includes/header.php';
 </style>
 
 <script>
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function formatTime(timeString) {
+            if (!timeString) return 'N/A';
+            // Handle HH:mm:ss format
+            const [hours, minutes] = timeString.split(':');
+            const date = new Date();
+            date.setHours(parseInt(hours), parseInt(minutes));
+            return date.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
 function viewAppointment(id) {
     fetch(`../Appointment/get_appointment_details.php?id=${id}`)
         .then(response => response.json())
@@ -373,15 +178,15 @@ function viewAppointment(id) {
                 id: appointment.id,
                 name: (appointment.patient_first_name + ' ' + (appointment.patient_last_name || '')),
                 status: appointment.status,
-                date: formatDateModal(appointment.appointment_date),
-                time: formatTimeModal(appointment.appointment_time),
+                date: formatDate(appointment.appointment_date),
+                time: formatTime(appointment.appointment_time),
                 purpose: appointment.purpose === 'consultation' ? 'Medical Consultation' : (appointment.reason_for_visit || appointment.purpose),
                 doctor: 'Dr. ' + appointment.doctor_first_name + ' ' + appointment.doctor_last_name,
                 specialty: appointment.specialty,
                 license: appointment.license_number,
                 fee: parseFloat(appointment.display_fee || appointment.consultation_fee || 0).toFixed(2),
                 relationship: appointment.relationship || 'Self',
-                dob: formatDateModal(appointment.patient_dob),
+                dob: appointment.patient_dob ? formatDate(appointment.patient_dob) : 'N/A',
                 gender: appointment.patient_gender,
                 email: appointment.patient_email,
                 phone: appointment.patient_phone,
@@ -394,7 +199,8 @@ function viewAppointment(id) {
                     ref: payment.gcash_reference,
                     receipt: payment.receipt_path
                 } : null,
-                laboratory_image: patientInfo ? patientInfo.laboratory_image : null
+                laboratory_image: patientInfo ? patientInfo.laboratory_image : null,
+                updated_at: appointment.updated_at
             };
             
             showAppointmentOverview(standardizedData, 'admin');
@@ -402,6 +208,29 @@ function viewAppointment(id) {
         .catch(error => {
             console.error('Error fetching appointment details:', error);
         });
+}
+
+function toggleUserStatus(userId) {
+    if (confirm('Are you sure you want to change this user\'s status?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'patients.php';
+        
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'toggle_status';
+        
+        const idInput = document.createElement('input');
+        idInput.type = 'hidden';
+        idInput.name = 'patient_id';
+        idInput.value = userId;
+        
+        form.appendChild(actionInput);
+        form.appendChild(idInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 
 function closeAptModal() {

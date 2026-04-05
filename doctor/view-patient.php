@@ -33,7 +33,8 @@ if ($_POST && isset($_POST['action']) && isset($_POST['appointment_id'])) {
                 $notes = $_POST['notes'] ?? '';
                 $db->update('appointments', [
                     'status' => 'completed',
-                    'notes' => $notes
+                    'notes' => $notes,
+                    'updated_at' => date('Y-m-d H:i:s')
                 ], 'id = ?', [$appointment_id]);
                 $success_message = "Appointment marked as completed successfully.";
                 header("Location: view-patient.php?id=" . $patient_id_param . "&success=" . urlencode($success_message));
@@ -45,7 +46,10 @@ if ($_POST && isset($_POST['action']) && isset($_POST['appointment_id'])) {
                 exit();
             case 'update_findings':
                 $notes = $_POST['notes'] ?? '';
-                $db->update('appointments', ['notes' => $notes], 'id = ?', [$appointment_id]);
+                $db->update('appointments', [
+                    'notes' => $notes,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ], 'id = ?', [$appointment_id]);
                 $success_message = "Appointment findings updated successfully.";
                 header("Location: view-patient.php?id=" . $patient_id_param . "&success=" . urlencode($success_message));
                 exit();
@@ -65,17 +69,15 @@ if (!$patientId) {
 }
 
 // Ensure doctor's patient connection
-$doctor_record_id = $db->fetch("SELECT id FROM doctors WHERE user_id = ?", [$doctor_id])['id'] ?? 0;
-
 $verify_sql = "
     SELECT COUNT(*) as count 
     FROM appointments a
     WHERE a.patient_id = ? AND a.doctor_id = ?
 ";
-$verify_result = $db->fetch($verify_sql, [$patientId, $doctor_record_id]);
+$verify_result = $db->fetch($verify_sql, [$patientId, $doctor_id]);
 
 // Get doctor specialty for modals
-$doctor_specialty = $db->fetch("SELECT specialty FROM doctors WHERE id = ?", [$doctor_record_id])['specialty'] ?? 'Medical Practitioner';
+$doctor_specialty = $doctor_record['specialty'] ?? 'Medical Practitioner';
 
 if ($verify_result['count'] == 0) {
     $_SESSION['error'] = 'Patient not found or you do not have permission to view them.';
@@ -104,21 +106,21 @@ if (!$user) {
 
 // Stats
 $stats = [];
-if ($user['role'] === 'patient' && $doctor_record_id) {
-    $stats['total_appointments'] = $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND doctor_id = ?", [$user['patient_record_id'], $doctor_record_id])['count'];
-    $stats['completed_appointments'] = $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND doctor_id = ? AND status = 'completed'", [$user['patient_record_id'], $doctor_record_id])['count'];
-    $stats['cancelled_appointments'] = $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND doctor_id = ? AND status = 'cancelled'", [$user['patient_record_id'], $doctor_record_id])['count'];
+if ($user['role'] === 'patient' && $doctor_id) {
+    $stats['total_appointments'] = $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND doctor_id = ?", [$user['patient_record_id'], $doctor_id])['count'];
+    $stats['completed_appointments'] = $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND doctor_id = ? AND status = 'completed'", [$user['patient_record_id'], $doctor_id])['count'];
+    $stats['cancelled_appointments'] = $db->fetch("SELECT COUNT(*) as count FROM appointments WHERE patient_id = ? AND doctor_id = ? AND status = 'cancelled'", [$user['patient_record_id'], $doctor_id])['count'];
 }
 
 // Recent Activity
 $recentActivity = [];
-if ($user['role'] === 'patient' && $doctor_record_id) {
+if ($user['role'] === 'patient' && $doctor_id) {
     $recentActivity = $db->fetchAll("
         SELECT a.*
         FROM appointments a
         WHERE a.patient_id = ? AND a.doctor_id = ?
         ORDER BY a.appointment_date DESC, a.appointment_time DESC
-        LIMIT 10", [$user['patient_record_id'], $doctor_record_id]);
+        LIMIT 10", [$user['patient_record_id'], $doctor_id]);
 }
 
 require_once '../includes/header.php';
@@ -149,65 +151,105 @@ require_once '../includes/header.php';
         </nav>
     </div>
 
-    <div class="doctor-content" style="flex: 1; padding: 2rem; background-color: #f8fafc; min-height: 100vh;">
+    <div class="doctor-content">
         <!-- Profile Header -->
-        <div class="content-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
-            <div style="display: flex; gap: 2rem;">
-                <div class="profile-avatar" style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div class="content-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+            <div style="display: flex; gap: 2rem; align-items: center;">
+                <div class="profile-avatar" style="width: 110px; height: 110px; border-radius: 20px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 700; box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);">
                     <?php echo strtoupper(substr($user['first_name'], 0, 1) . substr($user['last_name'], 0, 1)); ?>
                 </div>
                 
-                <div class="profile-info" style="display: flex; flex-direction: column; justify-content: center;">
-                    <h1 style="margin: 0 0 0.5rem 0; font-size: 2rem; color: #1e293b;"><?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></h1>
-                    <p style="margin: 0 0 1rem 0; color: #64748b;"><?php echo ucfirst($user['role']); ?> Profile</p>
-                    
-                    <div class="profile-badges" style="display: flex; gap: 1rem;">
-                        <span class="status-badge <?php echo $user['is_active'] ? 'active' : 'inactive'; ?>" style="padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; background: <?php echo $user['is_active'] ? '#dcfce7' : '#fee2e2'; ?>; color: <?php echo $user['is_active'] ? '#166534' : '#991b1b'; ?>;">
-                            <i class="fas fa-<?php echo $user['is_active'] ? 'check-circle' : 'times-circle'; ?>"></i>
-                            <?php echo $user['is_active'] ? 'Active' : 'Inactive'; ?>
+                <div class="profile-info">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                        <h1 style="margin: 0; font-size: 2.25rem; font-weight: 800; color: #0f172a; letter-spacing: -0.025em;"><?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></h1>
+                        <span class="status-badge <?php echo $user['is_active'] ? 'active' : 'inactive'; ?>" style="padding: 0.5rem 1rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 0.5rem; background: <?php echo $user['is_active'] ? '#dcfce7' : '#fee2e2'; ?>; color: <?php echo $user['is_active'] ? '#15803d' : '#991b1b'; ?>;">
+                            <i class="fas fa-<?php echo $user['is_active'] ? 'circle' : 'times-circle'; ?>" style="font-size: 0.6rem;"></i>
+                            <?php echo $user['is_active'] ? 'Active Patient' : 'Inactive'; ?>
                         </span>
+                    </div>
+                    <div style="display: flex; gap: 1.5rem; color: #64748b; font-weight: 500;">
+                        <span><i class="fas fa-id-badge" style="margin-right: 0.5rem; color: #3b82f6;"></i> ID: #<?php echo str_pad($user['patient_id'] ?? $patientId, 4, '0', STR_PAD_LEFT); ?></span>
+                        <span><i class="fas fa-calendar-alt" style="margin-right: 0.5rem; color: #3b82f6;"></i> Joined <?php echo date('M Y', strtotime($user['created_at'])); ?></span>
                     </div>
                 </div>
             </div>
             
             <div class="header-actions">
-                <a href="patients.php" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; text-decoration: none; color: #475569; font-weight: 500; background: white; transition: all 0.2s;">
-                    <i class="fas fa-arrow-left"></i> Back to Patients
+                <a href="patients.php" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1.5rem; border: 1.5px solid #e2e8f0; border-radius: 12px; text-decoration: none; color: #475569; font-weight: 600; background: white; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.875rem;" onmouseover="this.style.borderColor='#3b82f6'; this.style.color='#3b82f6'; this.style.transform='translateX(-4px)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#475569'; this.style.transform='translateX(0)';">
+                    <i class="fas fa-chevron-left"></i> Back to Patients
                 </a>
             </div>
         </div>
 
         <!-- Profile Content -->
         <div class="profile-content" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
-            <!-- Left Column -->
-            <div style="display: flex; flex-direction: column; gap: 2rem;">
+            <!-- Main Column -->
+            <div style="display: flex; flex-direction: column; gap: 2rem; grid-column: 1 / -1;">
                 
+                <!-- Statistics -->
+                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 0.5rem;">
+                    <?php 
+                    $stat_labels = [
+                        'total_appointments' => ['label' => 'Total Consultations', 'icon' => 'calendar-check', 'color' => '#3b82f6', 'bg' => '#eff6ff'],
+                        'completed_appointments' => ['label' => 'Completed Sessions', 'icon' => 'check-double', 'color' => '#10b981', 'bg' => '#ecfdf5'],
+                        'cancelled_appointments' => ['label' => 'Cancelled/No-show', 'icon' => 'times-circle', 'color' => '#ef4444', 'bg' => '#fef2f2']
+                    ];
+                    foreach ($stats as $key => $value): 
+                        $cfg = $stat_labels[$key] ?? ['label' => ucwords(str_replace('_', ' ', $key)), 'icon' => 'info-circle', 'color' => '#64748b', 'bg' => '#f8fafc'];
+                    ?>
+                    <div class="stat-card" style="background: white; border-radius: 1.25rem; padding: 1.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); display: flex; align-items: center; gap: 1.25rem; border: 1px solid #f1f5f9; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';" >
+                        <div class="stat-icon" style="width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: <?php echo $cfg['bg']; ?>; color: <?php echo $cfg['color']; ?>;">
+                            <i class="fas fa-<?php echo $cfg['icon']; ?>"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 style="margin: 0; font-size: 1.75rem; font-weight: 800; color: #0f172a; line-height: 1;"><?php echo $value; ?></h3>
+                            <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; font-weight: 600; color: #64748b;"><?php echo $cfg['label']; ?></p>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+
                 <!-- User Information Section -->
-                <div class="info-section" style="background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <div class="section-header" style="margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
-                        <h2 style="margin: 0; font-size: 1.25rem; color: #1e293b;"><i class="fas fa-user" style="color: #3b82f6; margin-right: 0.5rem;"></i> Patient Information</h2>
+                <div class="info-section" style="background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #f1f5f9; margin-bottom: 2rem;">
+                    <div class="section-header" style="margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 1.25rem; color: #1e293b;"><i class="fas fa-user-circle" style="color: #3b82f6; margin-right: 0.5rem;"></i> Personal Information</h2>
                     </div>
                     
-                    <div class="info-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                        <div class="info-item">
-                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Email</label>
-                            <span style="color: #0f172a;"><?php echo htmlspecialchars($user['email']); ?></span>
+                    <div class="info-grid" style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 0.5rem; gap: 1rem;">
+                        <div class="info-item" style="flex: 1;">
+                            <label style="display: block; font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Email Address</label>
+                            <span style="color: #1e293b; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                                <i class="far fa-envelope" style="color: #6366f1;"></i>
+                                <?php echo htmlspecialchars($user['email']); ?>
+                            </span>
                         </div>
-                        <div class="info-item">
-                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Phone</label>
-                            <span style="color: #0f172a;"><?php echo htmlspecialchars($user['phone'] ?: 'Not provided'); ?></span>
+                        <div class="info-item" style="flex: 1;">
+                            <label style="display: block; font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Phone Number</label>
+                            <span style="color: #1e293b; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                                <i class="fas fa-phone" style="color: #10b981;"></i>
+                                <?php echo htmlspecialchars($user['phone'] ?: 'N/A'); ?>
+                            </span>
                         </div>
-                        <div class="info-item">
-                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Date of Birth</label>
-                            <span style="color: #0f172a;"><?php echo $user['date_of_birth'] ? date('M j, Y', strtotime($user['date_of_birth'])) : 'Not provided'; ?></span>
+                        <div class="info-item" style="flex: 1;">
+                            <label style="display: block; font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Date of Birth</label>
+                            <span style="color: #1e293b; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                                <i class="far fa-calendar-alt" style="color: #f59e0b;"></i>
+                                <?php echo $user['date_of_birth'] ? date('M j, Y', strtotime($user['date_of_birth'])) : 'N/A'; ?>
+                            </span>
                         </div>
-                        <div class="info-item">
-                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Gender</label>
-                            <span style="color: #0f172a;"><?php echo $user['gender'] ? ucfirst($user['gender']) : 'Not provided'; ?></span>
+                        <div class="info-item" style="flex: 1;">
+                            <label style="display: block; font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Gender</label>
+                            <span style="color: #1e293b; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                                <i class="fas fa-venus-mars" style="color: #ec4899;"></i>
+                                <?php echo $user['gender'] ? ucfirst($user['gender']) : 'N/A'; ?>
+                            </span>
                         </div>
-                        <div class="info-item" style="grid-column: 1 / -1;">
-                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Address</label>
-                            <span style="color: #0f172a;"><?php echo htmlspecialchars($user['address'] ?: 'Not provided'); ?></span>
+                        <div class="info-item" style="flex: 1.5;">
+                            <label style="display: block; font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Home Address</label>
+                            <span style="color: #1e293b; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                                <i class="fas fa-map-marker-alt" style="color: #64748b;"></i>
+                                <?php echo htmlspecialchars($user['address'] ?: 'No address registered'); ?>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -249,7 +291,7 @@ require_once '../includes/header.php';
                                 'payment_amount' => $activity['payment_amount'] ?? 0,
                                 'gcash_reference' => $activity['gcash_reference'] ?? 'N/A',
                                 'receipt_path' => $activity['payment_receipt_path'] ?? '',
-                                'laboratory_image_path' => $activity_patient_info['laboratory_image'] ?? null
+                                'laboratory_image_path' => $activity_patient_info['laboratory_image'] ?? null, 'updated_at' => $activity['updated_at']
                             ]), ENT_QUOTES, 'UTF-8'); ?>)" 
                              onmouseover="this.style.borderColor='#3b82f6'; this.style.backgroundColor='#f8fafc';" 
                              onmouseout="this.style.borderColor='#e2e8f0'; this.style.backgroundColor='transparent';">
@@ -278,74 +320,35 @@ require_once '../includes/header.php';
                     <?php endif; ?>
                 </div>
             </div>
-
-            <!-- Right Column -->
-            <div style="display: flex; flex-direction: column; gap: 2rem;">
-                
-                <!-- Statistics -->
-                <div class="stats-grid" style="display: grid; gap: 1rem;">
-                    <?php foreach ($stats as $key => $value): ?>
-                    <div class="stat-card" style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 1rem;">
-                        <div class="stat-icon" style="width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; 
-                            <?php echo $key === 'total_appointments' ? 'background: #eff6ff; color: #3b82f6;' : 
-                                     ($key === 'completed_appointments' ? 'background: #f0fdf4; color: #16a34a;' : 'background: #fef2f2; color: #dc2626;'); ?>">
-                            <i class="fas fa-<?php echo $key === 'total_appointments' ? 'calendar' : ($key === 'completed_appointments' ? 'check' : 'times'); ?>"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 style="margin: 0 0 0.25rem 0; font-size: 1.5rem; color: #0f172a;"><?php echo $value; ?></h3>
-                            <p style="margin: 0; font-size: 0.875rem; color: #64748b;"><?php echo ucwords(str_replace('_', ' ', $key)); ?></p>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-
-                <!-- Medical Info Summary -->
-                <div class="info-section" style="background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <div class="section-header" style="margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
-                        <h2 style="margin: 0; font-size: 1.25rem; color: #1e293b;"><i class="fas fa-notes-medical" style="color: #ef4444; margin-right: 0.5rem;"></i> Medical Summary</h2>
-                    </div>
-                    
-                    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                        <div>
-                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Blood Type</label>
-                            <span style="color: #0f172a; font-weight: 500;"><?php echo $user['blood_type'] ?: 'Unknown'; ?></span>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Allergies</label>
-                            <span style="color: <?php echo $user['allergies'] ? '#ef4444' : '#0f172a'; ?>; font-weight: 500;"><?php echo htmlspecialchars($user['allergies'] ?: 'No known allergies'); ?></span>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Medical History Summary</label>
-                            <p style="margin: 0; color: #475569; font-size: 0.875rem; line-height: 1.5;"><?php echo nl2br(htmlspecialchars($user['medical_history'] ?: 'No history provided')); ?></p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Emergency Contact -->
-                <div class="info-section" style="background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <div class="section-header" style="margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
-                        <h2 style="margin: 0; font-size: 1.25rem; color: #1e293b;"><i class="fas fa-phone-alt" style="color: #f59e0b; margin-right: 0.5rem;"></i> Emergency Contact</h2>
-                    </div>
-                    
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        <div>
-                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Name</label>
-                            <span style="color: #0f172a; font-weight: 500;"><?php echo htmlspecialchars($user['emergency_contact'] ?: 'Not provided'); ?></span>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">Phone</label>
-                            <span style="color: #0f172a; font-weight: 500;"><?php echo htmlspecialchars($user['emergency_phone'] ?: 'Not provided'); ?></span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
         </div>
     </div>
 </div>
 
 <!-- Appointment Details Modal -->
 <?php include_once '../includes/shared_appointment_details.php'; ?>
+
+<div id="findingsModal" class="modal" style="display: none; z-index: 10001;">
+    <div class="modal-content" style="max-width: 600px; width: 90%; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+        <div class="modal-header" style="background: linear-gradient(135deg, #2563eb, #1e3a8a); color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin:0; display: flex; align-items: center; gap: 10px;"><i class="fas fa-clipboard-check"></i> Final Findings</h3>
+            <span class="close-modal" onclick="closeFindingsModal()" style="cursor: pointer; opacity: 0.8; transition: opacity 0.2s;"><i class="fas fa-times"></i></span>
+        </div>
+        <form method="POST">
+            <div class="modal-body" style="padding: 30px; background: white;">
+                <input type="hidden" name="action" value="update_findings">
+                <input type="hidden" name="appointment_id" id="findingsAptId">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.05em;">Doctor's Notes & Findings</label>
+                    <textarea name="notes" id="findingsNotesArea" style="width: 100%; height: 200px; padding: 15px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; resize: none; focus: border-color #2563eb; outline: none; transition: border-color 0.2s;" placeholder="Enter patient diagnosis, prescriptions, or summary here..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 20px 30px; background: #f8fafc; border-top: 1px solid #edf2f7; display: flex; justify-content: flex-end; gap: 12px;">
+                <button type="button" class="modal-btn modal-btn-secondary" onclick="closeFindingsModal()" style="padding: 10px 20px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; color: #475569; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="submit" class="modal-btn modal-btn-primary" style="padding: 10px 25px; border-radius: 10px; border: none; background: linear-gradient(135deg, #2563eb, #1e3a8a); color: white; font-weight: 700; cursor: pointer; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);">Save Findings</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script>
 function showAppointmentDetails(data) {
