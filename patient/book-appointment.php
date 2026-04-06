@@ -1429,12 +1429,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Handle Relationship change to auto-fill or clear fields
+  // Handle Relationship change to fill account data for 'self'
   var relationshipSelect = document.getElementById('modal_relationship');
   if (relationshipSelect) {
     relationshipSelect.addEventListener('change', function() {
       if (this.value.toLowerCase() === 'self') {
-        // Refill with account data
+        // Refill with account data only when selecting 'self'
         document.getElementById('modal_first_name').value = '<?php echo htmlspecialchars($user_details['first_name'] ?? ''); ?>';
         document.getElementById('modal_last_name').value = '<?php echo htmlspecialchars($user_details['last_name'] ?? ''); ?>';
         document.getElementById('modal_phone_number').value = '<?php echo htmlspecialchars($user_details['phone_number'] ?? ''); ?>';
@@ -1442,30 +1442,97 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modal_address').value = '<?php echo htmlspecialchars($user_details['address'] ?? ''); ?>';
         document.getElementById('modal_dob').value = '<?php echo htmlspecialchars($user_details['date_of_birth'] ?? ''); ?>';
         document.getElementById('modal_gender').value = '<?php echo htmlspecialchars($user_details['gender'] ?? ''); ?>';
-      } else {
-        // Clear fields for dependent entry
-        document.getElementById('modal_first_name').value = '';
-        document.getElementById('modal_last_name').value = '';
-        document.getElementById('modal_phone_number').value = '';
-        document.getElementById('modal_email').value = '';
-        document.getElementById('modal_address').value = '';
-        document.getElementById('modal_dob').value = '';
-        document.getElementById('modal_gender').value = '';
       }
+      // We no longer clear fields for non-self selections. 
+      // This allows users to keep shared information (like address/last name) or 
+      // fix a dropdown mistake without losing their typed data.
     });
+  }
+
+  // Simple but effective form validation
+  function validateForm(form) {
+    var errors = [];
+    var firstErrorField = null;
+    
+    // Clear previous errors
+    form.querySelectorAll('.form-control').forEach(el => {
+      el.style.borderColor = '#edf2f7';
+      el.style.backgroundColor = '#fff';
+    });
+    form.querySelectorAll('.custom-error-msg').forEach(el => el.remove());
+
+    // Helper to mark invalid fields
+    function markInvalid(id, message) {
+      const field = document.getElementById(id);
+      if (field) {
+        field.style.borderColor = '#f56565';
+        field.style.backgroundColor = '#fff5f5';
+        
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'custom-error-msg';
+        errorMsg.style.color = '#e53e3e';
+        errorMsg.style.fontSize = '0.75rem';
+        errorMsg.style.marginTop = '0.25rem';
+        errorMsg.style.fontWeight = '600';
+        errorMsg.textContent = message;
+        
+        // Find wrapper to append error message
+        const wrapper = field.closest('.input-icon-wrapper') || field.parentElement;
+        wrapper.appendChild(errorMsg);
+        
+        if (!firstErrorField) firstErrorField = field;
+        errors.push(message);
+      }
+    }
+
+    // Required Field Checks
+    if (!document.getElementById('modal_first_name').value.trim()) markInvalid('modal_first_name', 'First name is required');
+    if (!document.getElementById('modal_last_name').value.trim()) markInvalid('modal_last_name', 'Last name is required');
+    if (!document.getElementById('modal_phone_number').value.trim()) markInvalid('modal_phone_number', 'Phone number is required');
+    
+    const emailField = document.getElementById('modal_email');
+    if (!emailField.value.trim()) {
+      markInvalid('modal_email', 'Email address is required');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailField.value)) {
+      markInvalid('modal_email', 'Please enter a valid email address');
+    }
+
+    if (!document.getElementById('modal_address').value.trim()) markInvalid('modal_address', 'Complete address is required');
+    if (!document.getElementById('modal_dob').value) markInvalid('modal_dob', 'Date of birth is required');
+    if (!document.getElementById('modal_gender').value) markInvalid('modal_gender', 'Please select a gender');
+    if (!document.getElementById('modal_schedule_day').value) markInvalid('modal_schedule_day', 'Appointment date is required');
+    if (!document.getElementById('modal_schedule_time').value) markInvalid('modal_schedule_time', 'Preferred time slot is required');
+    if (!document.getElementById('modal_illness').value.trim()) markInvalid('modal_illness', 'Reason for visit is required');
+
+    // Conditional Laboratory Checks
+    const purpose = document.getElementById('modal_purpose').value;
+    if (purpose === 'laboratory') {
+      if (!document.getElementById('modal_laboratory').value) markInvalid('modal_laboratory', 'Please select a laboratory test');
+      if (!document.getElementById('modal_laboratory_image').files.length) markInvalid('modal_laboratory_image', 'Laboratory request image is required');
+    }
+
+    if (!document.getElementById('modal_no_refund').checked) {
+      markInvalid('modal_no_refund', 'You must agree to the No Refund Policy');
+    }
+
+    if (firstErrorField) {
+      firstErrorField.focus();
+      firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    return errors.length === 0;
   }
 
   // Handle form submission to show notification
   var appointmentForm = document.querySelector('.appointment-form-grid');
   if (appointmentForm) {
     appointmentForm.addEventListener('submit', function(e) {
-      if (noRefundCheckbox && !noRefundCheckbox.checked) {
-        e.preventDefault();
-        alert('Please agree to the No Refund Policy before proceeding.');
+      e.preventDefault();
+
+      // Run validation
+      if (!validateForm(this)) {
         return false;
       }
-      
-      e.preventDefault();
       
       // Show loading state on button
       if (submitBtn) {

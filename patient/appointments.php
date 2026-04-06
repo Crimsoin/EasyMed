@@ -27,7 +27,7 @@ $patient_record_id = $patient_record['id'];
 $appointments = $db->fetchAll("
     SELECT 
         a.id, a.appointment_date, a.appointment_time, a.reason_for_visit, a.illness, 
-        a.status, a.patient_info, a.notes, a.created_at, a.updated_at,
+        a.status, a.patient_info, a.notes, a.reschedule_reason, a.created_at, a.updated_at,
         u.first_name as doctor_first_name, u.last_name as doctor_last_name,
         d.id as doctor_internal_id, d.specialty, d.license_number, d.consultation_fee,
         p_pay.id as payment_id, p_pay.status as payment_verification_status, 
@@ -719,7 +719,8 @@ unset($_SESSION['appointment_errors']);
                                         "status" => $appointment['payment_verification_status'] ?? 'pending',
                                         "receipt" => $appointment['receipt_file'] ? ("assets/uploads/payment_receipts/" . $appointment['receipt_file']) : null
                                     ],
-                                    "updated_at" => $appointment['updated_at']
+                                                                         "reschedule_reason" => $appointment['reschedule_reason'],
+                                     "updated_at" => $appointment['updated_at']
                                 ]);
                             ?>)'>
                                 View Details

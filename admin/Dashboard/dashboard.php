@@ -181,6 +181,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'update_status' && $appointment_id) {
         $new_status = $_POST['status'] ?? '';
         
+        // Define allowed administrative status changes - clinical states like 'completed' are doctor-only
+        $allowed_admin_statuses = ['scheduled', 'rescheduled', 'no_show', 'cancelled'];
+        
+        if (!in_array($new_status, $allowed_admin_statuses)) {
+            $_SESSION['error_message'] = "Unauthorized: Only Scheduled, Rescheduled, No Show, or Cancelled statuses can be set by the administration.";
+            header('Location: dashboard.php');
+            exit();
+        }
+        
         try {
             // Get appointment and patient details before updating
             $appointment_details = $db->fetch("
@@ -1025,23 +1034,28 @@ require_once '../../includes/header.php';
                 <?php if ($total_pages > 1): ?>
                     <div class="pagination-container">
                         <div class="pagination">
+                            <?php 
+                            // Helper to preserve all current GET parameters except 'page'
+                            $params = $_GET;
+                            ?>
                             <?php if ($page > 1): ?>
-                                <a href="?page=<?php echo ($page - 1); ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?><?php echo $status_filter ? '&status=' . $status_filter : ''; ?><?php echo $doctor_filter ? '&doctor=' . $doctor_filter : ''; ?><?php echo $date_filter ? '&date=' . $date_filter : ''; ?>" 
-                                   class="btn btn-pagination">
+                                <?php $params['page'] = $page - 1; ?>
+                                <a href="?<?php echo http_build_query($params); ?>" class="pagination-btn">
                                     <i class="fas fa-chevron-left"></i> Previous
                                 </a>
                             <?php endif; ?>
                             
                             <?php for ($i = max(1, $page - 2); $i <= min($total_pages, $page + 2); $i++): ?>
-                                <a href="?page=<?php echo $i; ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?><?php echo $status_filter ? '&status=' . $status_filter : ''; ?><?php echo $doctor_filter ? '&doctor=' . $doctor_filter : ''; ?><?php echo $date_filter ? '&date=' . $date_filter : ''; ?>" 
-                                   class="btn btn-pagination <?php echo $i === $page ? 'active' : ''; ?>">
+                                <?php $params['page'] = $i; ?>
+                                <a href="?<?php echo http_build_query($params); ?>" 
+                                   class="pagination-btn <?php echo $i === $page ? 'active' : ''; ?>">
                                     <?php echo $i; ?>
                                 </a>
                             <?php endfor; ?>
                             
                             <?php if ($page < $total_pages): ?>
-                                <a href="?page=<?php echo ($page + 1); ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?><?php echo $status_filter ? '&status=' . $status_filter : ''; ?><?php echo $doctor_filter ? '&doctor=' . $doctor_filter : ''; ?><?php echo $date_filter ? '&date=' . $date_filter : ''; ?>" 
-                                   class="btn btn-pagination">
+                                <?php $params['page'] = $page + 1; ?>
+                                <a href="?<?php echo http_build_query($params); ?>" class="pagination-btn">
                                     Next <i class="fas fa-chevron-right"></i>
                                 </a>
                             <?php endif; ?>
@@ -1237,22 +1251,29 @@ require_once '../../includes/header.php';
                 <?php if ($total_log_pages > 1): ?>
                     <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #fff; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
                         <div class="pagination" style="display: flex; gap: 0.5rem;">
+                            <?php 
+                            // Helper to preserve all current GET parameters except 'log_page'
+                            $log_params = $_GET;
+                            ?>
                             <?php if ($current_log_page > 1): ?>
-                                <a href="?log_page=<?php echo ($current_log_page - 1); ?>" 
+                                <?php $log_params['log_page'] = $current_log_page - 1; ?>
+                                <a href="?<?php echo http_build_query($log_params); ?>" 
                                    class="pagination-btn" style="padding: 0.5rem 1rem; background: #fff; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">
                                     <i class="fas fa-chevron-left"></i> Previous
                                 </a>
                             <?php endif; ?>
                             
                             <?php for ($i = max(1, $current_log_page - 2); $i <= min($total_log_pages, $current_log_page + 2); $i++): ?>
-                                <a href="?log_page=<?php echo $i; ?>" 
+                                <?php $log_params['log_page'] = $i; ?>
+                                <a href="?<?php echo http_build_query($log_params); ?>" 
                                    class="pagination-btn" style="padding: 0.5rem 1rem; background: <?php echo $i === $current_log_page ? 'var(--primary-cyan)' : '#fff'; ?>; color: <?php echo $i === $current_log_page ? '#fff' : '#333'; ?>; border: 1px solid <?php echo $i === $current_log_page ? 'var(--primary-cyan)' : '#ccc'; ?>; border-radius: 4px; text-decoration: none;">
                                     <?php echo $i; ?>
                                 </a>
                             <?php endfor; ?>
                             
                             <?php if ($current_log_page < $total_log_pages): ?>
-                                <a href="?log_page=<?php echo ($current_log_page + 1); ?>" 
+                                <?php $log_params['log_page'] = $current_log_page + 1; ?>
+                                <a href="?<?php echo http_build_query($log_params); ?>" 
                                    class="pagination-btn" style="padding: 0.5rem 1rem; background: #fff; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">
                                     Next <i class="fas fa-chevron-right"></i>
                                 </a>
@@ -2262,11 +2283,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="form-group">
                         <label for="statusSelect" class="form-label" style="font-weight: 600; color: #475569;">Status</label>
                         <select name="status" id="statusSelect" class="form-control" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; color: #1e293b; background-color: #f8fafc;" required>
-                            <option value="pending">Pending</option>
                             <option value="scheduled">Scheduled</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
+                            <option value="rescheduled">Rescheduled</option>
                             <option value="no_show">No Show</option>
+                            <option value="cancelled">Cancelled</option>
                         </select>
                     </div>
                 </div>
@@ -2352,7 +2372,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 // Modal functionality
-function viewAppointment(id) {
+function viewAppointment(idOrData) {
+    const id = (typeof idOrData === 'object') ? idOrData.id : idOrData;
+    if (!id) return alert("Error: Invalid appointment reference.");
     // Show loading state
     const modal = document.getElementById('appointmentModal');
     const detailsDiv = document.getElementById('commonModalContent');
@@ -2403,6 +2425,7 @@ function viewAppointment(id) {
                         receipt: payment.receipt_path
                     } : null,
                     laboratory_image: patientInfo ? patientInfo.laboratory_image : null,
+                    reschedule_reason: appointment.reschedule_reason,
                     updated_at: appointment.updated_at
                 };
 

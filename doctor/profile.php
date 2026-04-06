@@ -748,7 +748,9 @@ require_once '../includes/header.php';
             } catch(e) { return timeString; }
         }
 
-        function viewAppointment(id) {
+        function viewAppointment(idOrData) {
+            const id = (typeof idOrData === 'object') ? idOrData.id : idOrData;
+            if (!id) return alert("Error: Invalid appointment reference.");
             fetch(`get_appointment_details.php?id=${id}`)
                 .then(response => response.json())
                 .then(data => {
@@ -782,7 +784,8 @@ require_once '../includes/header.php';
                             ref: payment.gcash_reference,
                             receipt: payment.receipt_path
                         } : null,
-                        laboratory_image: patientInfo ? patientInfo.laboratory_image : null
+                                                laboratory_image: patientInfo ? patientInfo.laboratory_image : null,
+                        reschedule_reason: appointment.reschedule_reason
                     };
                     
                     showAppointmentOverview(standardizedData, 'doctor');

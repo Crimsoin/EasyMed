@@ -166,10 +166,10 @@ $initials = strtoupper(substr($doctor['first_name'], 0, 1) . substr($doctor['las
             <div class="appointments-list" style="padding: 1rem; display: flex; flex-direction: column; gap: 1rem;">
                 <?php if (!empty($recent_appointments)): ?>
                     <?php foreach ($recent_appointments as $appointment): ?>
-                        <div class="appointment-item clickable" style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; background: white; border: 1px solid #f1f5f9; border-radius: 12px; transition: all 0.2s ease; cursor: pointer;" onclick="viewAppointment(<?php echo $appointment['id']; ?>)">
+                        <div class="appointment-item clickable" style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; background: white; border: 1px solid #f1f5f9; border-radius: 12px; transition: all 0.2s ease; cursor: pointer;" onclick='viewAppointment(<?php echo htmlspecialchars(json_encode($appointment), ENT_QUOTES, "UTF-8"); ?>)'>
                             <div class="appointment-main" style="display: flex; align-items: center; gap: 2rem; flex: 1;">
                                 <div class="doctor-brief" style="min-width: 180px;">
-                                    <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #2563eb;"><?php echo htmlspecialchars($appointment['patient_name']); ?></h4>
+                                    <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #2563eb;"><?php echo htmlspecialchars($appointment['patient_first_name'] . ' ' . $appointment['patient_last_name']); ?></h4>
                                     <span class="specialty" style="font-size: 0.8rem; color: #94a3b8; font-weight: 500;">Patient</span>
                                 </div>
                                 <div class="appointment-meta" style="display: flex; flex-direction: column; gap: 0.5rem;">

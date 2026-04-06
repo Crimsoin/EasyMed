@@ -68,14 +68,14 @@ function showAppointmentOverview(data, portalType = 'patient') {
     
     // Handle Rescheduling Reason
     let rescheduleInfoHtml = '';
-    if (data.reschedule_reason) {
+    if (status === 'rescheduled') {
         rescheduleInfoHtml = `
-            <div style="grid-column: span 2; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 20px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); overflow: hidden;">
-                <h3 style="color: #92400e; margin: 0 0 12px 0; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-info-circle" style="color: #f59e0b;"></i> Rescheduling Justification
+            <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
+                <h3 style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-clock-rotate-left" style="color: white; font-size: 0.9rem;"></i> Reason for Rescheduling
                 </h3>
-                <div style="font-size: 0.95rem; color: #78350f; font-weight: 600; line-height: 1.6; font-style: italic; background: rgba(255,255,255,0.5); padding: 12px; border-radius: 12px;">
-                    ${data.reschedule_reason}
+                <div style="font-size: 0.95rem; color: #92400e; font-weight: 600; line-height: 1.6; font-style: italic; background: #fffbeb; padding: 18px 22px; border-radius: 12px; border: 1px solid #fef3c7;">
+                    "${data.reschedule_reason || 'No specific reason provided.'}"
                 </div>
             </div>
         `;
@@ -83,19 +83,23 @@ function showAppointmentOverview(data, portalType = 'patient') {
 
     // Handle clinical records (Findings)
     let clinicalRecordsHtml = '';
+    const hasFindings = (status === 'completed' && data.notes);
+    
     if (portalType === 'doctor' || portalType === 'admin' || (portalType === 'patient' && status === 'completed')) {
         clinicalRecordsHtml = `
             <div style="grid-column: span 2; background: white; border: 1px solid #eef2f6; border-radius: 20px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden;">
                 <h3 style="background: #2563eb; color: white; margin: -28px -28px 24px -28px; padding: 16px 28px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-file-medical-alt" style="color: white; font-size: 0.9rem;"></i> Clinical Records
+                    <i class="fas fa-file-medical-alt" style="color: white; font-size: 0.9rem;"></i> ${status === 'completed' ? 'Clinical Records' : 'Medical Reason'}
                 </h3>
                 <div style="display: flex; flex-direction: column; gap: 20px;">
                     <div>
                         <label style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Reason for Visit</label>
                         <div style="font-size: 0.95rem; color: #1e293b; font-weight: 500; line-height: 1.5;">${data.reason || data.illness || 'N/A'}</div>
                     </div>
+                    
+                    ${status === 'completed' ? `
                     <div style="background: #eff6ff; border: 1px solid #dbeafe; border-radius: 12px; padding: 18px 20px; position: relative;">
-                        ${data.updated_at && status === 'completed' ? `
+                        ${data.updated_at ? `
                             <div style="font-size: 0.7rem; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 4px; margin-bottom: 8px;">
                                 <i class="fas fa-history" style="font-size: 0.65rem; color: #2563eb;"></i>
                                 Findings finalized on ${new Date(data.updated_at).toLocaleString('en-US', { 
@@ -115,6 +119,7 @@ function showAppointmentOverview(data, portalType = 'patient') {
                             ${data.notes || '"No findings recorded yet."'}
                         </div>
                     </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -311,8 +316,8 @@ function showAppointmentOverview(data, portalType = 'patient') {
                 </form>
             `;
         } 
-        // Scenario 2: Only Payment needs verification
-        else if (pStatus === 'pending_verification') {
+        // Scenario 2: Only Payment needs verification (for active/pending appointments only)
+        else if (pStatus === 'pending_verification' && status !== 'completed' && status !== 'cancelled' && status !== 'no_show') {
             primaryActionHtml = `
                 <form method="POST" style="display: inline-block;">
                     <input type="hidden" name="action" value="confirm_payment">
@@ -369,7 +374,7 @@ window.addEventListener('click', function(event) {
 
 <!-- Shared Modal HTML Structure -->
 <div id="appointmentModal" class="modal" style="z-index: 10000; display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
-    <div class="modal-content" style="max-width: 1000px; width: 95%; max-height: 85vh; overflow-y: auto; border-radius: 20px; border: none; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative; margin: 0 auto; background: white;">
+    <div class="modal-content" style="max-width: 1000px; width: 95%; max-height: 85vh; overflow-y: auto; border-radius: 20px; border: none; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative; margin: 0 auto; background: white; padding: 0;">
         <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 20px 40px; border-radius: 20px 20px 0 0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100;">
             <h3 style="margin: 0; font-size: 1.4rem; font-weight: 700; display: flex; align-items: center; gap: 12px;">
                 <i class="fas fa-file-medical"></i> Appointment Overview

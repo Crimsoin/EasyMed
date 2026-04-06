@@ -43,7 +43,7 @@ $db = Database::getInstance();
                     <button class="btn btn-primary btn-lg" onclick="EasyMed.openModal('loginModal')" style="min-width: 220px;">
                         <i class="fas fa-calendar-check"></i> Book Appointment
                     </button>
-                    <button class="btn btn-primary btn-lg" style="cursor: default; min-width: 220px;">
+                    <button class="btn btn-primary btn-lg" onclick="EasyMed.openModal('loginModal')" style="min-width: 220px;">
                         <i class="fas fa-microscope"></i> Laboratory
                     </button>
                 <?php elseif ($_SESSION['role'] === 'patient'): ?>
@@ -53,9 +53,9 @@ $db = Database::getInstance();
                     <a href="<?php echo SITE_URL; ?>/patient/dashboard_patients.php" class="btn btn-primary btn-lg" style="min-width: 220px;">
                         <i class="fas fa-tachometer-alt"></i> My Dashboard
                     </a>
-                    <button class="btn btn-primary btn-lg" style="cursor: default; min-width: 220px;">
+                    <a href="<?php echo SITE_URL; ?>/patient/book-appointment.php" class="btn btn-primary btn-lg" style="min-width: 220px;">
                         <i class="fas fa-microscope"></i> Laboratory
-                    </button>
+                    </a>
                 <?php else: ?>
                     <?php if ($_SESSION['role'] === 'doctor'): ?>
                         <a href="<?php echo SITE_URL; ?>/doctor/dashboard_doctor.php" class="btn btn-primary btn-lg">

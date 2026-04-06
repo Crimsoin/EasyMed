@@ -272,7 +272,8 @@ require_once '../includes/header.php';
                                         "status" => $appointment['payment_verification_status'] ?? 'pending',
                                         "receipt" => $appointment['receipt_file'] ? ("assets/uploads/payment_receipts/" . $appointment['receipt_file']) : null
                                     ],
-                                    "updated_at" => $appointment['updated_at']
+                                                                         "reschedule_reason" => $appointment['reschedule_reason'],
+                                     "updated_at" => $appointment['updated_at']
                                 ]);
                             ?>)'>
                                 <div class="appointment-info">

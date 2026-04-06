@@ -35,9 +35,6 @@ $current_settings = [
     'date_format' => 'Y-m-d',
     'time_format' => 'H:i',
     'timezone' => 'America/New_York',
-    'working_hours_start' => '09:00',
-    'working_hours_end' => '17:00',
-    'working_days' => json_encode(['monday', 'tuesday', 'wednesday', 'thursday', 'friday']),
     'email_notifications' => 1,
     'sms_notifications' => 0,
     'auto_confirm_appointments' => 0,
@@ -102,18 +99,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'update_settings') {
             $settings_keys = [
                 'site_name', 'site_description', 'admin_email', 'site_phone', 
-                'site_address', 'timezone', 'working_hours_start', 
-                'working_hours_end', 'working_days'
+                'site_address', 'timezone'
             ];
 
             foreach ($settings_keys as $key) {
                 if (isset($_POST[$key])) {
-                    $value = $_POST[$key];
-                    if ($key === 'working_days') {
-                        $value = json_encode($value);
-                    } else {
-                        $value = trim($value);
-                    }
+                    $value = trim($_POST[$key]);
 
                     // Validate email if present
                     if ($key === 'admin_email' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
@@ -129,16 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            // Special case: If business hours form was submitted but no working days checked
-            if (isset($_POST['section']) && $_POST['section'] === 'business_hours' && !isset($_POST['working_days'])) {
-                $empty_days = json_encode([]);
-                if (DB_TYPE === 'sqlite') {
-                    $db->query("INSERT OR REPLACE INTO system_settings (setting_key, setting_value) VALUES (?, ?)", ['working_days', $empty_days]);
-                } else {
-                    $db->query("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", ['working_days', $empty_days]);
-                }
-                $current_settings['working_days'] = $empty_days;
-            }
+
             $success_message = "Settings updated successfully!";
 
         } elseif ($action === 'update_profile') {
@@ -304,55 +286,7 @@ require_once '../../includes/header.php';
 
 
 
-            <form method="POST" class="settings-form">
-                <input type="hidden" name="section" value="business_hours">
-                <div class="content-section">
-                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <h2><i class="fas fa-clock"></i> Business Hours</h2>
-                        <button type="button" class="btn btn-sm btn-outline edit-card-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem; border: 1px solid var(--primary-cyan); color: var(--primary-cyan); background: transparent; border-radius: 6px;">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                    </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="working_hours_start" class="form-label">Start Time</label>
-                            <input type="time" id="working_hours_start" name="working_hours_start" class="form-input" 
-                                   value="<?php echo $current_settings['working_hours_start']; ?>" disabled>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="working_hours_end" class="form-label">End Time</label>
-                            <input type="time" id="working_hours_end" name="working_hours_end" class="form-input" 
-                                   value="<?php echo $current_settings['working_hours_end']; ?>" disabled>
-                        </div>
-                        
-                        <div class="form-group full-width">
-                            <label class="form-label">Working Days</label>
-                            <div class="checkbox-group">
-                                <?php 
-                                $working_days = json_decode($current_settings['working_days'], true) ?: [];
-                                $days = ['monday' => 'Monday', 'tuesday' => 'Tuesday', 'wednesday' => 'Wednesday', 'thursday' => 'Thursday', 'friday' => 'Friday', 'saturday' => 'Saturday', 'sunday' => 'Sunday'];
-                                foreach ($days as $day => $label): 
-                                ?>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" name="working_days[]" value="<?php echo $day; ?>" 
-                                               <?php echo in_array($day, $working_days) ? 'checked' : ''; ?> disabled>
-                                        <?php echo $label; ?>
-                                    </label>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="settings-actions card-actions" style="display: none; padding: 1.5rem 0 0 0; border-top: 1px solid #f0f0f0; margin-top: 1.5rem; justify-content: flex-start; gap: 1rem; background: transparent;">
-                        <button type="submit" name="action" value="update_settings" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Save Business Hours
-                        </button>
-                        <button type="button" class="btn btn-secondary cancel-card-btn">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                    </div>
-                </div>
-            </form>
+
                 <form method="POST" class="settings-form">
                     <div class="content-section">
                         <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">

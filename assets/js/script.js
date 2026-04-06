@@ -413,10 +413,15 @@ function selectRole(role) {
     const roleSelection = document.getElementById('roleSelection');
     const loginForm = document.getElementById('loginForm');
     const modalTitle = document.querySelector('#loginModal .modal-header h2');
+    const forgotLink = document.getElementById('forgotPasswordLink');
 
     if (roleSelection && loginForm) {
         roleSelection.style.display = 'none';
         loginForm.style.display = 'block';
+
+        if (forgotLink) {
+            forgotLink.style.display = (role === 'patient') ? 'inline-block' : 'none';
+        }
 
         if (modalTitle) {
             modalTitle.innerHTML = `<i class="fas fa-sign-in-alt"></i> ${capitalizeFirst(role)} Login`;
@@ -489,6 +494,223 @@ function initializeForms() {
         input.addEventListener('invalid', function (event) {
             event.preventDefault();
         });
+    });
+
+    // Forgot Password Forms
+    const forgotIdentityForm = document.getElementById('forgotIdentityForm');
+    if (forgotIdentityForm) {
+        forgotIdentityForm.addEventListener('submit', handleForgotStep1);
+    }
+
+    const forgotOtpForm = document.getElementById('forgotOtpForm');
+    if (forgotOtpForm) {
+        forgotOtpForm.addEventListener('submit', handleForgotStep2);
+        
+        // OTP Input auto-focus logic
+        const otpInputs = document.querySelectorAll('#forgotOtpInputs .otp-input');
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('keyup', (e) => {
+                if (e.key >= 0 && e.key <= 9) {
+                    if (index < otpInputs.length - 1) otpInputs[index + 1].focus();
+                } else if (e.key === 'Backspace') {
+                    if (index > 0) otpInputs[index - 1].focus();
+                }
+            });
+        });
+    }
+
+    const forgotResetForm = document.getElementById('forgotResetForm');
+    if (forgotResetForm) {
+        forgotResetForm.addEventListener('submit', handleForgotStep3);
+    }
+}
+
+// Forgot Password Step 1: Identity
+function handleForgotStep1(event) {
+    event.preventDefault();
+    const identity = document.getElementById('forgotIdentity').value;
+    const btn = event.target.querySelector('button');
+    const originalText = btn.innerHTML;
+
+    if (!identity) {
+        showModalAlert('forgotPasswordAlert', 'Please enter your username or email', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending code...';
+
+    const formData = new FormData();
+    formData.append('action', 'initiate');
+    formData.append('identity', identity);
+
+    const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+    
+    fetch(baseUrl + '/includes/ajax/forgot_password.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+
+        if (data.success) {
+            document.getElementById('forgotStep1').style.display = 'none';
+            document.getElementById('forgotStep2').style.display = 'block';
+            showModalAlert('forgotPasswordAlert', data.message, 'success');
+        } else {
+            showModalAlert('forgotPasswordAlert', data.message, 'error');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        showModalAlert('forgotPasswordAlert', 'An error occurred. Please try again.', 'error');
+    });
+}
+
+// Forgot Password Step 2: Verify OTP
+function handleForgotStep2(event) {
+    event.preventDefault();
+    const identity = document.getElementById('forgotIdentity').value;
+    const otpInputs = document.querySelectorAll('#forgotOtpInputs .otp-input');
+    let otp = '';
+    otpInputs.forEach(input => otp += input.value);
+
+    if (otp.length !== 6) {
+        showModalAlert('forgotPasswordAlert', 'Please enter the 6-digit code', 'error');
+        return;
+    }
+
+    const btn = event.target.querySelector('button');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+
+    const formData = new FormData();
+    formData.append('action', 'verify');
+    formData.append('identity', identity);
+    formData.append('otp', otp);
+
+    const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+
+    fetch(baseUrl + '/includes/ajax/forgot_password.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+
+        if (data.success) {
+            document.getElementById('forgotStep2').style.display = 'none';
+            document.getElementById('forgotStep3').style.display = 'block';
+            showModalAlert('forgotPasswordAlert', data.message, 'success');
+        } else {
+            showModalAlert('forgotPasswordAlert', data.message, 'error');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        showModalAlert('forgotPasswordAlert', 'Verification failed.', 'error');
+    });
+}
+
+// Forgot Password Step 3: Reset
+function handleForgotStep3(event) {
+    event.preventDefault();
+    const identity = document.getElementById('forgotIdentity').value;
+    const otpInputs = document.querySelectorAll('#forgotOtpInputs .otp-input');
+    let otp = '';
+    otpInputs.forEach(input => otp += input.value);
+    
+    const password = document.getElementById('forgotNewPassword').value;
+    const confirm = document.getElementById('forgotConfirmPassword').value;
+
+    if (password !== confirm) {
+        showModalAlert('forgotPasswordAlert', 'Passwords do not match', 'error');
+        return;
+    }
+
+    const btn = event.target.querySelector('button');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+
+    const formData = new FormData();
+    formData.append('action', 'reset');
+    formData.append('identity', identity);
+    formData.append('otp', otp);
+    formData.append('password', password);
+    formData.append('confirm_password', confirm);
+
+    const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+
+    fetch(baseUrl + '/includes/ajax/forgot_password.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+
+        if (data.success) {
+            showModalAlert('forgotPasswordAlert', data.message, 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            showModalAlert('forgotPasswordAlert', data.message, 'error');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        showModalAlert('forgotPasswordAlert', 'Reset failed. Please try again.', 'error');
+    });
+}
+
+function openForgotPassword() {
+    closeModal();
+    setTimeout(() => {
+        openModal('forgotPasswordModal');
+        // Reset steps
+        document.getElementById('forgotStep1').style.display = 'block';
+        document.getElementById('forgotStep2').style.display = 'none';
+        document.getElementById('forgotStep3').style.display = 'none';
+        
+        // Clear all inputs
+        document.getElementById('forgotIdentityForm').reset();
+        document.getElementById('forgotOtpForm').reset();
+        document.getElementById('forgotResetForm').reset();
+    }, 400);
+}
+
+function resendForgotOTP() {
+    const identity = document.getElementById('forgotIdentity').value;
+    if (!identity) return;
+    
+    const formData = new FormData();
+    formData.append('action', 'initiate');
+    formData.append('identity', identity);
+
+    const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+    
+    fetch(baseUrl + '/includes/ajax/forgot_password.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showModalAlert('forgotPasswordAlert', 'New code sent to your email.', 'success');
+        } else {
+            showModalAlert('forgotPasswordAlert', data.message, 'error');
+        }
     });
 }
 
@@ -1076,6 +1298,26 @@ style.textContent = `
     .dropdown-menu a:last-child {
         border-bottom: none;
     }
+
+    .otp-input {
+        width: 45px;
+        height: 55px;
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #0891b2;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    .otp-input:focus {
+        border-color: #0891b2;
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.1);
+        transform: translateY(-2px);
+    }
 `;
 document.head.appendChild(style);
 
@@ -1129,5 +1371,7 @@ window.EasyMed = {
     formatTime,
     isValidEmail,
     isValidPhone,
-    verifyOTP
+    verifyOTP,
+    openForgotPassword,
+    resendForgotOTP
 };

@@ -291,7 +291,7 @@ require_once '../includes/header.php';
                                 'payment_amount' => $activity['payment_amount'] ?? 0,
                                 'gcash_reference' => $activity['gcash_reference'] ?? 'N/A',
                                 'receipt_path' => $activity['payment_receipt_path'] ?? '',
-                                'laboratory_image_path' => $activity_patient_info['laboratory_image'] ?? null, 'updated_at' => $activity['updated_at']
+                                                                 'laboratory_image_path' => $activity_patient_info['laboratory_image'] ?? null, 'reschedule_reason' => $activity['reschedule_reason'], 'updated_at' => $activity['updated_at']
                             ]), ENT_QUOTES, 'UTF-8'); ?>)" 
                              onmouseover="this.style.borderColor='#3b82f6'; this.style.backgroundColor='#f8fafc';" 
                              onmouseout="this.style.borderColor='#e2e8f0'; this.style.backgroundColor='transparent';">

@@ -217,13 +217,108 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         </button>
                     </div>
                     
-                    <div class="auth-links">
+                    <div class="auth-links" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
                         <a href="#" onclick="EasyMed.goBackToRoleSelection()" class="auth-link">
-                            <i class="fas fa-arrow-left"></i> Back to Role Selection
+                            <i class="fas fa-arrow-left"></i> Back
+                        </a>
+                        <a href="#" onclick="EasyMed.openForgotPassword()" class="auth-link" id="forgotPasswordLink" style="color: #64748b; font-size: 0.9rem;">
+                            Forgot Password?
                         </a>
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div id="forgotPasswordModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-key"></i> Reset Password</h2>
+            <p class="modal-subtitle">Recover your account access securely</p>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body" style="padding: 2rem 2.5rem;">
+            <div id="forgotPasswordAlert"></div>
+            
+            <!-- Step 1: Identity -->
+            <div id="forgotStep1">
+                <form id="forgotIdentityForm">
+                    <div class="form-group">
+                        <label class="form-label">Username or Email</label>
+                        <div class="input-group">
+                            <span class="input-icon"><i class="fas fa-user-circle"></i></span>
+                            <input type="text" id="forgotIdentity" class="form-control" placeholder="Enter your username or email" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" style="margin-top: 1rem;">
+                        Send Reset Code <i class="fas fa-paper-plane" style="margin-left: 8px;"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Step 2: OTP Verification -->
+            <div id="forgotStep2" style="display: none;">
+                <div class="text-center" style="margin-bottom: 2rem;">
+                    <div style="background: #eff6ff; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto; color: #2563eb;">
+                        <i class="fas fa-envelope-open-text" style="font-size: 1.5rem;"></i>
+                    </div>
+                    <p style="color: #64748b; font-size: 0.95rem;">We've sent a 6-digit verification code to your registered email address.</p>
+                </div>
+                <form id="forgotOtpForm">
+                    <div class="form-group">
+                        <div style="display: flex; gap: 10px; justify-content: center;" id="forgotOtpInputs">
+                            <input type="text" maxlength="1" class="otp-input" required>
+                            <input type="text" maxlength="1" class="otp-input" required>
+                            <input type="text" maxlength="1" class="otp-input" required>
+                            <input type="text" maxlength="1" class="otp-input" required>
+                            <input type="text" maxlength="1" class="otp-input" required>
+                            <input type="text" maxlength="1" class="otp-input" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" style="margin-top: 2rem;">
+                        Verify Code <i class="fas fa-check-circle" style="margin-left: 8px;"></i>
+                    </button>
+                    <p class="text-center" style="margin-top: 1.5rem; font-size: 0.9rem; color: #64748b;">
+                        Didn't receive the code? <a href="#" onclick="EasyMed.resendForgotOTP()" style="color: #2563eb; font-weight: 600;">Resend</a>
+                    </p>
+                </form>
+            </div>
+
+            <!-- Step 3: New Password -->
+            <div id="forgotStep3" style="display: none;">
+                <form id="forgotResetForm">
+                    <div class="form-group">
+                        <label class="form-label">New Password</label>
+                        <div class="input-group">
+                            <span class="input-icon"><i class="fas fa-lock"></i></span>
+                            <input type="password" id="forgotNewPassword" class="form-control" placeholder="Minimum 8 characters" required minlength="8">
+                            <span class="password-toggle" onclick="EasyMed.togglePassword('forgotNewPassword')">
+                                <i class="fas fa-eye"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm New Password</label>
+                        <div class="input-group">
+                            <span class="input-icon"><i class="fas fa-lock"></i></span>
+                            <input type="password" id="forgotConfirmPassword" class="form-control" placeholder="Repeat new password" required minlength="8">
+                            <span class="password-toggle" onclick="EasyMed.togglePassword('forgotConfirmPassword')">
+                                <i class="fas fa-eye"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" style="margin-top: 1.5rem;">
+                        Reset Password <i class="fas fa-save" style="margin-left: 8px;"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="modal-footer" style="padding: 1.25rem; display: flex; justify-content: center; border-top: 1px solid #f1f5f9; background: #fdfdfd; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+            <a href="#" onclick="EasyMed.closeModal(); EasyMed.openModal('loginModal')" style="color: #64748b; font-size: 0.9rem; text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 8px; transition: color 0.3s ease;">
+                <i class="fas fa-arrow-left"></i> Back to Login
+            </a>
         </div>
     </div>
 </div>

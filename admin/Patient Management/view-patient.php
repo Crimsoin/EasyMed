@@ -58,8 +58,9 @@ if ($user['role'] === 'patient') {
         $recentActivity = $db->fetchAll("
             SELECT a.*, 
                    du.first_name as doctor_first_name, du.last_name as doctor_last_name,
-                   doc.specialty, doc.consultation_fee,
-                   pay.amount as paid_amount
+                   doc.specialty, doc.consultation_fee, doc.license_number,
+                   pay.amount as payment_amount, pay.status as payment_status, 
+                   pay.gcash_reference, pay.receipt_file
             FROM appointments a
             JOIN doctors doc ON a.doctor_id = doc.id
             JOIN users du ON doc.user_id = du.id
@@ -67,13 +68,40 @@ if ($user['role'] === 'patient') {
             WHERE a.patient_id = ?
             ORDER BY a.appointment_date DESC, a.appointment_time DESC
             LIMIT 10", [$patientId]);
+            
+        // Normalize patient info
+        foreach ($recentActivity as &$appt) {
+            if (!empty($appt['patient_info'])) {
+                $decoded = json_decode($appt['patient_info'], true);
+                if (is_array($decoded)) {
+                    $appt['patient_dob'] = $decoded['date_of_birth'] ?? null;
+                    $appt['patient_gender'] = $decoded['gender'] ?? null;
+                    $appt['patient_address'] = $decoded['address'] ?? null;
+                    $appt['patient_phone'] = $decoded['phone_number'] ?? null;
+                    $appt['patient_email'] = $decoded['email'] ?? null;
+                    $appt['patient_first_name'] = $decoded['first_name'] ?? null;
+                    $appt['patient_last_name'] = $decoded['last_name'] ?? null;
+                    $appt['illness'] = $decoded['illness'] ?? null;
+                    $appt['purpose'] = $decoded['purpose'] ?? null;
+                    $appt['relationship'] = $decoded['relationship'] ?? 'Self';
+                    $appt['laboratory_image'] = $decoded['laboratory_image'] ?? null;
+                }
+            }
+            if (!empty($appt['receipt_file'])) {
+                $appt['receipt_path'] = 'assets/uploads/payment_receipts/' . $appt['receipt_file'];
+            }
+        }
+        unset($appt);
     }
 } elseif ($user['role'] === 'doctor') {
     $doctorId = $db->fetch("SELECT id FROM doctors WHERE user_id = ?", [$userId])['id'] ?? 0;
     if ($doctorId) {
         $recentActivity = $db->fetchAll("
             SELECT a.*, 
-                   pu.first_name as patient_first_name, pu.last_name as patient_last_name
+                   pu.first_name as patient_first_name, pu.last_name as patient_last_name,
+                   pu.email as patient_email,
+                   COALESCE(p.phone, pu.phone) as patient_phone,
+                   COALESCE(p.address, pu.address) as patient_address
             FROM appointments a
             JOIN patients p ON a.patient_id = p.id
             JOIN users pu ON p.user_id = pu.id
@@ -160,54 +188,41 @@ function formatDate(dateString) {
             });
         }
 
-function viewAppointment(id) {
-    fetch(`../Appointment/get_appointment_details.php?id=${id}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert("Error: " + data.error);
-                return;
-            }
-            
-            const appointment = data.appointment;
-            const payment = data.payment;
-            const patientInfo = data.patient_info;
-            
-            // Standardize for shared renderer
-            const standardizedData = {
-                id: appointment.id,
-                name: (appointment.patient_first_name + ' ' + (appointment.patient_last_name || '')),
-                status: appointment.status,
-                date: formatDate(appointment.appointment_date),
-                time: formatTime(appointment.appointment_time),
-                purpose: appointment.purpose === 'consultation' ? 'Medical Consultation' : (appointment.reason_for_visit || appointment.purpose),
-                doctor: 'Dr. ' + appointment.doctor_first_name + ' ' + appointment.doctor_last_name,
-                specialty: appointment.specialty,
-                license: appointment.license_number,
-                fee: parseFloat(appointment.display_fee || appointment.consultation_fee || 0).toFixed(2),
-                relationship: appointment.relationship || 'Self',
-                dob: appointment.patient_dob ? formatDate(appointment.patient_dob) : 'N/A',
-                gender: appointment.patient_gender,
-                email: appointment.patient_email,
-                phone: appointment.patient_phone,
-                address: appointment.patient_address,
-                reason: appointment.illness || appointment.reason_for_visit,
-                notes: appointment.notes,
-                payment: payment ? {
-                    amount: parseFloat(payment.amount).toFixed(2),
-                    status: payment.status,
-                    ref: payment.gcash_reference,
-                    receipt: payment.receipt_path
-                } : null,
-                laboratory_image: patientInfo ? patientInfo.laboratory_image : null,
-                updated_at: appointment.updated_at
-            };
-            
-            showAppointmentOverview(standardizedData, 'admin');
-        })
-        .catch(error => {
-            console.error('Error fetching appointment details:', error);
-        });
+function viewAppointment(appointment) {
+    if (!appointment) return;
+    
+    // Standardize for shared renderer
+    const standardizedData = {
+        id: appointment.id,
+        name: (appointment.patient_first_name + ' ' + (appointment.patient_last_name || '')),
+        status: appointment.status,
+        date: formatDate(appointment.appointment_date),
+        time: formatTime(appointment.appointment_time),
+        purpose: appointment.purpose === 'consultation' ? 'Medical Consultation' : (appointment.reason_for_visit || appointment.purpose),
+        doctor: 'Dr. ' + appointment.doctor_first_name + ' ' + appointment.doctor_last_name,
+        specialty: appointment.specialty,
+        license: appointment.license_number,
+        fee: parseFloat(appointment.display_fee || appointment.consultation_fee || 0).toFixed(2),
+        relationship: appointment.relationship || 'Self',
+        dob: appointment.patient_dob ? formatDate(appointment.patient_dob) : 'N/A',
+        gender: appointment.patient_gender,
+        email: appointment.patient_email,
+        phone: appointment.patient_phone,
+        address: appointment.patient_address,
+        reason: appointment.illness || appointment.reason_for_visit,
+        notes: appointment.notes,
+        payment: appointment.payment_amount ? {
+            amount: parseFloat(appointment.payment_amount).toFixed(2),
+            status: appointment.payment_status,
+            ref: appointment.gcash_reference,
+            receipt: appointment.receipt_path
+        } : null,
+        laboratory_image: appointment.laboratory_image,
+        reschedule_reason: appointment.reschedule_reason,
+        updated_at: appointment.updated_at
+    };
+    
+    showAppointmentOverview(standardizedData, 'admin');
 }
 
 function toggleUserStatus(userId) {

@@ -736,6 +736,19 @@
     box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
 }
 
+.btn-reset {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.btn-reset:hover {
+    background: #8b5cf6;
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
 .btn-delete {
     background: rgba(244, 67, 54, 0.15);
     color: var(--error);

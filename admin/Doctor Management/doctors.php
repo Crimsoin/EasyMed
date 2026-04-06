@@ -204,6 +204,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_type = 'error';
             error_log("Doctor deletion error: " . $e->getMessage());
         }
+    } elseif ($action === 'reset_password' && $doctor_id) {
+        try {
+            $defaultPassword = 'password123';
+            $hashedPassword = password_hash($defaultPassword, PASSWORD_DEFAULT);
+            $result = $db->update('users', ['password' => $hashedPassword], 'id = ?', [$doctor_id]);
+            
+            if ($result > 0) {
+                // Send email notification to the doctor
+                try {
+                    $doctor_info = $db->fetch("SELECT first_name, last_name, email FROM users WHERE id = ?", [$doctor_id]);
+                    if ($doctor_info && !empty($doctor_info['email'])) {
+                        $emailService->sendPasswordResetNotification(
+                            $doctor_info['email'],
+                            $doctor_info['first_name'] . ' ' . $doctor_info['last_name'],
+                            $defaultPassword,
+                            'doctor'
+                        );
+                    }
+                    $message = "Doctor password reset successfully. New password: $defaultPassword. A notification has been sent to their email.";
+                    $message_type = 'success';
+                } catch (Exception $emailEx) {
+                    error_log("Password reset email failed for doctor {$doctor_id}: " . $emailEx->getMessage());
+                    $message = "Doctor password reset successfully. New password: $defaultPassword. (Note: Email notification failed)";
+                    $message_type = 'success';
+                }
+            } else {
+                $message = "Failed to reset password - doctor not found.";
+                $message_type = 'error';
+            }
+        } catch (Exception $e) {
+            $message = "Error resetting password: " . $e->getMessage();
+            $message_type = 'error';
+        }
     }
 }
 
@@ -501,7 +534,13 @@ require_once '../../includes/header.php';
                                                 <?php endif; ?>
                                             </form>
                                             
-
+                                            <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to reset password for this doctor to default (\'password123\')?')">
+                                                <input type="hidden" name="action" value="reset_password">
+                                                <input type="hidden" name="doctor_id" value="<?php echo $doctor['id']; ?>">
+                                                <button type="submit" class="btn-action btn-reset" title="Reset Password">
+                                                    <i class="fas fa-key"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>

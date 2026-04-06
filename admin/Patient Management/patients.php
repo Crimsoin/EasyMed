@@ -434,7 +434,7 @@ require_once '../../includes/header.php';
 
                                     <?php if ($patient['id'] !== $_SESSION['user_id']): ?>
                                         <a href="patients.php?action=reset_password&id=<?php echo $patient['id']; ?>" 
-                                           class="btn-action btn-toggle" title="Reset Password"
+                                           class="btn-action btn-reset" title="Reset Password"
                                            onclick="return confirm('Are you sure you want to reset this patient\'s password to \'password123\'?')">
                                             <i class="fas fa-key"></i>
                                         </a>

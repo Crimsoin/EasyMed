@@ -186,7 +186,7 @@ $profile_user_id = $user['id'];
 <!-- Appointments History -->
 <div class="info-section history-section" style="padding: 0 !important; overflow: hidden; background: white; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid #e5e7eb;">
     <div class="section-header" style="background: transparent; padding: 1.5rem 2rem; margin-bottom: 0; border-bottom: 1px solid #edf2f7; display: flex; justify-content: space-between; align-items: center; border-radius: 0;">
-        <h2 style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin: 0;">Recent Appointments</h2>
+        <h2 style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin: 0;">Patient History</h2>
         <a href="<?php echo $is_admin ? '../Dashboard/dashboard.php' : 'appointments.php'; ?>" class="view-all-btn">
             <i class="fas fa-list-ul"></i> View All
         </a>
@@ -195,7 +195,7 @@ $profile_user_id = $user['id'];
     <?php if (!empty($recentActivity)): ?>
     <div class="appointments-list" style="padding: 1.5rem 2rem; display: flex; flex-direction: column; gap: 1.25rem;">
         <?php foreach ($recentActivity as $activity): ?>
-        <div class="appointment-item clickable" style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem; background: white; border: 1px solid #f1f5f9; border-radius: 16px; transition: all 0.2s ease; cursor: pointer; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);" onclick="viewAppointment(<?php echo $activity['id']; ?>)">
+        <div class="appointment-item clickable" style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem; background: white; border: 1px solid #f1f5f9; border-radius: 16px; transition: all 0.2s ease; cursor: pointer; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);" onclick='viewAppointment(<?php echo htmlspecialchars(json_encode($activity), ENT_QUOTES, "UTF-8"); ?>)'>
             <div class="appointment-main" style="display: flex; align-items: center; gap: 4rem; flex: 1;">
                 <div class="doctor-brief" style="min-width: 200px;">
                     <?php if ($user['role'] === 'patient'): ?>

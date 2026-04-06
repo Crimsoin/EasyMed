@@ -427,7 +427,12 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
             });
         }
 
-        function viewAppointment(id) {
+        function viewAppointment(idOrData) {
+            const id = (typeof idOrData === 'object') ? idOrData.id : idOrData;
+            if (!id) {
+                alert("Error: Unable to identify appointment ID.");
+                return;
+            }
             fetch(`../patient/get_appointment_details.php?id=${id}`)
                 .then(response => response.json())
                 .then(data => {
@@ -466,7 +471,8 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
                             ref: payment.gcash_reference,
                             receipt: payment.receipt_path
                         } : null,
-                        laboratory_image: patientInfo ? patientInfo.laboratory_image : null
+                                                laboratory_image: patientInfo ? patientInfo.laboratory_image : null,
+                        reschedule_reason: appointment.reschedule_reason
                     };
                     
                     showAppointmentOverview(standardizedData, 'patient');

@@ -113,6 +113,65 @@ class EmailService {
             return ['success' => false, 'message' => 'Failed to send email'];
         }
     }
+
+    /**
+     * Shared Email Design Wrapper
+     */
+    private function getTemplateWrapper($title, $content_html, $preheader = '') {
+        $support_email    = getEmailClinicSetting('clinic_email', 'support@easymedclinic.com');
+        $clinic_phone     = getEmailClinicSetting('clinic_phone', '+63-2-8123-4567');
+        $clinic_address   = getEmailClinicSetting('clinic_address', '123 Healthcare Street, Medical District, Manila, Philippines');
+        $year = date('Y');
+
+        return '<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>' . htmlspecialchars($title) . '</title>
+            <style>
+                body { font-family: "Inter", -apple-system, system-ui, sans-serif; line-height: 1.6; color: #1e293b; margin: 0; padding: 0; background: #f8fafc; }
+                .wrapper { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.1); border: 1px solid #e2e8f0; }
+                .header { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: #ffffff; padding: 48px 40px; text-align: center; }
+                .header h1 { margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.025em; }
+                .header p { margin: 8px 0 0 0; opacity: 0.9; font-size: 0.95rem; }
+                .content { padding: 48px; }
+                .content h2 { color: #0f172a; font-size: 1.5rem; font-weight: 800; margin-top: 0; margin-bottom: 24px; letter-spacing: -0.02em; }
+                .content p { font-size: 1.05rem; margin-bottom: 1.5rem; color: #334155; }
+                .info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 32px 0; }
+                .info-box h3 { margin-top: 0; font-size: 0.85rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+                .info-item { display: flex; margin-bottom: 12px; }
+                .info-label { font-weight: 700; color: #475569; width: 140px; flex-shrink: 0; font-size: 0.9rem; }
+                .info-value { color: #1e293b; font-weight: 500; font-size: 0.95rem; }
+                .btn-wrap { text-align: center; margin: 32px 0; }
+                .btn { display: inline-block; background: #2563eb; color: #ffffff !important; text-decoration: none !important; padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+                .footer { padding: 32px 48px; background: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center; color: #64748b; font-size: 0.825rem; }
+                .social-copy { margin-top: 16px; color: #94a3b8; }
+                .security-note { background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 16px 20px; font-size: 0.875rem; color: #991b1b; }
+                @media (max-width: 600px) { .content { padding: 32px 24px; } .header { padding: 40px 24px; } .info-label { width: 100px; } }
+            </style>
+        </head>
+        <body>
+            <div style="display: none; max-height: 0px; overflow: hidden;">' . ($preheader ?: 'EasyMed Clinical Update') . '</div>
+            <div class="wrapper">
+                <div class="header">
+                    <h1>🏥 EasyMed</h1>
+                    <p>Clinical Management System</p>
+                </div>
+                <div class="content">
+                    ' . $content_html . '
+                </div>
+                <div class="footer">
+                    <p><strong>EasyMed Clinic</strong></p>
+                    <p>' . $clinic_address . '</p>
+                    <p>Phone: ' . $clinic_phone . ' &nbsp;|&nbsp; Email: ' . $support_email . '</p>
+                    <div class="social-copy">&copy; ' . $year . ' EasyMed. All rights reserved.</div>
+                </div>
+            </div>
+        </body>
+        </html>';
+    }
+
     
     /**
      * Send appointment scheduled notification
@@ -189,312 +248,201 @@ class EmailService {
     }
 
     /**
+     * Send password reset OTP for patient/doctor self-recovery
+     */
+    public function sendPasswordResetOTP($to_email, $to_name, $otp) {
+        $subject = "Your EasyMed Password Reset Code";
+        $body    = $this->getPasswordResetOTPTemplate($to_name, $otp);
+
+        return $this->sendEmail($to_email, $to_name, $subject, $body, true);
+    }
+
+    /**
      * Password reset email template
      */
     private function getPasswordResetTemplate($name, $new_password, $role) {
-        $role_label       = ucfirst($role);
-        $login_url        = SITE_URL . '/index.php';
-        $support_email    = getEmailClinicSetting('clinic_email', 'support@easymedclinic.com');
-        $clinic_phone     = getEmailClinicSetting('clinic_phone', '+63-2-8123-4567');
-        $clinic_address   = getEmailClinicSetting('clinic_address', '123 Healthcare Street, Medical District, Manila, Philippines');
-
-        return '
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Password Reset Notification</title>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f4f4f4; }
-                .wrapper { max-width: 620px; margin: 30px auto; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-                .header { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; padding: 30px 40px; text-align: center; }
-                .header h1 { margin: 0 0 5px 0; font-size: 1.8rem; }
-                .header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
-                .content   { padding: 35px 40px; }
-                .alert-box { background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 15px 20px; margin: 20px 0; }
-                .alert-box p { margin: 0; color: #92400e; font-size: 0.9rem; }
-                .cred-box  { background: #f0f9ff; border: 2px dashed #2563eb; border-radius: 8px; padding: 20px 25px; margin: 20px 0; text-align: center; }
-                .cred-box .label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-                .cred-box .password { font-size: 1.6rem; font-weight: 800; color: #1e3a8a; letter-spacing: 3px; font-family: monospace; }
-                .btn { display: inline-block; background: linear-gradient(135deg, #2563eb, #0891b2); color: #fff !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 1rem; margin: 20px 0; }
-                .footer { background: #f8fafc; padding: 20px 40px; text-align: center; color: #64748b; font-size: 0.82rem; border-top: 1px solid #e2e8f0; }
-                .security-note { background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 6px; padding: 12px 18px; margin-top: 20px; }
-                .security-note p { margin: 0; color: #991b1b; font-size: 0.88rem; }
-            </style>
-        </head>
-        <body>
-            <div class="wrapper">
-                <div class="header">
-                    <h1>🏥 EasyMed Clinic</h1>
-                    <p>Secure Account Notification</p>
-                </div>
-
-                <div class="content">
-                    <p>Dear <strong>' . htmlspecialchars($name) . '</strong>,</p>
-
-                    <p>This is an automated notification to inform you that an <strong>EasyMed administrator</strong> has reset the password for your <strong>' . $role_label . '</strong> account.</p>
-
-                    <div class="cred-box">
-                        <div class="label">🔑 Your Temporary Password</div>
-                        <div class="password">' . htmlspecialchars($new_password) . '</div>
-                    </div>
-
-                    <div class="alert-box">
-                        <p>⚠️ <strong>Action Required:</strong> Please log in immediately and change this temporary password from your profile settings to secure your account.</p>
-                    </div>
-
-                    <p style="text-align:center;">
-                        <a href="' . $login_url . '" class="btn">🔐 Log In to EasyMed</a>
-                    </p>
-
-                    <div class="security-note">
-                        <p>🛡️ <strong>Did not expect this?</strong> If you did not request a password reset, please contact our support team immediately at <a href="mailto:' . $support_email . '">' . $support_email . '</a> or call us at ' . $clinic_phone . '.</p>
-                    </div>
-
-                    <p style="margin-top: 25px;">Thank you for using <strong>EasyMed Clinic</strong>.</p>
-                </div>
-
-                <div class="footer">
-                    <p>EasyMed Clinic &nbsp;|&nbsp; 📞 ' . $clinic_phone . ' &nbsp;|&nbsp; 📧 ' . $support_email . '</p>
-                    <p>' . $clinic_address . '</p>
-                    <p style="margin-top:10px; color:#94a3b8;">This is an automated security email. Please do not reply directly to this message.</p>
-                </div>
+        $login_url = SITE_URL . '/index.php';
+        $content = '
+            <h2>Password Reset Notification</h2>
+            <p>Dear <strong>' . htmlspecialchars($name) . '</strong>,</p>
+            <p>An administrator has reset your <strong>' . ucfirst($role) . '</strong> account password. Please use the temporary credentials below to log in:</p>
+            
+            <div class="info-box" style="text-align: center; border: 2px dashed #2563eb;">
+                <div style="font-size: 0.86rem; color: #64748b; margin-bottom: 8px; font-weight: 700;">TEMPORARY PASSWORD</div>
+                <div style="font-size: 1.75rem; font-weight: 800; color: #1e3a8a; letter-spacing: 2px; font-family: monospace;">' . htmlspecialchars($new_password) . '</div>
             </div>
-        </body>
-        </html>';
+
+            <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 16px 20px; font-size: 0.9rem; color: #92400e; margin-bottom: 24px;">
+                <strong>Action Required:</strong> Log in and change this temporary password immediately from your profile settings.
+            </div>
+
+            <div class="btn-wrap">
+                <a href="' . $login_url . '" class="btn">Log In to EasyMed</a>
+            </div>
+
+            <div class="security-note">
+                <strong>Security Alert:</strong> If you did not expect this, please contact support immediately.
+            </div>';
+
+        return $this->getTemplateWrapper("Password Reset", $content, "Your EasyMed password has been reset.");
     }
-    
+
+    /**
+     * Password reset OTP email template
+     */
+    private function getPasswordResetOTPTemplate($name, $otp) {
+        $content = '
+            <h2>Verification Code</h2>
+            <p>Hi <strong>' . htmlspecialchars($name) . '</strong>,</p>
+            <p>We received a request to reset your password. Use the code below to proceed. It is valid for <strong>15 minutes</strong>.</p>
+            
+            <div class="info-box" style="text-align: center; background: #f1f5f9;">
+                <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px; font-weight: 700;">SECURITY CODE</div>
+                <div style="font-size: 3rem; font-weight: 800; color: #0891b2; letter-spacing: 0.2em; font-family: monospace;">' . $otp . '</div>
+            </div>
+
+            <p style="font-size: 0.95rem;">If you did not request this, you can safely ignore this email.</p>
+
+            <div class="security-note">
+                Never share this code with anyone. EasyMed staff will never ask for your verification code.
+            </div>';
+
+        return $this->getTemplateWrapper("Reset Verification", $content, "Your 6-digit password reset code.");
+    }
+
     /**
      * Get appointment scheduled email template
      */
     private function getAppointmentScheduledTemplate($data) {
-        return '
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Appointment Scheduled</title>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
-                .content { padding: 20px; background: #f9f9f9; }
-                .appointment-details { background: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
-                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-                .btn { background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🏥 EasyMed Clinic</h1>
-                    <h2>Appointment Scheduled</h2>
+        $content = '
+            <h2>Appointment Scheduled</h2>
+            <p>Dear <strong>' . htmlspecialchars($data['patient_name']) . '</strong>,</p>
+            <p>Your appointment has been successfully scheduled. We look forward to seeing you at our clinic.</p>
+            
+            <div class="info-box">
+                <h3>📅 Appointment Details</h3>
+                <div class="info-item">
+                    <div class="info-label">Doctor</div>
+                    <div class="info-value">Dr. ' . htmlspecialchars($data['doctor_name']) . '</div>
                 </div>
-                
-                <div class="content">
-                    <p>Dear ' . htmlspecialchars($data['patient_name']) . ',</p>
-                    
-                    <p>Your appointment has been successfully scheduled. Here are the details:</p>
-                    
-                    <div class="appointment-details">
-                        <h3>📅 Appointment Details</h3>
-                        <p><strong>Date:</strong> ' . htmlspecialchars($data['appointment_date']) . '</p>
-                        <p><strong>Time:</strong> ' . htmlspecialchars($data['appointment_time']) . '</p>
-                        <p><strong>Doctor:</strong> ' . htmlspecialchars($data['doctor_name']) . '</p>
-                        <p><strong>Specialty:</strong> ' . htmlspecialchars($data['specialty'] ?? 'General Medicine') . '</p>
-                        <p><strong>Reason:</strong> ' . htmlspecialchars($data['reason'] ?? 'General consultation') . '</p>
-                        <p><strong>Reference:</strong> #' . $data['appointment_id'] . '</p>
-                    </div>
-                    
-                    <p><strong>⚠️ Important Reminders:</strong></p>
-                    <ul>
-                        <li>Please arrive 15 minutes before your scheduled time</li>
-                        <li>Bring a valid ID and any previous medical records</li>
-                        <li>If you need to reschedule, please contact us at least 24 hours in advance</li>
-                    </ul>
-                    
-                    <p>If you have any questions or need to make changes to your appointment, please contact us.</p>
-                    
-                    <p>Thank you for choosing EasyMed Clinic!</p>
+                <div class="info-item">
+                    <div class="info-label">Date</div>
+                    <div class="info-value">' . htmlspecialchars($data['appointment_date']) . '</div>
                 </div>
-                
-                <div class="footer">
-                    <p>EasyMed Clinic | 📞 ' . getEmailClinicSetting('clinic_phone', '+63-2-8123-4567') . ' | 📧 ' . getEmailClinicSetting('clinic_email', 'info@easymed.com') . '</p>
-                    <p>' . getEmailClinicSetting('clinic_address', '123 Healthcare Street, Medical District, Manila, Philippines') . '</p>
+                <div class="info-item">
+                    <div class="info-label">Time</div>
+                    <div class="info-value">' . htmlspecialchars($data['appointment_time']) . '</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Service</div>
+                    <div class="info-value">' . htmlspecialchars($data['purpose'] ?? $data['specialty'] ?? 'Consultation') . '</div>
+                </div>
+                <div class="info-item" style="margin-bottom: 0;">
+                    <div class="info-label">Reference</div>
+                    <div class="info-value">#APT-' . str_pad($data['appointment_id'], 5, "0", STR_PAD_LEFT) . '</div>
                 </div>
             </div>
-        </body>
-        </html>';
+
+            <p><strong>Reminders:</strong> Please arrive 15 minutes early and bring a valid ID.</p>';
+
+        return $this->getTemplateWrapper("Appointment Scheduled", $content, "Your appointment with EasyMed has been scheduled.");
     }
-    
-    /**
-     * Get appointment rescheduled email template
-     */
-    private function getAppointmentRescheduledTemplate($data, $old_date = null, $old_time = null) {
-        $old_info = '';
-        if ($old_date && $old_time) {
-            $old_info = '
-                <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0;">
-                    <p><strong>Previous Schedule:</strong></p>
-                    <p>Date: ' . date('F j, Y', strtotime($old_date)) . '</p>
-                    <p>Time: ' . date('g:i A', strtotime($old_time)) . '</p>
-                </div>';
-        }
-        
-        return '
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Appointment Rescheduled</title>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: #ff9800; color: white; padding: 20px; text-align: center; }
-                .content { padding: 20px; background: #f9f9f9; }
-                .appointment-details { background: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
-                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🏥 EasyMed Clinic</h1>
-                    <h2>Appointment Rescheduled</h2>
+
+    private function getAppointmentRescheduledTemplate($data) {
+        $content = '
+            <h2 style="color: #d97706;">Appointment Rescheduled</h2>
+            <p>Dear <strong>' . htmlspecialchars($data['patient_name']) . '</strong>,</p>
+            <p>Your appointment schedule has been updated. Please note the new date and time below:</p>
+            
+            <div class="info-box" style="border-left: 4px solid #f59e0b;">
+                <h3>📅 Updated Schedule</h3>
+                <div class="info-item">
+                    <div class="info-label">Doctor</div>
+                    <div class="info-value">' . htmlspecialchars($data['doctor_name']) . '</div>
                 </div>
-                
-                <div class="content">
-                    <p>Dear ' . htmlspecialchars($data['patient_name']) . ',</p>
-                    
-                    <p>Your appointment has been rescheduled. Here are the updated details:</p>
-                    
-                    ' . $old_info . '
-                    
-                    <div class="appointment-details">
-                        <h3>📅 New Appointment Details</h3>
-                        <p><strong>Date:</strong> ' . date('F j, Y', strtotime($data['appointment_date'])) . '</p>
-                        <p><strong>Time:</strong> ' . date('g:i A', strtotime($data['appointment_time'])) . '</p>
-                        <p><strong>Doctor:</strong> ' . htmlspecialchars($data['doctor_name']) . '</p>
-                        <p><strong>Specialty:</strong> ' . htmlspecialchars($data['specialty'] ?? 'General Medicine') . '</p>
-                        <p><strong>Reason:</strong> ' . htmlspecialchars($data['reason']) . '</p>
-                        <p><strong>Reference:</strong> #' . $data['appointment_id'] . '</p>
-                    </div>
-                    
-                    <p>We apologize for any inconvenience caused by this change.</p>
-                    
-                    <p>Thank you for your understanding!</p>
+                <div class="info-item">
+                    <div class="info-label">New Date</div>
+                    <div class="info-value">' . htmlspecialchars($data['appointment_date']) . '</div>
                 </div>
-                
-                <div class="footer">
-                    <p>EasyMed Clinic | 📞 ' . getEmailClinicSetting('clinic_phone', '+63-2-8123-4567') . ' | 📧 ' . getEmailClinicSetting('clinic_email', 'info@easymed.com') . '</p>
+                <div class="info-item">
+                    <div class="info-label">New Time</div>
+                    <div class="info-value">' . htmlspecialchars($data['appointment_time']) . '</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Reason</div>
+                    <div class="info-value">' . htmlspecialchars($data['reason'] ?? 'Schedule adjustment') . '</div>
                 </div>
             </div>
-        </body>
-        </html>';
+
+            <p>We apologize for any inconvenience this change may cause.</p>';
+
+        return $this->getTemplateWrapper("Appointment Rescheduled", $content, "Your appointment has been rescheduled.");
     }
     
     /**
      * Get appointment cancelled email template
      */
     private function getAppointmentCancelledTemplate($data) {
-        return '
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Appointment Cancelled</title>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: #f44336; color: white; padding: 20px; text-align: center; }
-                .content { padding: 20px; background: #f9f9f9; }
-                .appointment-details { background: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
-                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🏥 EasyMed Clinic</h1>
-                    <h2>Appointment Cancelled</h2>
+        $content = '
+            <h2 style="color: #ef4444;">Appointment Cancelled</h2>
+            <p>Dear <strong>' . htmlspecialchars($data['patient_name']) . '</strong>,</p>
+            <p>Your clinical appointment has been cancelled. Please see the original details below for your reference:</p>
+            
+            <div class="info-box" style="border-left: 4px solid #ef4444;">
+                <h3>📅 Cancelled Details</h3>
+                <div class="info-item">
+                    <div class="info-label">Doctor</div>
+                    <div class="info-value">Dr. ' . htmlspecialchars($data['doctor_name']) . '</div>
                 </div>
-                
-                <div class="content">
-                    <p>Dear ' . htmlspecialchars($data['patient_name']) . ',</p>
-                    
-                    <p>Your appointment has been cancelled. Here were the details:</p>
-                    
-                    <div class="appointment-details">
-                        <h3>📅 Cancelled Appointment</h3>
-                        <p><strong>Date:</strong> ' . date('F j, Y', strtotime($data['appointment_date'])) . '</p>
-                        <p><strong>Time:</strong> ' . date('g:i A', strtotime($data['appointment_time'])) . '</p>
-                        <p><strong>Doctor:</strong> Dr. ' . htmlspecialchars($data['doctor_name']) . '</p>
-                        <p><strong>Reference:</strong> #' . $data['appointment_id'] . '</p>
-                    </div>
-                    
-                    <p>If you would like to schedule a new appointment, please contact us or use our online booking system.</p>
-                    
-                    <p>Thank you for choosing EasyMed Clinic!</p>
+                <div class="info-item">
+                    <div class="info-label">Date</div>
+                    <div class="info-value">' . htmlspecialchars($data['appointment_date']) . '</div>
                 </div>
-                
-                <div class="footer">
-                    <p>EasyMed Clinic | 📞 ' . getEmailClinicSetting('clinic_phone', '+63-2-8123-4567') . ' | 📧 ' . getEmailClinicSetting('clinic_email', 'info@easymed.com') . '</p>
+                <div class="info-item">
+                    <div class="info-label">Time</div>
+                    <div class="info-value">' . htmlspecialchars($data['appointment_time']) . '</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Reference</div>
+                    <div class="info-value">#APT-' . str_pad($data['appointment_id'], 5, "0", STR_PAD_LEFT) . '</div>
                 </div>
             </div>
-        </body>
-        </html>';
+
+            <p>If you wish to rebook, please visit our online portal or contact us directly.</p>';
+
+        return $this->getTemplateWrapper("Appointment Cancelled", $content, "Your appointment with EasyMed has been cancelled.");
     }
 
     /**
      * Get doctor appointment rescheduled email template
      */
     private function getDoctorAppointmentRescheduledTemplate($data) {
-        return '
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Schedule Update</title>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
-                .content { padding: 20px; background: #f9f9f9; }
-                .appointment-details { background: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
-                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🏥 EasyMed Clinic</h1>
-                    <h2>Schedule Update</h2>
+        $content = '
+            <h2>Schedule Update</h2>
+            <p>Dear <strong>' . htmlspecialchars($data['doctor_name']) . '</strong>,</p>
+            <p>One of your clinical appointments has been rescheduled by an administrator. Below are the updated details:</p>
+            
+            <div class="info-box">
+                <h3>👤 Patient Information</h3>
+                <div class="info-item">
+                    <div class="info-label">Patient</div>
+                    <div class="info-value">' . htmlspecialchars($data['patient_name']) . '</div>
                 </div>
-                
-                <div class="content">
-                    <p>Dear ' . htmlspecialchars($data['doctor_name']) . ',</p>
-                    
-                    <p>One of your clinical appointments has been rescheduled by an administrator. Below are the updated details:</p>
-                    
-                    <div class="appointment-details">
-                        <h3>👤 Patient Information</h3>
-                        <p><strong>Patient:</strong> ' . htmlspecialchars($data['patient_name']) . '</p>
-                        <p><strong>Reference:</strong> #' . $data['appointment_id'] . '</p>
-                        
-                        <h3 style="margin-top: 20px;">📅 New Schedule</h3>
-                        <p><strong>New Date:</strong> ' . date('F j, Y', strtotime($data['appointment_date'])) . '</p>
-                        <p><strong>New Time:</strong> ' . date('g:i A', strtotime($data['appointment_time'])) . '</p>
-                        <p><strong>Reason for Change:</strong> ' . htmlspecialchars($data['reason']) . '</p>
-                    </div>
-                    
-                    <p>This change has been updated in your doctor portal dashboard.</p>
+                <div class="info-item">
+                    <div class="info-label">New Date</div>
+                    <div class="info-value">' . date('F j, Y', strtotime($data['appointment_date'])) . '</div>
                 </div>
-                
-                <div class="footer">
-                    <p>EasyMed Clinic | Administrative Notification Service</p>
+                <div class="info-item">
+                    <div class="info-label">New Time</div>
+                    <div class="info-value">' . date('g:i A', strtotime($data['appointment_time'])) . '</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Reference</div>
+                    <div class="info-value">#APT-' . str_pad($data['appointment_id'], 5, "0", STR_PAD_LEFT) . '</div>
                 </div>
             </div>
-        </body>
-        </html>';
+            <p>Your dashboard has been updated to reflect these changes.</p>';
+
+        return $this->getTemplateWrapper("Schedule Update", $content, "An appointment in your schedule has been updated.");
     }
 }

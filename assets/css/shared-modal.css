@@ -291,6 +291,11 @@
     color: #b91c1c;
 }
 
+.status-rescheduled {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
 /* Buttons */
 .modal-btn {
     padding: 12px 24px;

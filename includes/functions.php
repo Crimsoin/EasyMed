@@ -286,6 +286,127 @@ class Auth {
             ];
         }
     }
+
+    public function initiatePasswordReset($identity) {
+        try {
+            // Find user by email or username - RESTRICT TO PATIENTS ONLY
+            $user = $this->db->fetch(
+                "SELECT id, email, first_name, last_name FROM users WHERE (email = ? OR username = ?) AND role = 'patient' AND is_active = 1",
+                [$identity, $identity]
+            );
+
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'message' => 'No active account found with that email or username.'
+                ];
+            }
+
+            // Generate 6-digit OTP
+            $otpCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $otpExpiresAt = date('Y-m-d H:i:s', strtotime('+15 minutes'));
+
+            // Store OTP in user record
+            $this->db->update('users', [
+                'otp_code' => $otpCode,
+                'otp_expires_at' => $otpExpiresAt
+            ], 'id = ?', [$user['id']]);
+
+            // Send OTP via email
+            require_once __DIR__ . '/email.php';
+            $emailService = new EmailService();
+            $fullName = $user['first_name'] . ' ' . $user['last_name'];
+            $emailResult = $emailService->sendPasswordResetOTP($user['email'], $fullName, $otpCode);
+
+            if ($emailResult['success']) {
+                // Log activity
+                logActivity($user['id'], 'password_reset_request', 'Password reset initiated via OTP');
+                
+                return [
+                    'success' => true,
+                    'email' => $user['email'],
+                    'message' => 'A verification code has been sent to your email.'
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to send verification email. Please try again later.'
+                ];
+            }
+        } catch (Exception $e) {
+            error_log("Password reset init error: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'An error occurred. Please try again.'
+            ];
+        }
+    }
+
+    public function verifyResetOTP($identity, $otp) {
+        try {
+            $user = $this->db->fetch(
+                "SELECT id FROM users WHERE (email = ? OR username = ?) AND otp_code = ? AND otp_expires_at > CURRENT_TIMESTAMP",
+                [$identity, $identity, $otp]
+            );
+
+            if ($user) {
+                return [
+                    'success' => true,
+                    'message' => 'Code verified successfully. You can now set your new password.'
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid or expired verification code.'
+                ];
+            }
+        } catch (Exception $e) {
+            error_log("Reset OTP verification error: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Verification failed.'
+            ];
+        }
+    }
+
+    public function resetPassword($identity, $otp, $newPassword) {
+        try {
+            // Verify code again to ensure sequence
+            $user = $this->db->fetch(
+                "SELECT id FROM users WHERE (email = ? OR username = ?) AND otp_code = ? AND otp_expires_at > CURRENT_TIMESTAMP",
+                [$identity, $identity, $otp]
+            );
+
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'message' => 'Session expired. Please start over.'
+                ];
+            }
+
+            // Hash and update password
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+            $this->db->update('users', [
+                'password' => $hashedPassword,
+                'otp_code' => null,
+                'otp_expires_at' => null
+            ], 'id = ?', [$user['id']]);
+
+            // Log activity
+            logActivity($user['id'], 'password_reset_complete', 'Password reset successfully completed');
+
+            return [
+                'success' => true,
+                'message' => 'Your password has been reset successfully. You can now login with your new password.'
+            ];
+        } catch (Exception $e) {
+            error_log("Password reset final error: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Failed to reset password.'
+            ];
+        }
+    }
     
     private function getRedirectUrl($role) {
         switch ($role) {

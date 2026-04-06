@@ -367,7 +367,8 @@ require_once '../includes/header.php';
                                         'gcash_reference' => $appointment['gcash_reference'] ?? 'N/A',
                                         'receipt_path' => $appointment['receipt_path'] ?? null,
                                         'laboratory_image_path' => $p_info['laboratory_image'] ?? null,
-                                        'updated_at' => $appointment['updated_at']
+                                                                                 'reschedule_reason' => $appointment['reschedule_reason'],
+                                         'updated_at' => $appointment['updated_at']
                                     ]), ENT_QUOTES, 'UTF-8');
                             ?>
                             <div class="appointment-card" onclick="showAppointmentDetails(<?php echo $appt_json; ?>)" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
@@ -461,7 +462,8 @@ require_once '../includes/header.php';
                                         'gcash_reference' => $appointment['gcash_reference'] ?? 'N/A',
                                         'receipt_path' => $appointment['receipt_path'] ?? null,
                                         'laboratory_image_path' => $p_info['laboratory_image'] ?? null,
-                                        'updated_at' => $appointment['updated_at']
+                                                                                 'reschedule_reason' => $appointment['reschedule_reason'],
+                                         'updated_at' => $appointment['updated_at']
                                     ]), ENT_QUOTES, 'UTF-8');
                             ?>
                             <div class="appointment-card" onclick="showAppointmentDetails(<?php echo $appt_json; ?>)" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
