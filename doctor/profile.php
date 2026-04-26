@@ -117,7 +117,7 @@ $stats = [
 // Get consultation history (Recent appointments for template)
 $recent_appointments = $db->fetchAll("
     SELECT a.id, a.appointment_date, a.appointment_time, a.status, a.reason_for_visit, a.illness,
-           (up.first_name || ' ' || up.last_name) as patient_name
+           up.first_name as patient_first_name, up.last_name as patient_last_name
     FROM appointments a
     JOIN patients p ON a.patient_id = p.id
     JOIN users up ON p.user_id = up.id
