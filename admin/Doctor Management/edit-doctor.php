@@ -241,9 +241,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['lab_offer_action']))
             $errors[] = 'Valid email address is required';
         }
     // Username is no longer required/edited for doctors.
-        if (!empty($password) && strlen($password) < 6) {
-            $errors[] = 'Password must be at least 6 characters long';
-        }
         if (empty($doctorData['specialty'])) $errors[] = 'Specialty is required';
         if (empty($doctorData['license_number'])) $errors[] = 'License number is required';
         
@@ -271,22 +268,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['lab_offer_action']))
                 
                 $db->query($userUpdateSql, $userParams);
                 
-                // Update password if provided
-                if (!empty($password)) {
-                    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                    $db->query("UPDATE users SET password = ? WHERE id = ?", [$hashedPassword, $doctor_id]);
-
-                    // Send password reset notification email to doctor
-                    try {
-                        $doctorEmail = $userData['email'];
-                        $doctorName  = $userData['first_name'] . ' ' . $userData['last_name'];
-                        require_once '../../includes/email.php';
-                        $emailService = new EmailService();
-                        $emailService->sendPasswordResetNotification($doctorEmail, $doctorName, $password, 'doctor');
-                    } catch (Exception $emailEx) {
-                        error_log("Password reset email failed for doctor {$doctor_id}: " . $emailEx->getMessage());
-                    }
-                }
                 
                 // Handle phone, date_of_birth, gender (these might be in patients table if doctor also has patient record)
                 if (!empty($userData['phone']) || !empty($userData['date_of_birth']) || !empty($userData['gender'])) {
@@ -417,20 +398,17 @@ require_once '../../includes/header.php';
     </div>
 
     <div class="admin-content">
-        <div class="content-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="content-header">
             <div class="header-info">
-                <h1><i class="fas fa-edit"></i> Edit Doctor</h1>
-                <p>Update doctor account and profile information</p>
+                <h1><i class="fas fa-user-edit"></i> Edit Doctor Profile</h1>
+                <p>Modify account settings and professional information for Dr. <?php echo htmlspecialchars($doctor['first_name'] . ' ' . $doctor['last_name']); ?></p>
             </div>
-            <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
-                <button type="button" id="edit-mode-btn" class="btn btn-primary" style="background: white; color: var(--primary-cyan); border: 2px solid var(--primary-cyan); box-shadow: none;">
-                    <i class="fas fa-edit"></i> Edit Doctor Information
-                </button>
+            <div class="header-actions">
                 <a href="view-doctor.php?id=<?php echo $doctor_id; ?>" class="btn btn-info">
                     <i class="fas fa-eye"></i> View Profile
                 </a>
                 <a href="../Doctor Management/doctors.php" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Doctors
+                    <i class="fas fa-arrow-left"></i> Back to List
                 </a>
             </div>
         </div>
@@ -462,13 +440,13 @@ require_once '../../includes/header.php';
                 <div class="form-group">
                     <label for="first_name" class="form-label required">First Name</label>
                     <input type="text" id="first_name" name="first_name" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['first_name'] ?? $doctor['first_name']); ?>" required disabled>
+                           value="<?php echo htmlspecialchars($_POST['first_name'] ?? $doctor['first_name']); ?>" required>
                 </div>
 
                 <div class="form-group">
                     <label for="last_name" class="form-label required">Last Name</label>
                     <input type="text" id="last_name" name="last_name" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['last_name'] ?? $doctor['last_name']); ?>" required disabled>
+                           value="<?php echo htmlspecialchars($_POST['last_name'] ?? $doctor['last_name']); ?>" required>
                 </div>
             </div>
             
@@ -476,36 +454,27 @@ require_once '../../includes/header.php';
                 <div class="form-group">
                     <label for="email" class="form-label required">Email Address</label>
                     <input type="email" id="email" name="email" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['email'] ?? $doctor['email']); ?>" required disabled>
+                           value="<?php echo htmlspecialchars($_POST['email'] ?? $doctor['email']); ?>" required>
                 </div>
-                
-                <!-- Username is internal and not editable from this form -->
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="password" class="form-label">New Password</label>
-                    <input type="password" id="password" name="password" class="form-control" disabled>
-                    <small class="form-text">Leave blank to keep current password. Minimum 6 characters if changing.</small>
-                </div>
-                
+
                 <div class="form-group">
                     <label for="phone" class="form-label">Phone Number</label>
                     <input type="tel" id="phone" name="phone" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['phone'] ?? $doctor['phone']); ?>" disabled>
+                           value="<?php echo htmlspecialchars($_POST['phone'] ?? $doctor['phone']); ?>">
                 </div>
             </div>
+            
             
             <div class="form-row">
                 <div class="form-group">
                     <label for="date_of_birth" class="form-label">Date of Birth</label>
                     <input type="date" id="date_of_birth" name="date_of_birth" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['date_of_birth'] ?? $doctor['date_of_birth']); ?>" disabled>
+                           value="<?php echo htmlspecialchars($_POST['date_of_birth'] ?? $doctor['date_of_birth']); ?>">
                 </div>
                 
                 <div class="form-group">
                     <label for="gender" class="form-label">Gender</label>
-                    <select id="gender" name="gender" class="form-control" disabled>
+                    <select id="gender" name="gender" class="form-control">
                         <option value="">Select Gender</option>
                         <option value="male" <?php echo ($_POST['gender'] ?? $doctor['gender']) === 'male' ? 'selected' : ''; ?>>Male</option>
                         <option value="female" <?php echo ($_POST['gender'] ?? $doctor['gender']) === 'female' ? 'selected' : ''; ?>>Female</option>
@@ -517,14 +486,13 @@ require_once '../../includes/header.php';
             <div class="form-group">
                 <label class="checkbox-label">
                     <input type="checkbox" name="is_active" value="1" 
-                           <?php echo ($_POST['is_active'] ?? $doctor['is_active']) ? 'checked' : ''; ?> disabled>
-                    <span class="checkmark"></span>
+                           <?php echo ($_POST['is_active'] ?? $doctor['is_active']) ? 'checked' : ''; ?>>
                     Active account
                 </label>
                 <small class="form-text">Uncheck to deactivate this doctor's account</small>
             </div>
             
-            <div style="margin-top: 1.5rem; text-align: right;" class="edit-actions" style="display: none;">
+            <div class="edit-actions" style="margin-top: 1.5rem; text-align: right;">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Save Changes
                 </button>
@@ -543,13 +511,13 @@ require_once '../../includes/header.php';
                     <label for="specialty" class="form-label required">Specialty</label>
                     <input type="text" id="specialty" name="specialty" class="form-control" 
                            value="<?php echo htmlspecialchars($_POST['specialty'] ?? $doctor['specialty']); ?>" 
-                           placeholder="e.g., General Medicine, Cardiology, Pediatrics" required disabled>
+                           placeholder="e.g., General Medicine, Cardiology, Pediatrics" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="license_number" class="form-label required">Medical License Number</label>
                     <input type="text" id="license_number" name="license_number" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['license_number'] ?? $doctor['license_number']); ?>" required disabled>
+                           value="<?php echo htmlspecialchars($_POST['license_number'] ?? $doctor['license_number']); ?>" required>
                 </div>
             </div>
             
@@ -557,17 +525,23 @@ require_once '../../includes/header.php';
                 <div class="form-group">
                     <label for="experience_years" class="form-label">Years of Experience</label>
                     <input type="number" id="experience_years" name="experience_years" class="form-control" 
-                           min="0" max="50" value="<?php echo htmlspecialchars($_POST['experience_years'] ?? $doctor['experience_years']); ?>" disabled>
+                           min="0" max="50" value="<?php echo htmlspecialchars($_POST['experience_years'] ?? $doctor['experience_years']); ?>">
                 </div>
                 
                 <div class="form-group">
                     <label for="consultation_fee" class="form-label">Consultation Fee (₱)</label>
                     <input type="number" id="consultation_fee" name="consultation_fee" class="form-control" 
-                           min="0" step="0.01" value="<?php echo htmlspecialchars($_POST['consultation_fee'] ?? $doctor['consultation_fee']); ?>" disabled>
+                           min="0" step="0.01" value="<?php echo htmlspecialchars($_POST['consultation_fee'] ?? $doctor['consultation_fee']); ?>">
                 </div>
             </div>
             
-            <div style="margin-top: 1.5rem; text-align: right;" class="edit-actions" style="display: none;">
+            <div class="form-group" style="grid-column: span 2;">
+                <label for="biography" class="form-label">Biography / Professional Statement</label>
+                <textarea id="biography" name="biography" class="form-control" 
+                          placeholder="Tell patients about your background, expertise, and philosophy..."><?php echo htmlspecialchars($_POST['biography'] ?? $doctor['biography'] ?? ''); ?></textarea>
+            </div>
+            
+            <div class="edit-actions" style="margin-top: 1.5rem; text-align: right;">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Save Changes
                 </button>
@@ -591,8 +565,7 @@ require_once '../../includes/header.php';
                     <?php foreach ($days as $day): ?>
                         <label class="checkbox-label">
                             <input type="checkbox" name="schedule_days[]" value="<?php echo $day; ?>" 
-                                   <?php echo in_array($day, $selected_days) ? 'checked' : ''; ?> disabled>
-                            <span class="checkmark"></span>
+                                   <?php echo in_array($day, $selected_days) ? 'checked' : ''; ?>>
                             <?php echo $day; ?>
                         </label>
                     <?php endforeach; ?>
@@ -603,27 +576,26 @@ require_once '../../includes/header.php';
                 <div class="form-group">
                     <label for="schedule_time_start" class="form-label">Start Time</label>
                     <input type="time" id="schedule_time_start" name="schedule_time_start" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['schedule_time_start'] ?? $doctor['schedule_time_start']); ?>" disabled>
+                           value="<?php echo htmlspecialchars($_POST['schedule_time_start'] ?? $doctor['schedule_time_start']); ?>">
                 </div>
                 
                 <div class="form-group">
                     <label for="schedule_time_end" class="form-label">End Time</label>
                     <input type="time" id="schedule_time_end" name="schedule_time_end" class="form-control" 
-                           value="<?php echo htmlspecialchars($_POST['schedule_time_end'] ?? $doctor['schedule_time_end']); ?>" disabled>
+                           value="<?php echo htmlspecialchars($_POST['schedule_time_end'] ?? $doctor['schedule_time_end']); ?>">
                 </div>
             </div>
             
             <div class="form-group">
                 <label class="checkbox-label">
                     <input type="checkbox" name="is_available" value="1" 
-                           <?php echo ($_POST['is_available'] ?? $doctor['is_available']) ? 'checked' : ''; ?> disabled>
-                    <span class="checkmark"></span>
+                           <?php echo ($_POST['is_available'] ?? $doctor['is_available']) ? 'checked' : ''; ?>>
                     Available for appointments
                 </label>
                 <small class="form-text">Uncheck to make doctor unavailable for new appointments</small>
             </div>
             
-            <div style="margin-top: 1.5rem; text-align: right;" class="edit-actions" style="display: none;">
+            <div class="edit-actions" style="margin-top: 1.5rem; text-align: right;">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Save Changes
                 </button>
@@ -634,15 +606,13 @@ require_once '../../includes/header.php';
     <!-- Laboratory Offers -->
     <div class="card">
         <div class="card-header">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h3><i class="fas fa-flask"></i> Laboratory Offers</h3>
-                    <p style="font-size: 0.9rem; font-weight: normal; margin: 0.5rem 0 0 0;">Manage laboratory tests and diagnostic services</p>
-                </div>
-                <button type="button" class="btn btn-primary" onclick="openLabOfferModal()" style="white-space: nowrap;">
-                    <i class="fas fa-plus"></i> Add Lab Offer
-                </button>
+            <div class="header-content">
+                <h3><i class="fas fa-flask"></i> Laboratory Offers</h3>
+                <p class="text-muted">Manage laboratory tests and diagnostic services</p>
             </div>
+            <button type="button" class="btn btn-primary" onclick="openLabOfferModal()">
+                <i class="fas fa-plus"></i> Add Lab Offer
+            </button>
         </div>
         <div class="card-body">
             <?php 
@@ -672,45 +642,41 @@ require_once '../../includes/header.php';
             ?>
             
             <?php if (!empty($lab_offers)): ?>
-                <div class="lab-offers-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.25rem;">
+                <div class="lab-offers-grid">
                     <?php foreach ($lab_offers as $offer): ?>
-                        <div class="lab-offer-card" style="padding: 1.5rem; background: #ffffff; border-radius: 10px; border: 2px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.08); position: relative; transition: all 0.2s ease;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; gap: 1rem;">
-                                <h4 style="margin: 0; color: #1f2937; font-size: 1.15rem; font-weight: 600; flex: 1; line-height: 1.4;">
+                        <div class="lab-offer-card">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+                                <h4 style="margin: 0; color: var(--text-main); font-size: 1.2rem; font-weight: 700; line-height: 1.3;">
                                     <?php echo htmlspecialchars($offer['title']); ?>
                                 </h4>
-                                <span style="display: inline-flex; align-items: center; padding: 0.375rem 0.875rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; <?php echo $offer['is_active'] ? 'background: #d1fae5; color: #065f46;' : 'background: #fee2e2; color: #991b1b;'; ?>">
+                                <span class="lab-offer-status <?php echo $offer['is_active'] ? 'status-active' : 'status-inactive'; ?>">
                                     <?php echo $offer['is_active'] ? 'Active' : 'Inactive'; ?>
                                 </span>
                             </div>
+                            
                             <?php if (!empty($offer['description'])): ?>
-                                <p style="margin: 0 0 1rem 0; color: #6b7280; font-size: 0.925rem; line-height: 1.6;">
+                                <p style="margin: 0 0 1.5rem 0; color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;">
                                     <?php echo htmlspecialchars($offer['description']); ?>
                                 </p>
                             <?php endif; ?>
+                            
                             <?php if (!empty($offer['price'])): ?>
-                                <div style="margin: 0 0 1.25rem 0; padding: 0.75rem 1rem; background: #f0f9ff; border-radius: 8px; border-left: 3px solid #2563eb;">
-                                    <p style="margin: 0; color: #2563eb; font-weight: 700; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                                        <i class="fas fa-coins"></i> ₱<?php echo number_format($offer['price'], 2); ?>
+                                <div style="margin-top: auto; padding: 1rem; background: var(--primary-light); border-radius: 12px; margin-bottom: 1.5rem;">
+                                    <p style="margin: 0; color: var(--primary); font-weight: 800; font-size: 1.4rem; display: flex; align-items: center; gap: 0.5rem;">
+                                        ₱<?php echo number_format($offer['price'], 2); ?>
                                     </p>
                                 </div>
                             <?php endif; ?>
-                            <div style="display: flex; gap: 0.625rem; padding-top: 0.5rem; border-top: 1px solid #e5e7eb;">
-                                <button type="button" class="btn btn-sm btn-secondary" 
-                                        onclick='editLabOffer(<?php echo json_encode($offer); ?>)'
-                                        style="flex: 1; width: 100%;">
+                            
+                            <div style="display: flex; gap: 0.75rem;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick='editLabOffer(<?php echo json_encode($offer); ?>)' style="flex: 1;">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <button type="button" class="btn btn-sm <?php echo $offer['is_active'] ? 'btn-warning' : 'btn-success'; ?>" 
-                                        onclick="toggleLabOfferStatus(<?php echo $offer['id']; ?>)"
-                                        style="flex: 1; width: 100%;">
-                                    <i class="fas fa-<?php echo $offer['is_active'] ? 'eye-slash' : 'eye'; ?>"></i> 
-                                    <?php echo $offer['is_active'] ? 'Deactivate' : 'Activate'; ?>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="toggleLabOfferStatus(<?php echo $offer['id']; ?>)" style="flex: 1;">
+                                    <i class="fas fa-<?php echo $offer['is_active'] ? 'eye-slash' : 'eye'; ?>"></i>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-danger" 
-                                        onclick="deleteLabOffer(<?php echo $offer['id']; ?>)"
-                                        style="flex: 1; width: 100%;">
-                                    <i class="fas fa-trash"></i> Delete
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="deleteLabOffer(<?php echo $offer['id']; ?>)" style="color: var(--danger); border-color: #fee2e2;">
+                                    <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </div>
@@ -797,19 +763,6 @@ require_once '../../includes/header.php';
 </div>
 
     <script>
-    document.getElementById('edit-mode-btn').addEventListener('click', function() {
-        const formInputs = document.querySelectorAll('.admin-form input, .admin-form select, .admin-form textarea');
-        const actions = document.querySelectorAll('.edit-actions');
-        
-        formInputs.forEach(input => {
-            input.disabled = false;
-        });
-        
-        this.style.display = 'none';
-        actions.forEach(action => {
-            action.style.display = 'block';
-        });
-    });
 
     function openLabOfferModal(editMode = false, offerData = null) {
         const modal = document.getElementById('labOfferModal');

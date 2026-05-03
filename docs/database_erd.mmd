@@ -1,0 +1,131 @@
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#1e293b', 'primaryBorderColor': '#10b981' }, 'er': { 'layoutDirection': 'LR' }}}%%
+erDiagram
+    USERS {
+        INTEGER id PK
+        VARCHAR username UK
+        VARCHAR email UK
+        VARCHAR password
+        VARCHAR first_name
+        VARCHAR last_name
+        VARCHAR role "admin, doctor, patient"
+        VARCHAR status
+        DATETIME created_at
+    }
+
+    DOCTORS {
+        INTEGER id PK
+        INTEGER user_id FK
+        VARCHAR specialty
+        VARCHAR license_number
+        DECIMAL consultation_fee
+        VARCHAR status
+    }
+
+    PATIENTS {
+        INTEGER id PK
+        INTEGER user_id FK
+        DATE date_of_birth
+        VARCHAR gender
+        VARCHAR phone
+        TEXT medical_history
+    }
+
+    APPOINTMENTS {
+        INTEGER id PK
+        INTEGER patient_id FK
+        INTEGER doctor_id FK
+        DATE appointment_date
+        TIME appointment_time
+        TEXT status
+        TEXT reason_for_visit
+    }
+
+    PAYMENTS {
+        INTEGER id PK
+        INTEGER appointment_id FK
+        INTEGER patient_id FK
+        DECIMAL amount
+        VARCHAR payment_method
+        VARCHAR status
+        INTEGER verified_by FK
+    }
+
+    REVIEWS {
+        INTEGER id PK
+        INTEGER patient_id FK
+        INTEGER doctor_id FK
+        INTEGER appointment_id FK
+        INTEGER rating
+        TEXT review_text
+    }
+
+    LAB_OFFERS {
+        INTEGER id PK
+        TEXT title
+        DECIMAL price
+        INTEGER is_active
+    }
+
+    LAB_OFFER_DOCTORS {
+        INTEGER id PK
+        INTEGER lab_offer_id FK
+        INTEGER doctor_id FK
+    }
+
+    DOCTOR_SCHEDULES {
+        INTEGER id PK
+        INTEGER doctor_id FK
+        INTEGER day_of_week
+        TEXT start_time
+        TEXT end_time
+    }
+
+
+    ACTIVITY_LOGS {
+        INTEGER id PK
+        INTEGER user_id FK
+        VARCHAR action
+        VARCHAR ip_address
+    }
+
+    NOTIFICATIONS {
+        INTEGER id PK
+        INTEGER user_id FK
+        VARCHAR title
+        TEXT message
+        INTEGER is_read
+    }
+
+    CLINIC_SETTINGS {
+        INTEGER id PK
+        VARCHAR setting_key
+        TEXT setting_value
+    }
+
+    SYSTEM_SETTINGS {
+        INTEGER id PK
+        VARCHAR setting_key
+        TEXT setting_value
+    }
+
+    %% Relationships
+    USERS ||--o| DOCTORS : "acts as"
+    USERS ||--o| PATIENTS : "acts as"
+    USERS ||--o{ ACTIVITY_LOGS : "generates"
+    USERS ||--o{ NOTIFICATIONS : "receives"
+    USERS ||--o{ PAYMENTS : "verifies (admin)"
+    
+    DOCTORS ||--o{ DOCTOR_SCHEDULES : "has"
+
+    DOCTORS ||--o{ LAB_OFFER_DOCTORS : "provides"
+    DOCTORS ||--o{ APPOINTMENTS : "assigned to"
+    DOCTORS ||--o{ REVIEWS : "receives"
+
+    PATIENTS ||--o{ APPOINTMENTS : "books"
+    PATIENTS ||--o{ PAYMENTS : "makes"
+    PATIENTS ||--o{ REVIEWS : "writes"
+
+    LAB_OFFERS ||--o{ LAB_OFFER_DOCTORS : "includes"
+
+    APPOINTMENTS ||--o| PAYMENTS : "paid via"
+    APPOINTMENTS ||--o| REVIEWS : "reviewed in"

@@ -51,6 +51,20 @@ if (empty($appointment_data)) {
     }
 }
 ?>
+<!-- Flatpickr for restricted date selection -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+  .flatpickr-day.flatpickr-disabled, .flatpickr-day.flatpickr-disabled:hover {
+    color: rgba(57, 57, 57, 0.1) !important;
+    background: transparent !important;
+    border-color: transparent !important;
+  }
+  .flatpickr-day.selected {
+    background: var(--primary-cyan) !important;
+    border-color: var(--primary-cyan) !important;
+  }
+</style>
+
 
 <div class="patient-container">
 	<div class="patient-sidebar">
@@ -245,7 +259,7 @@ if (empty($appointment_data)) {
 
 <!-- Modal for Appointment Form -->
 <div id="appointmentModal" class="modal">
-  <div class="modal-content" style="max-width: 900px; width: 90%;">
+  <div class="modal-content" style="max-width: 1000px; width: 95%;">
     <div class="modal-header">
       <h2 style="margin:0; font-size:1.3rem;">Appointment Request Form</h2>
       <p style="margin:0; font-size:1rem;">Submit your appointment request. The doctor will review and approve it.</p>
@@ -309,7 +323,8 @@ if (empty($appointment_data)) {
                 <label for="modal_dob">Date of Birth</label>
                 <div class="input-icon-wrapper">
                     <i class="fas fa-birthday-cake"></i>
-                    <input type="date" name="patient_dob" id="modal_dob" class="form-control" required>
+                    <input type="date" name="patient_dob" id="modal_dob" class="form-control" required 
+                           max="<?php echo date('Y-m-d'); ?>" title="Date of birth must be in the past">
                 </div>
               </div>
               <div class="form-group">
@@ -334,8 +349,8 @@ if (empty($appointment_data)) {
               <div class="form-group">
                 <label for="modal_schedule_day">Appointment Date</label>
                 <div class="input-icon-wrapper">
-                    <i class="fas fa-calendar-day"></i>
-                    <input type="date" name="schedule_day" id="modal_schedule_day" class="form-control" required>
+                    <i class="fas fa-calendar-alt"></i>
+                    <input type="text" name="schedule_day" id="modal_schedule_day" class="form-control" required placeholder="Select a date">
                 </div>
               </div>
               <div class="form-group">
@@ -343,7 +358,7 @@ if (empty($appointment_data)) {
                 <div class="input-icon-wrapper">
                     <i class="fas fa-clock"></i>
                     <select name="schedule_time" id="modal_schedule_time" class="form-control" required>
-                      <option value="">Select Time Slot</option>
+                      <option value="">Select Date First</option>
                     </select>
                 </div>
                 <small id="modal_time_range" style="color:#666; display:block; margin-top:0.3rem; font-size:0.85rem; font-weight: 500;"></small>
@@ -712,13 +727,25 @@ if (empty($appointment_data)) {
 }
 
 .input-icon-wrapper i {
-    display: none;
+    position: absolute;
+    left: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 1.1rem;
+    z-index: 5;
+    pointer-events: none;
+    display: block;
+}
+
+.input-icon-wrapper .form-control {
+    padding-left: 3.2rem !important;
 }
 
 .input-icon-wrapper .form-control {
     width: 100%;
     box-sizing: border-box;
-    padding-left: 1rem !important;
+    padding-left: 3.2rem !important;
     background: #fff;
     border: 2px solid #edf2f7;
     height: auto;
@@ -731,6 +758,8 @@ if (empty($appointment_data)) {
 
 .input-icon-wrapper textarea.form-control {
     padding-top: 0.8rem;
+    resize: vertical;
+    min-height: 80px;
 }
 
 .input-icon-wrapper .form-control:focus {
@@ -1072,9 +1101,7 @@ function openAppointmentModal(buttonElement) {
   // Initialize price display with consultation fee
   updatePriceDisplay('consultation');
   
-  // Populate schedule days (kept for compatibility)
-  populateScheduleDays(doctor.schedule_days);
-  // Setup native date input: min/max and allowed weekdays
+  // Setup Flatpickr for date selection
   setupDateInput(doctor.schedule_days);
   // If calendar produced no visible buttons (edge cases), show a date input fallback
   // ensure date input change populates times
@@ -1092,41 +1119,39 @@ function openAppointmentModal(buttonElement) {
 
 function setupDateInput(scheduleDays) {
   var input = document.getElementById('modal_schedule_day');
-  if (!input || input.tagName.toLowerCase() !== 'input') return;
-  var today = new Date();
-  var advance = 30;
-  try { var adv = document.getElementById('advance_booking_days'); if (adv) advance = parseInt(adv.value)||advance; } catch(e){}
-  var minDate = new Date();
-  // allow same-day booking when there are remaining future time slots
-  minDate.setDate(today.getDate()+0); // allow today
-  var maxDate = new Date(); maxDate.setDate(today.getDate()+advance);
-  input.min = minDate.toISOString().slice(0,10);
-  input.max = maxDate.toISOString().slice(0,10);
+  if (!input) return;
 
-  // store allowed weekdays on input for validation
-  var allowed = [];
-  if (scheduleDays) scheduleDays.split(',').forEach(function(d){ allowed.push(d.trim().toLowerCase()); });
-  input.dataset.allowedDays = JSON.stringify(allowed);
+  var allowed = scheduleDays ? scheduleDays.split(',').map(function(s) { return s.trim().toLowerCase(); }) : [];
+  
+  // Destroy existing instance if any
+  if (input._flatpickr) input._flatpickr.destroy();
 
-  // validate selection on change
-  input.addEventListener('change', function(){
-    var v = this.value; if (!v) return;
-    var dt = new Date(v);
-    var dow = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][dt.getDay()];
-    var allowed = JSON.parse(this.dataset.allowedDays || '[]');
-    if (allowed.length && allowed.indexOf(dow) === -1) {
-      alert('Selected date is not on the doctor\'s working days. Please choose another date.');
-      this.value = '';
-      document.getElementById('modal_schedule_time').innerHTML = '<option value="">Select Time</option>';
-      document.getElementById('modal_time_range').textContent = '';
-      return;
+  // Initialize Flatpickr to enforce logic in a calendar UI
+  flatpickr(input, {
+    minDate: "tomorrow",
+    maxDate: new Date().fp_incr(60),
+    disable: [
+      function(date) {
+        // Disable if it's in the past (strictly speaking, today might be allowed if time remains, 
+        // but user asked for "future dates" and "available days")
+        var today = new Date();
+        today.setHours(0,0,0,0);
+        if (date < today) return true;
+        
+        var dow = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
+        return allowed.length > 0 && allowed.indexOf(dow) === -1;
+      }
+    ],
+    locale: { firstDayOfWeek: 1 },
+    onChange: function(selectedDates, dateStr, instance) {
+      if (selectedDates.length > 0) {
+        populateScheduleTimesForDate(selectedDates[0]);
+      }
     }
-    // valid date: populate times
-    populateScheduleTimesForDate(dt);
   });
 }
-  // Populate schedule times
-  populateScheduleTimes(doctor.schedule_time_start, doctor.schedule_time_end);
+  // Times will be populated when a date is selected via Flatpickr
+  document.getElementById('modal_schedule_time').innerHTML = '<option value="">Select Date First</option>';
   
   // Populate laboratory offers for this specific doctor
   populateDoctorLaboratoryOffers(doctor.doctor_id);
@@ -1197,22 +1222,34 @@ function renderModalCalendar(scheduleDays) {
 }
 
 function populateScheduleTimesForDate(dateObj) {
-  // Determine day-of-week and populate times using existing populateScheduleTimes helper
-  var dow = dateObj.getDay();
-  // map numeric dow to string day used in doctor.schedule_days (e.g., monday)
-  var days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  var dowName = days[dow];
-  // Find the currently selected doctor's schedule info from the modalDoctorPanel data
-  var doctorJson = window._currentModalDoctor || (document.querySelector('button[data-doctor]') ? JSON.parse(document.querySelector('button[data-doctor]').getAttribute('data-doctor')) : null);
-  if (!doctorJson) return;
-  var scheduleDays = (doctorJson.schedule_days || '').split(',').map(function(s){ return s.trim().toLowerCase(); });
-  if (scheduleDays.indexOf(dowName) === -1) {
-    // no schedule this day
-    document.getElementById('modal_schedule_time').innerHTML = '<option value="">No available time</option>';
+  var doctor = window._currentModalDoctor;
+  if (!doctor) return;
+  
+  var dowIndex = dateObj.getDay();
+  var dowName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dowIndex];
+  var allowedDays = (doctor.schedule_days || '').split(',').map(function(s){ return s.trim().toLowerCase(); });
+  
+  if (allowedDays.indexOf(dowName) !== -1) {
+    var yyyy = dateObj.getFullYear();
+    var mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    var dd = String(dateObj.getDate()).padStart(2, '0');
+    var dateStr = yyyy + '-' + mm + '-' + dd;
+
+    // Fetch already booked times for this doctor/date
+    fetch('get_booked_times.php?doctor_id=' + doctor.doctor_id + '&date=' + dateStr)
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        var bookedTimes = data.success ? data.booked_times : [];
+        populateScheduleTimes(doctor.schedule_time_start, doctor.schedule_time_end, bookedTimes);
+      })
+      .catch(function(err) {
+        console.error('Error fetching booked times:', err);
+        populateScheduleTimes(doctor.schedule_time_start, doctor.schedule_time_end, []);
+      });
+  } else {
+    document.getElementById('modal_schedule_time').innerHTML = '<option value="">Doctor Unavailable</option>';
     document.getElementById('modal_time_range').textContent = '';
-    return;
   }
-  populateScheduleTimes(doctorJson.schedule_time_start, doctorJson.schedule_time_end);
 }
 
 function populateScheduleDays(scheduleDays) {
@@ -1229,7 +1266,7 @@ function populateScheduleDays(scheduleDays) {
   }
 }
 
-function populateScheduleTimes(startTime, endTime) {
+function populateScheduleTimes(startTime, endTime, bookedTimes) {
   var timeInput = document.getElementById('modal_schedule_time');
   var timeRangeText = document.getElementById('modal_time_range');
   timeInput.innerHTML = '<option value="">Select Time</option>';
@@ -1260,19 +1297,31 @@ function populateScheduleTimes(startTime, endTime) {
       }
     }
 
-    for (var hour = startHour; hour <= endHour; hour++) {
-      var timeValue = String(hour).padStart(2,'0') + ':00';
+    var addOption = function(h) {
+      var timeValue = String(h).padStart(2,'0') + ':00';
       var optionMinutes = timeToMinutes(timeValue);
-      if (allowOnlyFuture && optionMinutes <= nowMinutes) continue; // skip past/too-soon slots
+      
+      // Filter out past times if today
+      if (allowOnlyFuture && optionMinutes <= nowMinutes) return;
+      
+      // Filter out already booked times
+      if (bookedTimes && bookedTimes.indexOf(timeValue) !== -1) return;
+
       var option = document.createElement('option');
       option.value = timeValue;
       option.textContent = formatDisplayTime(timeValue);
       timeInput.appendChild(option);
+    };
+
+    // Handle overnight shifts (e.g., 8 PM to 5 AM)
+    if (endHour < startHour) {
+      for (var h = startHour; h <= 23; h++) addOption(h);
+      for (var h = 0; h <= endHour; h++) addOption(h);
+    } else {
+      for (var h = startHour; h <= endHour; h++) addOption(h);
     }
     
-    var minTime = String(startHour).padStart(2,'0') + ':00';
-    var maxTime = String(endHour).padStart(2,'0') + ':00';
-    timeRangeText.textContent = '(' + formatDisplayTime(minTime) + '-' + formatDisplayTime(maxTime) + ')';
+    timeRangeText.textContent = '(' + formatDisplayTime(startTime) + ' - ' + formatDisplayTime(endTime) + ')';
   } else {
     timeRangeText.textContent = '';
   }
@@ -1727,6 +1776,9 @@ function showSuccessNotification() {
   }, 1200);
 }
 </script>
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 </body>
 </html>
