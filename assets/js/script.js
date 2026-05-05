@@ -64,11 +64,21 @@ function openModal(modalId) {
         currentModal = modal;
         document.body.style.overflow = 'hidden';
 
-        // Clear any existing modal alerts
+        // Clear any existing modal alerts and errors
         const alertContainers = modal.querySelectorAll('[id$="ModalAlert"]');
         alertContainers.forEach(container => {
             container.style.display = 'none';
             container.innerHTML = '';
+        });
+
+        const modalInputs = modal.querySelectorAll('.form-control');
+        modalInputs.forEach(input => {
+            input.classList.remove('error');
+            input.style.borderColor = '';
+            // Only call clearFieldError if it's defined (to be safe)
+            if (typeof clearFieldError === 'function') {
+                clearFieldError(input);
+            }
         });
 
         // Add fade-in animation
@@ -85,6 +95,14 @@ function openModal(modalId) {
         // Reset form state if it's register modal
         if (modalId === 'registerModal') {
             resetMultiStepForm();
+        }
+
+        // Explicitly clear login fields to prevent browser autofill
+        if (modalId === 'loginModal') {
+            const loginUser = document.getElementById('loginUsername');
+            const loginPass = document.getElementById('loginPassword');
+            if (loginUser) loginUser.value = '';
+            if (loginPass) loginPass.value = '';
         }
     }
 }

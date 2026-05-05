@@ -187,7 +187,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <div class="input-group">
                             <span class="input-icon"><i class="fas fa-user"></i></span>
                             <input type="text" id="loginUsername" name="username" class="form-control" 
-                                   placeholder="Enter your username or email" required>
+                                   placeholder="Enter your username or email" required autocomplete="off">
                         </div>
                 
                     </div>
@@ -199,7 +199,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <div class="input-group">
                             <span class="input-icon"><i class="fas fa-lock"></i></span>
                             <input type="password" id="loginPassword" name="password" class="form-control" 
-                                   placeholder="Enter your password" required>
+                                   placeholder="Enter your password" required autocomplete="new-password">
                             <span class="password-toggle" onclick="EasyMed.togglePassword('loginPassword')">
                                 <i class="fas fa-eye"></i>
                             </span>

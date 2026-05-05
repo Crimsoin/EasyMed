@@ -162,11 +162,11 @@ body {
 }
 
 /* Form Validation Styles */
-.form-control:invalid {
+.form-control.error {
     border-color: var(--error);
 }
 
-.form-control:invalid:focus {
+.form-control.error:focus {
     border-color: var(--error);
     box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
 }

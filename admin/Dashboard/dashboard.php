@@ -920,6 +920,7 @@ require_once '../../includes/header.php';
                             <th>Patient Identity</th>
                             <th>Clinical Expert</th>
                             <th>Schedule</th>
+                            <th>Booking Date</th>
                             <th>Status Code</th>
                             <th>Valuation</th>
                             <th>Operations</th>
@@ -953,6 +954,15 @@ require_once '../../includes/header.php';
                                             <strong style="color: #334155;"><?php echo date('M j, Y', strtotime($appointment['appointment_date'])); ?></strong>
                                             <br>
                                             <small style="color: #64748b;"><i class="far fa-clock"></i> <?php echo formatTime($appointment['appointment_time']); ?></small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="log-timestamp">
+                                            <span style="color: #64748b; font-size: 0.85rem; font-weight: 500;">
+                                                <i class="fas fa-history"></i> <?php echo date('M j, Y', strtotime($appointment['created_at'])); ?>
+                                            </span>
+                                            <br>
+                                            <small style="color: #94a3b8; font-size: 0.75rem;"><i class="far fa-clock"></i> <?php echo date('h:i A', strtotime($appointment['created_at'])); ?></small>
                                         </div>
                                     </td>
                                     <td>
