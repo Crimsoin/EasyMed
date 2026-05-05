@@ -282,13 +282,13 @@ require_once '../../includes/header.php';
         <?php endif; ?>
 
         <!-- Main Settings Grid -->
-        <div class="settings-grid" style="display: flex; flex-direction: column; gap: 2rem; width: 100%;">
+        <div class="settings-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; width: 100%;">
 
 
 
 
-                <form method="POST" class="settings-form">
-                    <div class="content-section">
+                <form method="POST" class="settings-form" style="display: flex; flex-direction: column;">
+                    <div class="content-section" style="flex: 1; display: flex; flex-direction: column; margin-bottom: 0;">
                         <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
                             <h2><i class="fas fa-user"></i> My Admin Profile</h2>
                             <button type="button" class="btn btn-sm btn-outline edit-card-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem; border: 1px solid var(--primary-cyan); color: var(--primary-cyan); background: transparent; border-radius: 6px;">
@@ -319,8 +319,8 @@ require_once '../../includes/header.php';
                     </div>
                 </form>
 
-                <form method="POST" class="settings-form">
-                    <div class="content-section">
+                <form method="POST" class="settings-form" style="display: flex; flex-direction: column;">
+                    <div class="content-section" style="flex: 1; display: flex; flex-direction: column; margin-bottom: 0;">
                         <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
                             <h2><i class="fas fa-key"></i> Change Password</h2>
                             <button type="button" class="btn btn-sm btn-outline edit-card-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem; border: 1px solid var(--primary-cyan); color: var(--primary-cyan); background: transparent; border-radius: 6px;">

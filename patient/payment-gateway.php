@@ -23,8 +23,7 @@ if (!$payment_data && $appointment_id_param > 0) {
                d.id as doctor_internal_id, d.consultation_fee, 
                u.id as doctor_user_id, u.first_name, u.last_name,
                JSON_EXTRACT(a.patient_info, '$.reference_number') as reference_number,
-               JSON_EXTRACT(a.patient_info, '$.purpose') as purpose,
-               JSON_EXTRACT(a.patient_info, '$.laboratory') as laboratory
+               JSON_EXTRACT(a.patient_info, '$.purpose') as purpose
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         JOIN doctors d ON a.doctor_id = d.id
@@ -34,24 +33,7 @@ if (!$payment_data && $appointment_id_param > 0) {
     
     if ($appointment) {
         $purpose = trim($appointment['purpose'] ?? '', '"');
-        $laboratory_name = trim($appointment['laboratory'] ?? '', '"');
-        $fee = $appointment['consultation_fee'];
-        $fee_label = 'Consultation Fee';
-        
-        // If purpose is laboratory, get the lab offer price
-        if ($purpose === 'laboratory' && !empty($laboratory_name)) {
-            $lab_offer = $db->fetch("
-                SELECT lo.price, lo.title, lo.id, lod.doctor_id
-                FROM lab_offers lo
-                JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
-                WHERE lo.title = ? AND lod.doctor_id = ? AND lo.is_active = 1
-            ", [$laboratory_name, $appointment['doctor_internal_id']]);
-            
-            if ($lab_offer && !empty($lab_offer['price'])) {
-                $fee = $lab_offer['price'];
-                $fee_label = 'Laboratory Fee';
-            }
-        }
+        // Laboratory fee logic removed
         
         $payment_data = [
             'appointment_id' => $appointment['id'],
@@ -59,7 +41,6 @@ if (!$payment_data && $appointment_id_param > 0) {
             'consultation_fee' => $fee,
             'fee_label' => $fee_label,
             'purpose' => $purpose,
-            'laboratory' => $laboratory_name,
             'appointment_date' => $appointment['appointment_date'],
             'appointment_time' => $appointment['appointment_time'],
             'reference_number' => trim($appointment['reference_number'], '"') // Remove JSON quotes
@@ -77,7 +58,6 @@ $doctor_name = $payment_data['doctor_name'];
 $consultation_fee = $payment_data['consultation_fee'];
 $fee_label = $payment_data['fee_label'] ?? 'Consultation Fee';
 $purpose = $payment_data['purpose'] ?? 'consultation';
-$laboratory = $payment_data['laboratory'] ?? '';
 $appointment_date = $payment_data['appointment_date'];
 $appointment_time = $payment_data['appointment_time'];
 $reference_number = $payment_data['reference_number'];
@@ -169,12 +149,7 @@ $gcash_number = getClinicSetting('gcash_number', '09207245610');
                         <span><?php echo htmlspecialchars($reference_number); ?></span>
                     </div>
                     
-                    <?php if ($purpose === 'laboratory' && !empty($laboratory)): ?>
-                    <div class="summary-item">
-                        <label><i class="fas fa-flask"></i> Laboratory Service:</label>
-                        <span><?php echo htmlspecialchars($laboratory); ?></span>
-                    </div>
-                    <?php endif; ?>
+                    <!-- Laboratory summary removed -->
                     
                     <div class="summary-item total-fee">
                         <label><i class="fas fa-money-bill-wave"></i> <?php echo htmlspecialchars($fee_label); ?>:</label>

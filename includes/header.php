@@ -187,7 +187,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <div class="input-group">
                             <span class="input-icon"><i class="fas fa-user"></i></span>
                             <input type="text" id="loginUsername" name="username" class="form-control" 
-                                   placeholder="Enter your username or email" required autocomplete="off">
+                                   placeholder="Enter your username or email" required>
                         </div>
                 
                     </div>

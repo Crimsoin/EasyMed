@@ -53,22 +53,6 @@ try {
     
     // Calculate correct fee
     $appointment['display_fee'] = $appointment['consultation_fee'];
-    $purpose = $patient_info['purpose'] ?? 'consultation';
-    $laboratory_name = $patient_info['laboratory'] ?? '';
-    
-    // If laboratory, fetch the correct price
-    if ($purpose === 'laboratory' && !empty($laboratory_name) && !empty($appointment['doctor_internal_id'])) {
-        $lab_offer = $db->fetch("
-            SELECT lo.price 
-            FROM lab_offers lo
-            JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
-            WHERE lo.title = ? AND lod.doctor_id = ? AND lo.is_active = 1
-        ", [$laboratory_name, $appointment['doctor_internal_id']]);
-        
-        if ($lab_offer && !empty($lab_offer['price'])) {
-            $appointment['display_fee'] = $lab_offer['price'];
-        }
-    }
 
     // Get payment information if exists
     $payment = $db->fetch("

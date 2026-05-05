@@ -612,9 +612,8 @@ function loadDayDetails(date) {
                                 "address": apt.patient_address || pInfo.address || "N/A",
                                 "gender": (apt.patient_gender || "N/A").charAt(0).toUpperCase() + (apt.patient_gender || "N/A").slice(1),
                                 "dob": apt.patient_dob ? formatDateForDisplay(apt.patient_dob) : "N/A",
-                                "reason": apt.illness || apt.reason_for_visit || pInfo.laboratory || "Consultation",
+                                "reason": apt.illness || apt.reason_for_visit || "Consultation",
                                 "purpose": (pInfo.purpose || "Consultation").charAt(0).toUpperCase() + (pInfo.purpose || "Consultation").slice(1),
-                                "laboratory": pInfo.laboratory || "",
                                 "relationship": (pInfo.relationship || "Self").charAt(0).toUpperCase() + (pInfo.relationship || "Self").slice(1),
                                 "status": (apt.status || "pending").charAt(0).toUpperCase() + (apt.status || "pending").slice(1),
                                 "id": apt.id,
@@ -628,7 +627,7 @@ function loadDayDetails(date) {
                                 "payment_amount": apt.payment_amount || 0,
                                 "gcash_reference": apt.gcash_reference || "N/A",
                                 "receipt_path": apt.receipt_path || null,
-                                "laboratory_image_path": pInfo.laboratory_image || null,
+
                                 "updated_at": apt.updated_at || null
                             }).replace(/'/g, "&apos;");
 

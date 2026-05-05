@@ -84,7 +84,7 @@ if ($user['role'] === 'patient') {
                     $appt['illness'] = $decoded['illness'] ?? null;
                     $appt['purpose'] = $decoded['purpose'] ?? null;
                     $appt['relationship'] = $decoded['relationship'] ?? 'Self';
-                    $appt['laboratory_image'] = $decoded['laboratory_image'] ?? null;
+
                 }
             }
             if (!empty($appt['receipt_file'])) {
@@ -217,7 +217,7 @@ function viewAppointment(appointment) {
             ref: appointment.gcash_reference,
             receipt: appointment.receipt_path
         } : null,
-        laboratory_image: appointment.laboratory_image,
+
         reschedule_reason: appointment.reschedule_reason,
         updated_at: appointment.updated_at
     };

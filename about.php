@@ -59,7 +59,7 @@ require_once 'includes/header.php';
                 </div>
                 <h3 style="color: var(--primary-cyan); margin-bottom: 1rem;">Our Mission</h3>
                 <p>
-                    Deliver accurate and reliable laboratory results and provide excellent quality care to clients.
+                    Deliver accurate and reliable medical services and provide excellent quality care to clients.
                 </p>
             </div>
             
@@ -69,7 +69,7 @@ require_once 'includes/header.php';
                 </div>
                 <h3 style="color: var(--primary-cyan); margin-bottom: 1rem;">Our Vision</h3>
                 <p>
-                    provide holistic patient care by well trained and qualified personnel, adhering and maintaining the gold standard in releasing accurate and reliable results.
+                    Provide holistic patient care by well-trained and qualified personnel, adhering to the highest standards of medical excellence.
                 </p>
             </div>
             

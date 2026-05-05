@@ -19,14 +19,7 @@ $db = Database::getInstance();
         ORDER BY u.first_name
     ");
 
-    // Fetch lab offers for each doctor (title only)
-    if (!empty($doctors)) {
-        foreach ($doctors as &$doc) {
-            $offers = $db->fetchAll("SELECT lo.title FROM lab_offers lo JOIN lab_offer_doctors lod ON lod.lab_offer_id = lo.id WHERE lod.doctor_id = ? AND lo.is_active = 1 ORDER BY lo.created_at DESC", [$doc['doctor_id']]);
-            $doc['offers'] = $offers ? array_column($offers, 'title') : [];
-        }
-        unset($doc);
-    }
+
 ?>
 
 <!-- Hero Section -->
@@ -101,13 +94,7 @@ $db = Database::getInstance();
                                 <i class="fas fa-stethoscope" style="color: var(--primary-cyan); margin-right: 0.5rem;"></i> 
                                 <?php echo htmlspecialchars($doctor['specialty']); ?>
                             </p>
-                            <?php if (!empty($doctor['offers'])): ?>
-                                <div style="text-align:center; margin-bottom: 1rem;">
-                                    <?php foreach ($doctor['offers'] as $offer_title): ?>
-                                        <span class="badge" style="display:inline-block; background: #dbeafe; color: #1e3a8a; padding: 6px 10px; border-radius: 999px; font-size: 0.85rem; margin: 0 6px 6px 0;"><?php echo htmlspecialchars($offer_title); ?></span>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
+
                             
                             <!-- doctor biography removed for card simplicity -->
                             
@@ -197,13 +184,7 @@ $db = Database::getInstance();
                 <p>Comprehensive medical examinations and consultations for all ages with experienced healthcare professionals.</p>
             </div>
             
-            <div class="card text-center">
-                <div style="font-size: 3rem; color: var(--primary-cyan); margin-bottom: 1rem;">
-                    <i class="fas fa-vials"></i>
-                </div>
-                <h3>Laboratory Services</h3>
-                <p>Complete diagnostic testing services including blood work, urinalysis, and other essential medical tests.</p>
-            </div>
+            <!-- Laboratory Services card removed -->
             
             <div class="card text-center">
                 <div style="font-size: 3rem; color: var(--primary-cyan); margin-bottom: 1rem;">

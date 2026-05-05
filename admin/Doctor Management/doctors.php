@@ -116,9 +116,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Delete related records in the correct order to handle foreign key constraints
                         
                         if ($doctorRecordId) {
-                            // 1. Delete lab_offer_doctors
-                            $db->query("DELETE FROM lab_offer_doctors WHERE doctor_id = ?", [$doctorRecordId]);
-                            
                             // 2. Delete doctor schedules
                             $db->query("DELETE FROM doctor_schedules WHERE doctor_id = ?", [$doctorRecordId]);
                             
@@ -790,7 +787,7 @@ function showAppointmentDetails(id) {
                     ref: payment.gcash_reference,
                     receipt: payment.receipt_path
                 } : null,
-                laboratory_image: patientInfo ? patientInfo.laboratory_image : null
+
             };
             
             showAppointmentOverview(standardizedData, 'admin');

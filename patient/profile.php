@@ -471,7 +471,7 @@ unset($_SESSION['profile_success'], $_SESSION['profile_errors']);
                             ref: payment.gcash_reference,
                             receipt: payment.receipt_path
                         } : null,
-                                                laboratory_image: patientInfo ? patientInfo.laboratory_image : null,
+
                         reschedule_reason: appointment.reschedule_reason
                     };
                     

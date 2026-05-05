@@ -33,11 +33,8 @@ try {
     $relationship = trim($_POST['relationship'] ?? '');
     $illness = trim($_POST['illness'] ?? '');
     $purpose = trim($_POST['purpose'] ?? '');
-    $laboratory = trim($_POST['laboratory'] ?? '');
     $agreed_no_refund = isset($_POST['agreed_no_refund_policy']) ? 1 : 0;
-    $laboratory_image_file = $_FILES['laboratory_image'] ?? null;
     $patient_id = $_SESSION['user_id'];
-    $uploaded_laboratory_image = '';
 
     // Validate required fields
     $errors = [];
@@ -100,18 +97,7 @@ try {
         $errors[] = 'You must agree to the No Refund Policy to proceed.';
     }
     
-    // Validate laboratory field if purpose is laboratory
-    if ($purpose === 'laboratory' && empty($laboratory)) {
-        $errors[] = 'Please select a laboratory service.';
-    }
-
-    if ($purpose === 'laboratory') {
-        if (!$laboratory_image_file || ($laboratory_image_file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
-            $errors[] = 'Please upload a laboratory request image.';
-        } elseif (($laboratory_image_file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
-            $errors[] = 'Laboratory image upload failed. Please try again.';
-        }
-    }
+    // Laboratory validation removed
 
     if (!empty($errors)) {
         $_SESSION['appointment_errors'] = $errors;
@@ -153,23 +139,7 @@ try {
     
     $doctor_record_id = $doctor['doctor_record_id'];
 
-    // Upload laboratory image after core validation passes.
-    if ($purpose === 'laboratory' && $laboratory_image_file && ($laboratory_image_file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
-        $upload_result = uploadFile(
-            $laboratory_image_file,
-            __DIR__ . '/../assets/uploads/lab_requests',
-            ['jpg', 'jpeg', 'png', 'webp']
-        );
-
-        if (!$upload_result['success']) {
-            $_SESSION['appointment_errors'] = ['Failed to upload laboratory request image. Please try again.'];
-            $_SESSION['appointment_data'] = $_POST;
-            header('Location: book-appointment.php');
-            exit();
-        }
-
-        $uploaded_laboratory_image = 'assets/uploads/lab_requests/' . $upload_result['filename'];
-    }
+    // Laboratory image upload removed
 
     // Verify the selected day or date is in doctor's schedule
     $doctor_days = array_map('trim', explode(',', $doctor['schedule_days']));
@@ -239,8 +209,6 @@ try {
         'relationship' => $relationship,
         'illness' => $illness,
         'purpose' => $purpose,
-        'laboratory' => $laboratory,
-        'laboratory_image' => $uploaded_laboratory_image,
         'reference_number' => $reference_number,
         'agreed_no_refund_policy' => $agreed_no_refund
     ]);
@@ -251,7 +219,7 @@ try {
         'doctor_id' => $doctor_record_id,
         'appointment_date' => $appointment_date,
         'appointment_time' => $schedule_time,
-        'reason_for_visit' => $purpose === 'consultation' ? 'Consultation Only' : $laboratory,
+        'reason_for_visit' => 'Consultation Only',
         'first_name' => $first_name,
         'last_name' => $last_name,
         'phone_number' => $phone_number,
@@ -286,7 +254,7 @@ try {
                 'specialty' => $doctor['specialty'],
                 'appointment_date' => formatDate($appointment_date),
                 'appointment_time' => formatTime($schedule_time),
-                'reason' => $purpose === 'consultation' ? 'Consultation Only' : $laboratory,
+                'reason' => 'Consultation Only',
                 'fee' => number_format($doctor['consultation_fee'], 2),
                 'reference_number' => $reference_number
             ];
@@ -302,25 +270,9 @@ try {
         // Log activity
         logActivity($patient_id, 'appointment_created', "Created appointment with Dr. {$doctor['first_name']} {$doctor['last_name']}");
         
-        // Determine fee and fee label based on purpose
+        // Determine fee and fee label
         $fee = $doctor['consultation_fee'];
         $fee_label = 'Consultation Fee';
-        
-        // If laboratory, get the lab offer price
-        if ($purpose === 'laboratory' && !empty($laboratory)) {
-            // Query to fetch laboratory price using doctor_record_id
-            $lab_offer = $db->fetch("
-                SELECT lo.price, lo.title, lo.id, lod.doctor_id
-                FROM lab_offers lo
-                JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
-                WHERE lo.title = ? AND lod.doctor_id = ? AND lo.is_active = 1
-            ", [$laboratory, $doctor['doctor_record_id']]);
-            
-            if ($lab_offer && isset($lab_offer['price']) && $lab_offer['price'] !== null) {
-                $fee = (float)$lab_offer['price'];
-                $fee_label = 'Laboratory Fee';
-            }
-        }
         
         // Clear any existing payment data
         unset($_SESSION['payment_data']);
@@ -332,7 +284,6 @@ try {
             'consultation_fee' => $fee,
             'fee_label' => $fee_label,
             'purpose' => $purpose,
-            'laboratory' => $laboratory,
             'appointment_date' => $appointment_date,
             'appointment_time' => $schedule_time,
             'reference_number' => $reference_number

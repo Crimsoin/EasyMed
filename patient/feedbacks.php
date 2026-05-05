@@ -63,11 +63,6 @@ foreach ($unreviewed_appointments as &$apt) {
     
     $apt['display_fee'] = $apt['consultation_fee'];
     $apt['fee_label'] = 'Consultation Fee';
-    
-    if ($purpose === 'laboratory' && !empty($apt['payment_amount'])) {
-        $apt['display_fee'] = $apt['payment_amount'];
-        $apt['fee_label'] = 'Laboratory Fee';
-    }
 }
 unset($apt);
 

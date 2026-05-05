@@ -18,7 +18,16 @@ function initializePatientManagement() {
             const submitButton = form.querySelector('button[type="submit"]');
             if (submitButton && !submitButton.disabled) {
                 submitButton.disabled = true;
-                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                
+                // Identify if it's a small action button (in a table row) vs a large form button
+                const isActionBtn = submitButton.classList.contains('btn-action') || 
+                                   submitButton.classList.contains('btn-toggle') || 
+                                   submitButton.classList.contains('btn-delete') || 
+                                   submitButton.classList.contains('btn-reset') ||
+                                   submitButton.closest('.action-buttons') ||
+                                   submitButton.closest('.patient-actions');
+                                   
+                submitButton.innerHTML = isActionBtn ? '<i class="fas fa-spinner fa-spin"></i>' : '<i class="fas fa-spinner fa-spin"></i> Processing...';
                 
                 // Re-enable after 5 seconds as a failsafe
                 setTimeout(() => {

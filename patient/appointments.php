@@ -52,7 +52,6 @@ $appointments = $db->fetchAll("
 foreach ($appointments as &$appointment) {
     $p_info = json_decode($appointment['patient_info'], true) ?? [];
     $purpose = $p_info['purpose'] ?? 'consultation';
-    $laboratory_name = $p_info['laboratory'] ?? '';
     
     // Final normalization logic
     $appointment['patient_dob'] = (isset($p_info['date_of_birth']) && $p_info['date_of_birth'] !== '') ? $p_info['date_of_birth'] : $appointment['patient_dob'];
@@ -63,26 +62,6 @@ foreach ($appointments as &$appointment) {
     // Default to consultation fee
     $appointment['display_fee'] = $appointment['consultation_fee'];
     $appointment['fee_label'] = 'Consultation Fee';
-    
-    // If laboratory and payment amount exists, use that
-    if ($purpose === 'laboratory' && !empty($appointment['payment_amount'])) {
-        $appointment['display_fee'] = $appointment['payment_amount'];
-        $appointment['fee_label'] = 'Laboratory Fee';
-    }
-    // Otherwise, if laboratory, try to fetch from lab_offers table
-    elseif ($purpose === 'laboratory' && !empty($laboratory_name)) {
-        $lab_offer = $db->fetch("
-            SELECT lo.price 
-            FROM lab_offers lo
-            JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
-            WHERE lo.title = ? AND lod.doctor_id = ? AND lo.is_active = 1
-        ", [$laboratory_name, $appointment['doctor_internal_id']]);
-        
-        if ($lab_offer && !empty($lab_offer['price'])) {
-            $appointment['display_fee'] = $lab_offer['price'];
-            $appointment['fee_label'] = 'Laboratory Fee';
-        }
-    }
 }
 unset($appointment); // Break reference
 
@@ -291,21 +270,7 @@ unset($_SESSION['appointment_errors']);
             gap: 12px;
         }
 
-        .laboratory-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.8rem;
-            color: #475569;
-            background: #f8fafc;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid #f1f5f9;
-        }
 
-        .laboratory-info i {
-            color: #3b82f6;
-        }
 
         .payment-status-wrapper {
             display: flex;
@@ -596,7 +561,6 @@ unset($_SESSION['appointment_errors']);
                 <?php foreach ($appointments as $appointment): 
                     $p_info = json_decode($appointment['patient_info'], true) ?? [];
                     $purpose = $p_info['purpose'] ?? 'consultation';
-                    $laboratory = $p_info['laboratory'] ?? '';
                     $reference_number = $p_info['reference_number'] ?? ('APT-' . $appointment['id']);
                     $status = strtolower($appointment['status']);
                 ?>
@@ -634,12 +598,7 @@ unset($_SESSION['appointment_errors']);
                                     </div>
                                 </div>
 
-                                <?php if ($laboratory): ?>
-                                <div class="laboratory-info">
-                                    <i class="fas fa-flask"></i>
-                                    <span><strong>Laboratory:</strong> <?= htmlspecialchars($laboratory) ?></span>
-                                </div>
-                                <?php endif; ?>
+
                             </div>
 
                             <div class="payment-strip">
@@ -700,7 +659,6 @@ unset($_SESSION['appointment_errors']);
                                     "status" => ucfirst($appointment['status']),
                                     "fee" => number_format($appointment['display_fee'], 2),
                                     "purpose" => ucfirst($purpose),
-                                    "laboratory" => $laboratory,
                                     "doctor" => "Dr. " . $appointment['doctor_first_name'] . " " . $appointment['doctor_last_name'],
                                     "doctor_initials" => $appointment['doctor_first_name'][0] . $appointment['doctor_last_name'][0],
                                     "specialty" => $appointment['specialty'],
@@ -712,7 +670,7 @@ unset($_SESSION['appointment_errors']);
                                     "dob" => !empty($appointment['patient_dob']) ? formatDate($appointment['patient_dob']) : ($p_info['dob'] ?? 'N/A'),
                                     "reason" => !empty($appointment['illness']) ? $appointment['illness'] : ($appointment['reason_for_visit'] ?: 'General Consultation'),
                                     "notes" => $appointment['notes'] ?? '',
-                                    "laboratory_image" => $p_info['laboratory_image'] ?? null,
+
                                     "payment" => [
                                         "amount" => number_format($appointment['payment_amount'] ?? $appointment['display_fee'], 2),
                                         "ref" => $appointment['gcash_reference'] ?? 'N/A',

@@ -384,7 +384,7 @@ require_once '../includes/header.php';
                                                             'payment_amount' => $appointment['payment_amount'] ?? 0,
                                                             'gcash_reference' => $appointment['gcash_reference'] ?? 'N/A',
                                                             'receipt_path' => $receipt_path,
-                                                            'laboratory_image_path' => $p_info['laboratory_image'] ?? null,
+
                                                                                                                          'reschedule_reason' => $appointment['reschedule_reason'],
                                                              'updated_at' => $appointment['updated_at']
                                                         ]), ENT_QUOTES, 'UTF-8'); ?>)">

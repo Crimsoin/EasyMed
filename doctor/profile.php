@@ -59,52 +59,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 break;
                 
-            case 'add_lab_offer':
-                $result = addLabOffer($db, $doctor_internal_id, $_POST);
-                if ($result['success']) {
-                    $message = $result['message'];
-                } else {
-                    $error = $result['message'];
-                }
-                break;
-                
-            case 'update_lab_offer':
-                $result = updateLabOffer($db, $doctor_internal_id, $_POST);
-                if ($result['success']) {
-                    $message = $result['message'];
-                } else {
-                    $error = $result['message'];
-                }
-                break;
-                
-            case 'delete_lab_offer':
-                $result = deleteLabOffer($db, $doctor_internal_id, $_POST);
-                if ($result['success']) {
-                    $message = $result['message'];
-                } else {
-                    $error = $result['message'];
-                }
-                break;
-                
-            case 'toggle_lab_offer':
-                $result = toggleLabOffer($db, $doctor_internal_id, $_POST);
-                if ($result['success']) {
-                    $message = $result['message'];
-                } else {
-                    $error = $result['message'];
-                }
-                break;
+            // Laboratory actions removed
         }
     }
 }
+
 
 // Get doctor information and map to expected 'doctor' variable for template
 $doctor_info = getDoctorProfile($db, $doctor_id);
 $doctor = $doctor_info; // For template compatibility
 $doctor['id'] = $doctor_id; // Ensure user ID is present
 
-// Get doctor's lab offers
-$lab_offers = getLabOffers($db, $doctor_internal_id);
+
 
 // Get doctor statistics (Granular stats for template)
 $stats = [
@@ -281,159 +247,7 @@ function updatePreferences($db, $doctor_id, $data) {
     }
 }
 
-function getLabOffers($db, $doctor_internal_id) {
-    try {
-        $sql = "SELECT lo.* 
-                FROM lab_offers lo
-                JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
-                WHERE lod.doctor_id = ?
-                ORDER BY lo.title ASC";
-        return $db->fetchAll($sql, [$doctor_internal_id]);
-    } catch (Exception $e) {
-        return [];
-    }
-}
-
-function addLabOffer($db, $doctor_internal_id, $data) {
-    try {
-        if (empty($data['title'])) {
-            return ['success' => false, 'message' => 'Title is required.'];
-        }
-        
-        // Check if offer already exists for this doctor
-        $existing = $db->fetch("
-            SELECT lo.id 
-            FROM lab_offers lo
-            JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
-            WHERE lod.doctor_id = ? AND LOWER(lo.title) = LOWER(?)
-        ", [$doctor_internal_id, $data['title']]);
-        
-        if ($existing) {
-            return ['success' => false, 'message' => 'This lab offer already exists.'];
-        }
-        
-        // Insert lab offer
-        $lab_offer_id = $db->insert('lab_offers', [
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'price' => !empty($data['price']) ? (float)$data['price'] : null,
-            'is_active' => 1,
-            'created_at' => date('Y-m-d H:i:s')
-        ]);
-        
-        // Link to doctor
-        $db->insert('lab_offer_doctors', [
-            'lab_offer_id' => $lab_offer_id,
-            'doctor_id' => $doctor_internal_id,
-            'created_at' => date('Y-m-d H:i:s')
-        ]);
-        
-        return ['success' => true, 'message' => 'Lab offer added successfully!'];
-    } catch (Exception $e) {
-        return ['success' => false, 'message' => 'Error adding lab offer: ' . $e->getMessage()];
-    }
-}
-
-function updateLabOffer($db, $doctor_internal_id, $data) {
-    try {
-        if (empty($data['offer_id']) || empty($data['title'])) {
-            return ['success' => false, 'message' => 'Missing required fields.'];
-        }
-        
-        // Verify this offer belongs to the doctor
-        $verify = $db->fetch("
-            SELECT lod.id 
-            FROM lab_offer_doctors lod
-            WHERE lod.lab_offer_id = ? AND lod.doctor_id = ?
-        ", [$data['offer_id'], $doctor_internal_id]);
-        
-        if (!$verify) {
-            return ['success' => false, 'message' => 'Unauthorized action.'];
-        }
-        
-        // Update lab offer
-        $db->update('lab_offers', [
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'price' => !empty($data['price']) ? (float)$data['price'] : null
-        ], 'id = ?', [$data['offer_id']]);
-        
-        return ['success' => true, 'message' => 'Lab offer updated successfully!'];
-    } catch (Exception $e) {
-        return ['success' => false, 'message' => 'Error updating lab offer: ' . $e->getMessage()];
-    }
-}
-
-function deleteLabOffer($db, $doctor_internal_id, $data) {
-    try {
-        if (empty($data['offer_id'])) {
-            return ['success' => false, 'message' => 'Missing offer ID.'];
-        }
-        
-        // Verify this offer belongs to the doctor
-        $verify = $db->fetch("
-            SELECT lod.id 
-            FROM lab_offer_doctors lod
-            WHERE lod.lab_offer_id = ? AND lod.doctor_id = ?
-        ", [$data['offer_id'], $doctor_internal_id]);
-        
-        if (!$verify) {
-            return ['success' => false, 'message' => 'Unauthorized action.'];
-        }
-        
-        // Check if this is the only doctor with this offer
-        $doctor_count = $db->fetch("
-            SELECT COUNT(*) as count 
-            FROM lab_offer_doctors 
-            WHERE lab_offer_id = ?
-        ", [$data['offer_id']])['count'];
-        
-        if ($doctor_count <= 1) {
-            // Delete the offer itself if no other doctors have it
-            $db->delete('lab_offers', 'id = ?', [$data['offer_id']]);
-        } else {
-            // Just remove the link
-            $db->delete('lab_offer_doctors', 'lab_offer_id = ? AND doctor_id = ?', [$data['offer_id'], $doctor_internal_id]);
-        }
-        
-        return ['success' => true, 'message' => 'Lab offer deleted successfully!'];
-    } catch (Exception $e) {
-        return ['success' => false, 'message' => 'Error deleting lab offer: ' . $e->getMessage()];
-    }
-}
-
-function toggleLabOffer($db, $doctor_internal_id, $data) {
-    try {
-        if (empty($data['offer_id'])) {
-            return ['success' => false, 'message' => 'Missing offer ID.'];
-        }
-        
-        // Verify this offer belongs to the doctor
-        $verify = $db->fetch("
-            SELECT lod.id 
-            FROM lab_offer_doctors lod
-            WHERE lod.lab_offer_id = ? AND lod.doctor_id = ?
-        ", [$data['offer_id'], $doctor_internal_id]);
-        
-        if (!$verify) {
-            return ['success' => false, 'message' => 'Unauthorized action.'];
-        }
-        
-        // Toggle active status
-        $current = $db->fetch("SELECT is_active FROM lab_offers WHERE id = ?", [$data['offer_id']]);
-        $new_status = $current['is_active'] ? 0 : 1;
-        
-        $db->update('lab_offers', [
-            'is_active' => $new_status
-        ], 'id = ?', [$data['offer_id']]);
-        
-        $status_text = $new_status ? 'activated' : 'deactivated';
-        return ['success' => true, 'message' => "Lab offer $status_text successfully!"];
-    } catch (Exception $e) {
-        return ['success' => false, 'message' => 'Error toggling lab offer: ' . $e->getMessage()];
-    }
-}
-
+// Laboratory offer management functions removed
 function getInitials($name) {
     $words = explode(' ', trim($name));
     if (count($words) >= 2) {
@@ -784,7 +598,7 @@ require_once '../includes/header.php';
                             ref: payment.gcash_reference,
                             receipt: payment.receipt_path
                         } : null,
-                                                laboratory_image: patientInfo ? patientInfo.laboratory_image : null,
+
                         reschedule_reason: appointment.reschedule_reason
                     };
                     

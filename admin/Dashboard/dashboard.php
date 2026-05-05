@@ -506,26 +506,8 @@ $appointments = $db->fetchAll("
 
 // Calculate correct fee for each appointment
 foreach ($appointments as &$appointment) {
-    $patient_info = json_decode($appointment['patient_info'], true);
-    $purpose = $patient_info['purpose'] ?? 'consultation';
-    $laboratory_name = $patient_info['laboratory'] ?? '';
-    
     // Default to consultation fee
     $appointment['display_fee'] = $appointment['consultation_fee'];
-    
-    // If laboratory, try to fetch from lab_offers table
-    if ($purpose === 'laboratory' && !empty($laboratory_name) && !empty($appointment['doctor_internal_id'])) {
-        $lab_offer = $db->fetch("
-            SELECT lo.price 
-            FROM lab_offers lo
-            JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
-            WHERE lo.title = ? AND lod.doctor_id = ? AND lo.is_active = 1
-        ", [$laboratory_name, $appointment['doctor_internal_id']]);
-        
-        if ($lab_offer && !empty($lab_offer['price'])) {
-            $appointment['display_fee'] = $lab_offer['price'];
-        }
-    }
 }
 unset($appointment); // Break reference
 
@@ -916,32 +898,32 @@ require_once '../../includes/header.php';
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Ref ID</th>
-                            <th>Patient Identity</th>
-                            <th>Clinical Expert</th>
-                            <th>Schedule</th>
-                            <th>Booking Date</th>
-                            <th>Status Code</th>
-                            <th>Valuation</th>
+                            <th data-sort-type="number" style="cursor: pointer;">Ref ID <i class="fas fa-sort" style="font-size: 0.75rem; color: #cbd5e1; margin-left: 5px;"></i></th>
+                            <th data-sort-type="string" style="cursor: pointer;">Patient Identity <i class="fas fa-sort" style="font-size: 0.75rem; color: #cbd5e1; margin-left: 5px;"></i></th>
+                            <th data-sort-type="string" style="cursor: pointer;">Clinical Expert <i class="fas fa-sort" style="font-size: 0.75rem; color: #cbd5e1; margin-left: 5px;"></i></th>
+                            <th data-sort-type="string" style="cursor: pointer;">Schedule <i class="fas fa-sort" style="font-size: 0.75rem; color: #cbd5e1; margin-left: 5px;"></i></th>
+                            <th data-sort-type="string" style="cursor: pointer;">Booking Date <i class="fas fa-sort" style="font-size: 0.75rem; color: #cbd5e1; margin-left: 5px;"></i></th>
+                            <th data-sort-type="string" style="cursor: pointer;">Status Code <i class="fas fa-sort" style="font-size: 0.75rem; color: #cbd5e1; margin-left: 5px;"></i></th>
+                            <th data-sort-type="number" style="cursor: pointer;">Valuation <i class="fas fa-sort" style="font-size: 0.75rem; color: #cbd5e1; margin-left: 5px;"></i></th>
                             <th>Operations</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($appointments as $appointment): ?>
                                 <tr>
-                                    <td><code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-family: 'JetBrains Mono', monospace;">#<?php echo str_pad($appointment['id'], 5, '0', STR_PAD_LEFT); ?></code></td>
-                                    <td>
+                                    <td data-sort="<?php echo $appointment['id']; ?>"><code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-family: 'JetBrains Mono', monospace;">#<?php echo str_pad($appointment['id'], 5, '0', STR_PAD_LEFT); ?></code></td>
+                                    <td data-sort="<?php echo htmlspecialchars($appointment['patient_first_name'] . ' ' . ($appointment['patient_last_name'] ?? '')); ?>">
                                         <div class="user-info">
                                             <div class="doctor-avatar-initials" style="background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #2563eb;">
                                                 <?php echo strtoupper(substr($appointment['patient_first_name'], 0, 1) . substr($appointment['patient_last_name'] ?? '', 0, 1)); ?>
                                             </div>
                                             <div class="user-details" style="padding-left: 10px;">
-                                                <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #1e293b;"><?php echo htmlspecialchars($appointment['patient_first_name'] . ' ' . $appointment['patient_last_name']); ?></h4>
+                                                <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #1e293b;"><?php echo htmlspecialchars($appointment['patient_first_name'] . ' ' . ($appointment['patient_last_name'] ?? '')); ?></h4>
                                                 <p style="margin: 0; font-size: 0.8rem; color: #64748b;"><?php echo htmlspecialchars($appointment['patient_email']); ?></p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-sort="<?php echo htmlspecialchars($appointment['doctor_first_name'] . ' ' . $appointment['doctor_last_name']); ?>">
                                         <div class="user-info">
                                             <div class="user-details" style="padding-left: 0;">
                                                 <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #1e293b;">Dr. <?php echo htmlspecialchars($appointment['doctor_first_name'] . ' ' . $appointment['doctor_last_name']); ?></h4>
@@ -949,14 +931,14 @@ require_once '../../includes/header.php';
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-sort="<?php echo $appointment['appointment_date'] . ' ' . $appointment['appointment_time']; ?>">
                                         <div class="log-timestamp">
                                             <strong style="color: #334155;"><?php echo date('M j, Y', strtotime($appointment['appointment_date'])); ?></strong>
                                             <br>
                                             <small style="color: #64748b;"><i class="far fa-clock"></i> <?php echo formatTime($appointment['appointment_time']); ?></small>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-sort="<?php echo $appointment['created_at']; ?>">
                                         <div class="log-timestamp">
                                             <span style="color: #64748b; font-size: 0.85rem; font-weight: 500;">
                                                 <i class="fas fa-history"></i> <?php echo date('M j, Y', strtotime($appointment['created_at'])); ?>
@@ -965,13 +947,13 @@ require_once '../../includes/header.php';
                                             <small style="color: #94a3b8; font-size: 0.75rem;"><i class="far fa-clock"></i> <?php echo date('h:i A', strtotime($appointment['created_at'])); ?></small>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-sort="<?php echo htmlspecialchars($appointment['status'] ?: 'pending'); ?>">
                                         <span class="status-badge status-<?php echo htmlspecialchars($appointment['status'] ?: 'pending'); ?>">
                                             <?php echo strtoupper(htmlspecialchars($appointment['status'] ?: 'pending')); ?>
                                         </span>
                                     </td>
 
-                                    <td>
+                                    <td data-sort="<?php echo $appointment['display_fee']; ?>">
                                         <strong style="color: #0f172a; font-size: 0.95rem;">₱<?php echo number_format($appointment['display_fee'], 2); ?></strong>
                                     </td>
                                     <td>
@@ -1029,7 +1011,7 @@ require_once '../../includes/header.php';
                                             We couldn't find any clinic records matching your current filter criteria.
                                             Try adjusting your parameters or clear the workspace.
                                         </p>
-                                        <a href="dashboard.php" class="btn" style="background: #eff6ff; color: #2563eb; border-radius: 12px; font-weight: 700; padding: 0.8rem 1.5rem;">
+                                        <a href="dashboard.php" class="btn btn-secondary">
                                             <i class="fas fa-redo"></i> Reset Workspace
                                         </a>
                                     </div>
@@ -2378,16 +2360,43 @@ document.addEventListener('DOMContentLoaded', function() {
             </form>
         </div>
     </div>
-</div>v>
+</div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle loading states for all modal forms
+    const forms = ['rescheduleForm', 'statusForm'];
+    forms.forEach(formId => {
+        const form = document.getElementById(formId);
+        if (form) {
+            form.addEventListener('submit', function() {
+                const btn = form.querySelector('button[type="submit"]');
+                if (btn) {
+                    btn.disabled = true;
+                    
+                    // Identify if it's a small action button (in a table row) vs a large form button
+                    const isActionBtn = btn.classList.contains('btn-action') || 
+                                       btn.classList.contains('btn-view') || 
+                                       btn.classList.contains('btn-reschedule') || 
+                                       btn.classList.contains('btn-delete') ||
+                                       btn.classList.contains('btn-toggle') ||
+                                       btn.closest('.action-buttons') ||
+                                       btn.closest('.appointment-actions');
+                                       
+                    btn.innerHTML = isActionBtn ? '<i class="fas fa-spinner fa-spin"></i>' : '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                }
+            });
+        }
+    });
+});
+
 // Modal functionality
 function viewAppointment(idOrData) {
     const id = (typeof idOrData === 'object') ? idOrData.id : idOrData;
     if (!id) return alert("Error: Invalid appointment reference.");
     // Show loading state
     const modal = document.getElementById('appointmentModal');
-    const detailsDiv = document.getElementById('commonModalContent');
+    const detailsDiv = document.getElementById('modalContent');
     
     if (detailsDiv) detailsDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Loading appointment details...</div>';
     modal.style.display = 'block';
@@ -2434,7 +2443,7 @@ function viewAppointment(idOrData) {
                         ref: payment.gcash_reference,
                         receipt: payment.receipt_path
                     } : null,
-                    laboratory_image: patientInfo ? patientInfo.laboratory_image : null,
+
                     reschedule_reason: appointment.reschedule_reason,
                     updated_at: appointment.updated_at
                 };
@@ -2701,6 +2710,90 @@ function renderRescheduleTimeSlots(dateStr) {
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
+
+// Table Sorting Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.querySelector('.data-table');
+    if (!table) return;
+    
+    const headers = table.querySelectorAll('th[data-sort-type]');
+    const tbody = table.querySelector('tbody');
+    const originalRows = Array.from(tbody.querySelectorAll('tr:not(.empty-state)'));
+    
+    let currentSort = {
+        index: -1,
+        direction: 'none' // 'asc', 'desc', 'none'
+    };
+
+    headers.forEach((header, index) => {
+        header.addEventListener('click', () => {
+            const sortType = header.getAttribute('data-sort-type');
+            
+            // Reset other headers
+            headers.forEach((h, i) => {
+                if (i !== index) {
+                    const icon = h.querySelector('i');
+                    icon.className = 'fas fa-sort';
+                    icon.style.color = '#cbd5e1';
+                }
+            });
+
+            const icon = header.querySelector('i');
+            
+            if (currentSort.index === index) {
+                if (currentSort.direction === 'asc') {
+                    currentSort.direction = 'desc';
+                    icon.className = 'fas fa-sort-down';
+                    icon.style.color = '#2563eb';
+                    sortRows(index, 'desc', sortType);
+                } else if (currentSort.direction === 'desc') {
+                    currentSort.direction = 'none';
+                    icon.className = 'fas fa-sort';
+                    icon.style.color = '#cbd5e1';
+                    restoreOriginal();
+                } else {
+                    currentSort.direction = 'asc';
+                    icon.className = 'fas fa-sort-up';
+                    icon.style.color = '#2563eb';
+                    sortRows(index, 'asc', sortType);
+                }
+            } else {
+                currentSort.index = index;
+                currentSort.direction = 'asc';
+                icon.className = 'fas fa-sort-up';
+                icon.style.color = '#2563eb';
+                sortRows(index, 'asc', sortType);
+            }
+        });
+    });
+
+    function sortRows(index, direction, type) {
+        const rows = Array.from(tbody.querySelectorAll('tr:not(.empty-state)'));
+        
+        rows.sort((a, b) => {
+            let valA = a.children[index].getAttribute('data-sort') || a.children[index].textContent.trim();
+            let valB = b.children[index].getAttribute('data-sort') || b.children[index].textContent.trim();
+            
+            if (type === 'number') {
+                valA = parseFloat(valA) || 0;
+                valB = parseFloat(valB) || 0;
+            } else {
+                valA = valA.toLowerCase();
+                valB = valB.toLowerCase();
+            }
+            
+            if (valA < valB) return direction === 'asc' ? -1 : 1;
+            if (valA > valB) return direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    function restoreOriginal() {
+        originalRows.forEach(row => tbody.appendChild(row));
+    }
+});
 
 // Window click to handle specific admin modals
 const originalOnClick = window.onclick;

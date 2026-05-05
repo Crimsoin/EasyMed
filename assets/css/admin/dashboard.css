@@ -144,45 +144,124 @@
     font-size: 1.2rem;
 }
 
-/* Buttons */
+/* Buttons Design System */
 .btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0.8rem 1.6rem;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     font-size: 0.9rem;
-    font-weight: 500;
+    font-weight: 700;
     text-decoration: none;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     text-align: center;
+    outline: none;
+}
+
+.btn:active {
+    transform: scale(0.96);
 }
 
 .btn-primary {
-    background: var(--primary-cyan);
-    color: var(--white);
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    background: linear-gradient(135deg, var(--premium-blue), #3b82f6);
+    color: var(--white) !important;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+    background: linear-gradient(135deg, #3b82f6, var(--premium-blue));
     color: var(--white);
     text-decoration: none;
 }
 
 .btn-secondary {
-    background: var(--white);
-    color: var(--primary-cyan);
-    border: 2px solid var(--primary-cyan);
+    background: #f8fafc;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0;
 }
 
 .btn-secondary:hover {
-    background: var(--primary-cyan);
-    color: var(--white);
+    background: #f1f5f9;
+    color: var(--premium-blue) !important;
+    border-color: var(--premium-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.btn-view, .btn-reschedule, .btn-delete {
+    width: 40px;
+    height: 40px;
+    padding: 0 !important;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-view { background: #eff6ff; color: #1e40af; }
+.btn-view:hover { background: #2563eb; color: white; transform: translateY(-3px) rotate(5deg); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2); }
+
+.btn-reschedule { background: #f0fdf4; color: #166534; }
+.btn-reschedule:hover { background: #22c55e; color: white; transform: translateY(-3px); box-shadow: 0 8px 20px rgba(34, 197, 94, 0.2); }
+
+.btn-delete { background: #fef2f2; color: #991b1b; }
+.btn-delete:hover { background: #ef4444; color: white; transform: translateY(-3px) scale(1.1); box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2); }
+
+/* Pagination Buttons */
+.pagination-container {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pagination {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    transition: all 0.2s;
     text-decoration: none;
+    min-width: 40px;
+}
+
+.pagination-btn:hover {
+    border-color: var(--premium-blue);
+    color: var(--premium-blue);
+    background: #eff6ff;
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
+.pagination-btn.active {
+    background: var(--premium-blue);
+    color: white;
+    border-color: var(--premium-blue);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.pagination-info {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 600;
 }
 
 /* Tables */
@@ -579,18 +658,39 @@
     color: #64748b;
 }
 
-/* Filter Buttons Update */
+/* Filter Tabs Switcher */
+.filter-buttons {
+    background: #f1f5f9;
+    padding: 0.5rem;
+    border-radius: 16px;
+    display: inline-flex;
+    gap: 0.5rem;
+    border: 1px solid rgba(37, 99, 235, 0.05);
+    margin-bottom: 1.5rem;
+}
+
 .filter-btn {
-    padding: 0.75rem 1.75rem !important;
+    padding: 0.7rem 1.8rem !important;
     border-radius: 12px !important;
-    border: 2px solid #f1f5f9 !important;
+    border: none !important;
+    background: transparent !important;
+    color: #64748b !important;
+    font-weight: 700 !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+}
+
+.filter-btn:hover {
+    color: var(--premium-blue) !important;
+    background: rgba(37, 99, 235, 0.08) !important;
 }
 
 .filter-btn.active {
-    background: linear-gradient(135deg, var(--premium-blue), var(--premium-cyan)) !important;
-    box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4) !important;
+    background: white !important;
+    color: var(--premium-blue) !important;
+    box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.15) !important;
 }
 
 /* Doctor Performance & Management Tables Update */

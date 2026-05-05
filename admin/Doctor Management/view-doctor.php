@@ -81,7 +81,7 @@ foreach ($recent_appointments as &$appt) {
             $appt['illness'] = $decoded['illness'] ?? $appt['illness'];
             $appt['purpose'] = $decoded['purpose'] ?? null;
             $appt['relationship'] = $decoded['relationship'] ?? 'Self';
-            $appt['laboratory_image'] = $decoded['laboratory_image'] ?? null;
+
         }
     }
     if (!empty($appt['receipt_file'])) {
@@ -100,15 +100,7 @@ $rating_data = $db->fetch("
 $avg_rating = $rating_data['avg_rating'] ? round($rating_data['avg_rating'], 1) : 0;
 $total_reviews = $rating_data['total_reviews'];
 
-// Get laboratory offers
-$lab_offers = $db->fetchAll("
-    SELECT lo.* 
-    FROM lab_offers lo
-    JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
-    JOIN doctors d ON lod.doctor_id = d.id
-    WHERE d.user_id = ?
-    ORDER BY lo.title ASC
-", [$doctor_id]);
+
 
 require_once '../../includes/header.php';
 ?>
@@ -251,7 +243,7 @@ function viewAppointment(appointment) {
             ref: appointment.gcash_reference,
             receipt: appointment.receipt_path
         } : null,
-        laboratory_image: appointment.laboratory_image,
+
         reschedule_reason: appointment.reschedule_reason,
         updated_at: appointment.updated_at
     };

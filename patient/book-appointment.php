@@ -166,35 +166,8 @@ if (empty($appointment_data)) {
 										<?php echo htmlspecialchars($doctor['specialty']); ?>
 									</p>
 									
-									<?php
-									// Get laboratory offers for this doctor
-									$doctor_offers = $db->fetchAll("
-										SELECT lo.title 
-										FROM lab_offers lo
-										JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
-										WHERE lod.doctor_id = ? AND lo.is_active = 1
-										ORDER BY lo.title
-									", [$doctor['doctor_id']]);
-									
-									if (!empty($doctor_offers)): ?>
-										<div class="doctor-offers" style="margin-bottom: 1rem;">
-											<?php foreach ($doctor_offers as $offer): ?>
-												<span class="offer-badge" style="
-													display: inline-block;
-													background: linear-gradient(135deg, #eff6ff, #dbeafe);
-													color: #2563eb;
-													padding: 0.3rem 0.8rem;
-													border-radius: 15px;
-													font-size: 0.8rem;
-													font-weight: 600;
-													margin: 0.2rem 0.3rem 0.2rem 0;
-													border: 1px solid rgba(37, 99, 235, 0.2);
-												">
-													<?php echo htmlspecialchars($offer['title']); ?>
-												</span>
-											<?php endforeach; ?>
-										</div>
-									<?php endif; ?>
+									<!-- Laboratory offers removed -->
+									<!-- biography removed from doctor card -->
                   <!-- biography removed from doctor card -->
 									<div class="doctor-schedule">
 										<h4 style="color: var(--primary-cyan); margin-bottom: 0.5rem; font-size: 1rem;">
@@ -220,18 +193,7 @@ if (empty($appointment_data)) {
 									</div>
 									<div style="margin-top: 1rem; text-align: center;">
 									<?php
-									// Get laboratory offers for this doctor to include in data attribute with prices
-									$doctor_lab_offers = $db->fetchAll("
-										SELECT lo.title, lo.price 
-										FROM lab_offers lo
-										JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
-										WHERE lod.doctor_id = ? AND lo.is_active = 1
-										ORDER BY lo.title
-									", [$doctor['doctor_id']]);
-									
-									// Store both titles and full offer data with prices
-									$doctor['lab_offers'] = array_column($doctor_lab_offers, 'title');
-									$doctor['lab_offers_data'] = $doctor_lab_offers; // Include prices
+									// Laboratory offers data fetching removed
 									?>
 										<button class="btn btn-primary btn-sm" 
 											onclick="openAppointmentModal(this)" 
@@ -357,7 +319,7 @@ if (empty($appointment_data)) {
                 <label for="modal_schedule_time">Preferred Time</label>
                 <div class="input-icon-wrapper">
                     <i class="fas fa-clock"></i>
-                    <select name="schedule_time" id="modal_schedule_time" class="form-control" required>
+                    <select name="schedule_time" id="modal_schedule_time" class="form-control" required disabled>
                       <option value="">Select Date First</option>
                     </select>
                 </div>
@@ -398,34 +360,11 @@ if (empty($appointment_data)) {
                     <i class="fas fa-briefcase-medical"></i>
                     <select name="purpose" id="modal_purpose" class="form-control" required>
                       <option value="consultation">Medical Consultation</option>
-                      <option value="laboratory">Laboratory Service</option>
                     </select>
                 </div>
               </div>
             </div>
-            <div class="form-row" id="laboratory_row" style="display: none;">
-              <div class="form-group">
-                <label for="modal_laboratory">Select Laboratory Test</label>
-                <div class="input-icon-wrapper">
-                    <i class="fas fa-flask"></i>
-                    <select name="laboratory" id="modal_laboratory" class="form-control">
-                      <option value="">Choose available test...</option>
-                    </select>
-                </div>
-              </div>
-            </div>
-            <div class="form-row" id="laboratory_image_row" style="display: none;">
-              <div class="form-group">
-                <label for="modal_laboratory_image">Upload Laboratory Request Image</label>
-                <div class="input-icon-wrapper">
-                    <input type="file" name="laboratory_image" id="modal_laboratory_image" class="form-control" accept="image/*">
-                </div>
-                <small style="color:#666; display:block; margin-top:0.3rem; font-size:0.85rem; font-weight: 500;">Accepted formats: JPG, JPEG, PNG, WEBP</small>
-                <div id="laboratory_image_preview" class="laboratory-image-preview" style="display: none;">
-                    <img id="laboratory_image_preview_tag" src="" alt="Laboratory request preview">
-                </div>
-              </div>
-            </div>
+            <!-- Laboratory rows removed -->
 
             <!-- Section: Policy & Payment -->
             <div class="form-section-header" style="margin-top: 1.5rem;">
@@ -457,7 +396,7 @@ if (empty($appointment_data)) {
                   ₱0.00
                 </div>
                 <div id="price_label" class="fee-description">
-                  Please select a service type
+                  General Consultation Fee
                 </div>
               </div>
             </div>
@@ -772,27 +711,7 @@ if (empty($appointment_data)) {
     color: var(--primary-cyan);
 }
 
-.laboratory-image-preview {
-  margin-top: 0.9rem;
-  padding: 0.75rem;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.laboratory-image-preview img {
-  display: block;
-  width: 100%;
-  max-width: 320px;
-  max-height: 240px;
-  object-fit: contain;
-  border-radius: 10px;
-  border: 1px solid #cbd5e0;
-  background: #f8fafc;
-}
+/* Laboratory preview styles removed */
 
 .policy-agreement-box {
     width: 100%;
@@ -1050,9 +969,21 @@ function openAppointmentModal(buttonElement) {
   // Reset checkbox and button state for new doctor selection
   var noRefundCheck = document.getElementById('modal_no_refund');
   var submitBtn = document.getElementById('submit_appointment_btn');
+  var timeSelect = document.getElementById('modal_schedule_time');
+  var dateInput = document.getElementById('modal_schedule_day');
+  
   if (noRefundCheck && submitBtn) {
     noRefundCheck.checked = false;
     submitBtn.disabled = true;
+  }
+
+  if (timeSelect) {
+    timeSelect.innerHTML = '<option value="">Select Date First</option>';
+    timeSelect.disabled = true;
+  }
+  
+  if (dateInput) {
+    dateInput.value = '';
   }
   
   // Fill doctor details panel
@@ -1106,12 +1037,7 @@ function openAppointmentModal(buttonElement) {
   // If calendar produced no visible buttons (edge cases), show a date input fallback
   // ensure date input change populates times
   var dateInput = document.getElementById('modal_schedule_day');
-  if (dateInput) {
-    dateInput.addEventListener('change', function(){
-      if (!this.value) return;
-      populateScheduleTimesForDate(new Date(this.value));
-    });
-  }
+
 
   // helper to hide any previous calendar container if present
   var oldCal = document.getElementById('modal_calendar'); if (oldCal) oldCal.style.display = 'none';
@@ -1127,13 +1053,12 @@ function setupDateInput(scheduleDays) {
   if (input._flatpickr) input._flatpickr.destroy();
 
   // Initialize Flatpickr to enforce logic in a calendar UI
+  // Initialize Flatpickr to enforce logic in a calendar UI
   flatpickr(input, {
-    minDate: "tomorrow",
+    minDate: "today",
     maxDate: new Date().fp_incr(60),
     disable: [
       function(date) {
-        // Disable if it's in the past (strictly speaking, today might be allowed if time remains, 
-        // but user asked for "future dates" and "available days")
         var today = new Date();
         today.setHours(0,0,0,0);
         if (date < today) return true;
@@ -1146,6 +1071,12 @@ function setupDateInput(scheduleDays) {
     onChange: function(selectedDates, dateStr, instance) {
       if (selectedDates.length > 0) {
         populateScheduleTimesForDate(selectedDates[0]);
+      } else {
+        var timeSelect = document.getElementById('modal_schedule_time');
+        if (timeSelect) {
+            timeSelect.innerHTML = '<option value="">Select Date First</option>';
+            timeSelect.disabled = true;
+        }
       }
     }
   });
@@ -1153,8 +1084,7 @@ function setupDateInput(scheduleDays) {
   // Times will be populated when a date is selected via Flatpickr
   document.getElementById('modal_schedule_time').innerHTML = '<option value="">Select Date First</option>';
   
-  // Populate laboratory offers for this specific doctor
-  populateDoctorLaboratoryOffers(doctor.doctor_id);
+  // Laboratory offers population removed
   
   // Show modal
   document.getElementById('appointmentModal').style.display = 'block';
@@ -1240,14 +1170,16 @@ function populateScheduleTimesForDate(dateObj) {
       .then(function(response) { return response.json(); })
       .then(function(data) {
         var bookedTimes = data.success ? data.booked_times : [];
-        populateScheduleTimes(doctor.schedule_time_start, doctor.schedule_time_end, bookedTimes);
+        populateScheduleTimes(doctor.schedule_time_start, doctor.schedule_time_end, bookedTimes, dateStr);
       })
       .catch(function(err) {
         console.error('Error fetching booked times:', err);
-        populateScheduleTimes(doctor.schedule_time_start, doctor.schedule_time_end, []);
+        populateScheduleTimes(doctor.schedule_time_start, doctor.schedule_time_end, [], dateStr);
       });
   } else {
-    document.getElementById('modal_schedule_time').innerHTML = '<option value="">Doctor Unavailable</option>';
+    var timeInput = document.getElementById('modal_schedule_time');
+    timeInput.innerHTML = '<option value="">Doctor Unavailable</option>';
+    timeInput.disabled = true;
     document.getElementById('modal_time_range').textContent = '';
   }
 }
@@ -1266,9 +1198,10 @@ function populateScheduleDays(scheduleDays) {
   }
 }
 
-function populateScheduleTimes(startTime, endTime, bookedTimes) {
+function populateScheduleTimes(startTime, endTime, bookedTimes, selectedDateVal) {
   var timeInput = document.getElementById('modal_schedule_time');
   var timeRangeText = document.getElementById('modal_time_range');
+  timeInput.disabled = false;
   timeInput.innerHTML = '<option value="">Select Time</option>';
   
   if (startTime && endTime) {
@@ -1284,7 +1217,6 @@ function populateScheduleTimes(startTime, endTime, bookedTimes) {
     var endHour = Math.floor(endMinutes / 60);
     
     // If the currently selected date is today, filter out past times
-    var selectedDateVal = document.getElementById('modal_schedule_day') ? document.getElementById('modal_schedule_day').value : '';
     var allowOnlyFuture = false;
     var nowMinutes = null;
     var bufferMinutes = 30; // don't allow slots starting within the next 30 minutes
@@ -1327,40 +1259,8 @@ function populateScheduleTimes(startTime, endTime, bookedTimes) {
   }
 }
 
-function populateDoctorLaboratoryOffers(doctorId) {
-  // Get the current doctor's lab offers from the button data
-  var doctorButtons = document.querySelectorAll('button[data-doctor]');
-  var currentDoctorOffersData = [];
-  
-  doctorButtons.forEach(function(button) {
-    var doctorData = JSON.parse(button.getAttribute('data-doctor'));
-    if (doctorData.doctor_id == doctorId) {
-      currentDoctorOffersData = doctorData.lab_offers_data || [];
-    }
-  });
-  
-  var laboratorySelect = document.getElementById('modal_laboratory');
-  laboratorySelect.innerHTML = '<option value="">Select Laboratory Service</option>';
-  
-  if (currentDoctorOffersData.length > 0) {
-    currentDoctorOffersData.forEach(function(offer) {
-      var option = document.createElement('option');
-      option.value = offer.title;
-      option.setAttribute('data-price', offer.price);
-      option.textContent = offer.title + ' - ₱' + parseFloat(offer.price).toFixed(2);
-      laboratorySelect.appendChild(option);
-    });
-  } else {
-    var option = document.createElement('option');
-    option.value = "";
-    option.textContent = "No laboratory services available";
-    option.disabled = true;
-    laboratorySelect.appendChild(option);
-  }
-}
-
-// Function to update price display based on selection
-function updatePriceDisplay(purpose, laboratoryService) {
+// Laboratory and Price update functions removed
+function updatePriceDisplay() {
   var priceAmount = document.getElementById('price_amount');
   var priceLabel = document.getElementById('price_label');
   var doctor = window._currentModalDoctor;
@@ -1371,26 +1271,9 @@ function updatePriceDisplay(purpose, laboratoryService) {
     return;
   }
   
-  if (purpose === 'consultation') {
-    var consultationFee = parseFloat(doctor.consultation_fee || 0);
-    priceAmount.textContent = '₱' + consultationFee.toFixed(2);
-    priceLabel.textContent = 'Consultation Fee';
-  } else if (purpose === 'laboratory') {
-    if (laboratoryService) {
-      // Get the price from the selected laboratory option
-      var labSelect = document.getElementById('modal_laboratory');
-      var selectedOption = labSelect.options[labSelect.selectedIndex];
-      var labPrice = parseFloat(selectedOption.getAttribute('data-price') || 0);
-      priceAmount.textContent = '₱' + labPrice.toFixed(2);
-      priceLabel.textContent = 'Laboratory Fee - ' + laboratoryService;
-    } else {
-      priceAmount.textContent = '₱0.00';
-      priceLabel.textContent = 'Please select a laboratory service';
-    }
-  } else {
-    priceAmount.textContent = '₱0.00';
-    priceLabel.textContent = 'Select purpose to see fee';
-  }
+  var consultationFee = parseFloat(doctor.consultation_fee || 0);
+  priceAmount.textContent = '₱' + consultationFee.toFixed(2);
+  priceLabel.textContent = 'Consultation Fee';
 }
 
 function prefillFormData() {
@@ -1418,18 +1301,10 @@ function prefillFormData() {
   setTimeout(function() {
     var scheduleDay = '<?php echo htmlspecialchars($appointment_data['schedule_day'] ?? ''); ?>';
     var scheduleTime = '<?php echo htmlspecialchars($appointment_data['schedule_time'] ?? ''); ?>';
-    var purpose = '<?php echo htmlspecialchars($appointment_data['purpose'] ?? ''); ?>';
-    var laboratory = '<?php echo htmlspecialchars($appointment_data['laboratory'] ?? ''); ?>';
-    
-    if (scheduleDay) document.getElementById('modal_schedule_day').value = scheduleDay;
-    if (scheduleTime) document.getElementById('modal_schedule_time').value = scheduleTime;
     if (purpose) {
       document.getElementById('modal_purpose').value = purpose;
-      // Trigger change event to show/hide laboratory field
-      var event = new Event('change');
-      document.getElementById('modal_purpose').dispatchEvent(event);
     }
-    if (laboratory) document.getElementById('modal_laboratory').value = laboratory;
+    // Laboratory prefill removed
   }, 100);
 }
 
@@ -1526,8 +1401,12 @@ document.addEventListener('DOMContentLoaded', function() {
         errorMsg.textContent = message;
         
         // Find wrapper to append error message
-        const wrapper = field.closest('.input-icon-wrapper') || field.parentElement;
-        wrapper.appendChild(errorMsg);
+        const wrapper = field.closest('.input-icon-wrapper') || field;
+        if (wrapper.nextElementSibling && wrapper.nextElementSibling.className === 'custom-error-msg') {
+            wrapper.nextElementSibling.textContent = message;
+        } else {
+            wrapper.parentNode.insertBefore(errorMsg, wrapper.nextSibling);
+        }
         
         if (!firstErrorField) firstErrorField = field;
         errors.push(message);
@@ -1553,12 +1432,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!document.getElementById('modal_schedule_time').value) markInvalid('modal_schedule_time', 'Preferred time slot is required');
     if (!document.getElementById('modal_illness').value.trim()) markInvalid('modal_illness', 'Reason for visit is required');
 
-    // Conditional Laboratory Checks
+    // Laboratory checks removed
     const purpose = document.getElementById('modal_purpose').value;
-    if (purpose === 'laboratory') {
-      if (!document.getElementById('modal_laboratory').value) markInvalid('modal_laboratory', 'Please select a laboratory test');
-      if (!document.getElementById('modal_laboratory_image').files.length) markInvalid('modal_laboratory_image', 'Laboratory request image is required');
-    }
 
     if (!document.getElementById('modal_no_refund').checked) {
       markInvalid('modal_no_refund', 'You must agree to the No Refund Policy');
@@ -1601,81 +1476,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Handle purpose selection to show/hide laboratory dropdown
-  var purposeSelect = document.getElementById('modal_purpose');
-  var laboratoryRow = document.getElementById('laboratory_row');
-  var laboratoryImageRow = document.getElementById('laboratory_image_row');
-  var laboratorySelect = document.getElementById('modal_laboratory');
-  var laboratoryImageInput = document.getElementById('modal_laboratory_image');
-  var laboratoryImagePreview = document.getElementById('laboratory_image_preview');
-  var laboratoryImagePreviewTag = document.getElementById('laboratory_image_preview_tag');
-
-  function clearLaboratoryImagePreview() {
-    if (laboratoryImagePreviewTag) {
-      laboratoryImagePreviewTag.src = '';
-    }
-    if (laboratoryImagePreview) {
-      laboratoryImagePreview.style.display = 'none';
-    }
-  }
-  
-  if (purposeSelect) {
-    purposeSelect.addEventListener('change', function() {
-      if (this.value === 'laboratory') {
-        laboratoryRow.style.display = 'block';
-        laboratoryImageRow.style.display = 'block';
-        laboratorySelect.setAttribute('required', 'required');
-        laboratoryImageInput.setAttribute('required', 'required');
-        updatePriceDisplay('laboratory', laboratorySelect.value);
-      } else {
-        laboratoryRow.style.display = 'none';
-        laboratoryImageRow.style.display = 'none';
-        laboratorySelect.removeAttribute('required');
-        laboratoryImageInput.removeAttribute('required');
-        laboratorySelect.value = ''; // Clear selection
-        laboratoryImageInput.value = '';
-        clearLaboratoryImagePreview();
-        updatePriceDisplay('consultation');
-      }
-    });
-  }
-
-  if (laboratoryImageInput) {
-    laboratoryImageInput.addEventListener('change', function() {
-      var file = this.files && this.files[0] ? this.files[0] : null;
-
-      if (!file) {
-        clearLaboratoryImagePreview();
-        return;
-      }
-
-      if (!file.type || file.type.indexOf('image/') !== 0) {
-        clearLaboratoryImagePreview();
-        alert('Please select a valid image file.');
-        this.value = '';
-        return;
-      }
-
-      var reader = new FileReader();
-      reader.onload = function(event) {
-        if (laboratoryImagePreviewTag) {
-          laboratoryImagePreviewTag.src = event.target.result;
-        }
-        if (laboratoryImagePreview) {
-          laboratoryImagePreview.style.display = 'flex';
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-  
-  // Handle laboratory selection to update price
-  if (laboratorySelect) {
-    laboratorySelect.addEventListener('change', function() {
-      var purpose = document.getElementById('modal_purpose').value;
-      updatePriceDisplay(purpose, this.value);
-    });
-  }
+  // Laboratory event handlers removed
   
   // Auto-open modal if there were form errors
   <?php if (!empty($appointment_errors) && !empty($appointment_data['doctor_id'])): ?>

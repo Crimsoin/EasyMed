@@ -7,7 +7,6 @@
  * @var array $doctor - The doctor data (merged with user data)
  * @var array $stats - The statistics data
  * @var array $recent_appointments - The recent appointments data
- * @var array $lab_offers - The laboratory offers data
  * @var float $avg_rating - Average rating
  * @var int $total_reviews - Total reviews
  * @var string $viewMode - 'admin' or 'doctor'
@@ -239,32 +238,6 @@ $initials = strtoupper(substr($doctor['first_name'], 0, 1) . substr($doctor['las
             </div>
         </div>
 
-        <!-- Laboratory Offers Card (Matching Student Style List) -->
-        <div class="content-section" style="background: white; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid #e5e7eb; overflow: hidden;">
-            <div class="section-header" style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem 0.75rem 1.5rem; border-bottom: 2px solid #f3f4f6; margin-bottom: 1rem;">
-                <h2 style="margin: 0; color: #1f2937; font-size: 1.15rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-flask" style="color: #2563eb;"></i> Laboratory Tests
-                </h2>
-            </div>
-            <div class="section-content" style="padding: 1rem 1.5rem 1.5rem 1.5rem;">
-                <div class="quick-actions" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                    <?php if (!empty($lab_offers)): ?>
-                        <?php foreach ($lab_offers as $offer): ?>
-                            <div class="action-btn" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; color: #374151; transition: all 0.2s ease; overflow: hidden;">
-                                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    <i class="fas fa-check-circle" style="color: #2563eb; font-size: 0.9rem;"></i>
-                                    <span style="font-weight: 500; font-size: 0.85rem;"><?php echo htmlspecialchars($offer['title']); ?></span>
-                                </div>
-                                <span style="font-weight: 700; color: #1e3a8a; font-size: 0.85rem;">₱<?php echo number_format($offer['price'] ?: 0, 0); ?></span>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div style="text-align: center; padding: 1rem; color: #94a3b8; font-size: 0.85rem;">
-                            No lab offers available.
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
+
     </div>
 </div>

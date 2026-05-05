@@ -81,8 +81,7 @@ try {
     $appointment = $db->fetch("
         SELECT a.*, p.id as patient_id, p.user_id as patient_user_id, 
                d.id as doctor_id, d.consultation_fee, u.first_name, u.last_name,
-               JSON_EXTRACT(a.patient_info, '$.purpose') as purpose,
-               JSON_EXTRACT(a.patient_info, '$.laboratory') as laboratory
+               JSON_EXTRACT(a.patient_info, '$.purpose') as purpose
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         JOIN doctors d ON a.doctor_id = d.id
@@ -97,23 +96,8 @@ try {
     }
 
     // Determine the correct fee based on appointment purpose
+    // Laboratory fee calculation removed
     $fee = $appointment['consultation_fee'];
-    $purpose = trim($appointment['purpose'] ?? '', '"');
-    $laboratory_name = trim($appointment['laboratory'] ?? '', '"');
-    
-    // If purpose is laboratory, get the lab offer price
-    if ($purpose === 'laboratory' && !empty($laboratory_name)) {
-        $lab_offer = $db->fetch("
-            SELECT lo.price 
-            FROM lab_offers lo
-            JOIN lab_offer_doctors lod ON lo.id = lod.lab_offer_id
-            WHERE lo.title = ? AND lod.doctor_id = ?
-        ", [$laboratory_name, $appointment['doctor_id']]);
-        
-        if ($lab_offer && !empty($lab_offer['price'])) {
-            $fee = $lab_offer['price'];
-        }
-    }
 
     // Handle file upload
     $upload_dir = '../assets/uploads/payment_receipts/';

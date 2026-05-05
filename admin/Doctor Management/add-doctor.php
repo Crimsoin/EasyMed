@@ -35,18 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'consultation_fee' => floatval($_POST['consultation_fee'] ?? 0),
             'biography' => trim($_POST['biography'] ?? '')
         ];
-        // Laboratory offers posted as arrays (title only)
-        $labOffers = [];
-        if (!empty($_POST['offer_title']) && is_array($_POST['offer_title'])) {
-            $titles = $_POST['offer_title'];
-            for ($i = 0; $i < count($titles); $i++) {
-                $title = trim($titles[$i] ?? '');
-                if ($title === '') continue;
-                $labOffers[] = [
-                    'title' => $title
-                ];
-            }
-        }
+        // Laboratory offers logic removed
         
         // Basic validation
         if (empty($userData['first_name'])) $errors[] = 'First name is required';
@@ -111,43 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // get the newly created doctor id
                 $doctor_row_id = $db->getConnection()->lastInsertId();
 
-                // If lab offers were provided, ensure tables exist then insert and link them
-                if (!empty($labOffers)) {
-                    // create tables if they don't exist
-                    $db->query("CREATE TABLE IF NOT EXISTS lab_offers (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        title TEXT NOT NULL,
-                        is_active INTEGER DEFAULT 1,
-                        created_at TEXT DEFAULT (datetime('now')),
-                        updated_at TEXT
-                    );");
-
-                    $db->query("CREATE TABLE IF NOT EXISTS lab_offer_doctors (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        lab_offer_id INTEGER NOT NULL,
-                        doctor_id INTEGER NOT NULL,
-                        created_at TEXT DEFAULT (datetime('now')),
-                        FOREIGN KEY(lab_offer_id) REFERENCES lab_offers(id) ON DELETE CASCADE,
-                        FOREIGN KEY(doctor_id) REFERENCES doctors(id) ON DELETE CASCADE
-                    );");
-
-                    // insert offers and associate (title only)
-                    foreach ($labOffers as $lo) {
-                        $db->insert('lab_offers', [
-                            'title' => $lo['title'],
-                            'is_active' => 1,
-                            'created_at' => date('Y-m-d H:i:s')
-                        ]);
-                        $offer_id = $db->getConnection()->lastInsertId();
-                        if ($offer_id) {
-                            $db->insert('lab_offer_doctors', [
-                                'lab_offer_id' => $offer_id,
-                                'doctor_id' => $doctor_row_id,
-                                'created_at' => date('Y-m-d H:i:s')
-                            ]);
-                        }
-                    }
-                }
+                // Laboratory offers table creation and insertion removed
                 
                 $db->commit();
                 
@@ -173,27 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 require_once '../../includes/header.php';
 ?>
-<style>
-/* Laboratory offer input with right-side remove X */
-.offer-row { margin-bottom: 12px; }
-.offer-input-wrapper { position: relative; }
-.offer-input-wrapper input.form-control { padding-right: 44px; }
-.offer-remove-btn {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    border: none;
-    background: transparent;
-    color: #c0392b;
-    font-weight: 700;
-    cursor: pointer;
-    font-size: 18px;
-    line-height: 1;
-    padding: 4px;
-}
-.offer-remove-btn:focus { outline: none; }
-</style>
+/* Laboratory styles removed */
 
 <div class="admin-container">
     <div class="admin-sidebar">
@@ -345,28 +278,7 @@ require_once '../../includes/header.php';
 
             <!-- Laboratory Offers removed -->
 
-            <!-- Laboratory Offers -->
-            <div class="form-section">
-                <h3><i class="fas fa-vials"></i> Laboratory Offers</h3>
-                <p>Add lab test packages that this doctor offers (optional).</p>
-                <div id="offersContainer">
-                    <!-- existing submitted offers will be rendered here -->
-                    <?php if (!empty($_POST['offer_title']) && is_array($_POST['offer_title'])):
-                        for ($i=0;$i<count($_POST['offer_title']);$i++):
-                            $ot = htmlspecialchars($_POST['offer_title'][$i]);
-                    ?>
-                        <div class="offer-row">
-                            <div class="offer-input-wrapper">
-                                <input type="text" name="offer_title[]" class="form-control" placeholder="Offer title" value="<?php echo $ot; ?>">
-                                <button type="button" class="offer-remove-btn" onclick="this.closest('.offer-row').remove()">✕</button>
-                            </div>
-                        </div>
-                    <?php endfor; endif; ?>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="addOfferRow()">Add Offer</button>
-                </div>
-            </div>
+            <!-- Laboratory Offers removed -->
 
             <!-- Form Actions -->
             <div class="form-actions">
@@ -387,17 +299,3 @@ require_once '../../includes/header.php';
 </html>
 
 <!-- Laboratory Offers script removed -->
-<script>
-function addOfferRow(){
-    var container = document.getElementById('offersContainer');
-    var div = document.createElement('div');
-    div.className = 'offer-row';
-    div.innerHTML = `
-        <div class="offer-input-wrapper">
-            <input type="text" name="offer_title[]" class="form-control" placeholder="Offer title">
-            <button type="button" class="offer-remove-btn" onclick="this.closest('.offer-row').remove()">✕</button>
-        </div>
-    `;
-    container.appendChild(div);
-}
-</script>

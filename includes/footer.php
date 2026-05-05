@@ -54,9 +54,6 @@
                         <p>
                             <i class="fas fa-heartbeat"></i> Cardiology
                         </p>
-                        <p>
-                            <i class="fas fa-vials"></i> Laboratory Tests
-                        </p>
                     </div>
                 </div>
             </div>
