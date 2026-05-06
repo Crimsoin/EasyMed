@@ -1144,17 +1144,44 @@ function clearModalAlert(containerId) {
 // Spinner Functions
 function showSpinner(form) {
     const submitBtn = form.querySelector('button[type="submit"]');
+    const prevBtn = document.getElementById('prevBtn');
+    
     if (submitBtn) {
+        // Save original HTML if not already saved
+        if (!submitBtn.hasAttribute('data-original-html')) {
+            submitBtn.setAttribute('data-original-html', submitBtn.innerHTML);
+        }
+        
+        // Hide previous button if it exists
+        if (prevBtn) {
+            prevBtn.style.display = 'none';
+        }
+        
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<div class="spinner" style="width: 20px; height: 20px; margin: 0 auto;"></div>';
+        submitBtn.classList.add('btn-loading');
+        submitBtn.innerHTML = '<span class="spinner-loader"></span>';
     }
 }
 
 function hideSpinner(form) {
     const submitBtn = form.querySelector('button[type="submit"]');
+    
     if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = submitBtn.getAttribute('data-original-text') || 'Submit';
+        submitBtn.classList.remove('btn-loading');
+        
+        // Restore original HTML
+        const originalHtml = submitBtn.getAttribute('data-original-html');
+        if (originalHtml) {
+            submitBtn.innerHTML = originalHtml;
+        } else {
+            submitBtn.innerHTML = submitBtn.getAttribute('data-original-text') || 'Submit';
+        }
+    }
+    
+    // Restore navigation buttons state (like the Previous button)
+    if (typeof updateNavigationButtons === 'function') {
+        updateNavigationButtons();
     }
 }
 

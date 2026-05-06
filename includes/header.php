@@ -212,7 +212,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     </div>
                     
                     <div class="form-group">
-                        <button type="submit" class="btn btn-primary btn-lg w-100" data-original-text="Login">
+                        <button type="submit" class="btn btn-primary w-100" data-original-text="Login">
                             <i class="fas fa-sign-in-alt"></i> Login to Account
                         </button>
                     </div>
@@ -489,7 +489,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         </div>
                     </div>
 
-                    <div class="form-check">
+                    <div class="form-check" style="justify-content: center; margin: 1.5rem 0;">
                         <input type="checkbox" id="agreeTerms" class="form-check-input" required>
                         <label for="agreeTerms" class="form-check-label">
                             I agree to the <a href="#" class="auth-link">Terms of Service</a> and 
@@ -526,19 +526,19 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 
                 <!-- Navigation Buttons -->
                 <div class="form-group" style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: center; align-items: center;">
-                    <button type="button" id="prevBtn" class="btn btn-secondary btn-lg" style="display: none;" 
+                    <button type="button" id="prevBtn" class="btn btn-secondary" style="display: none;" 
                             onclick="EasyMed.previousStep()">
                         <i class="fas fa-arrow-left"></i> Previous
                     </button>
-                    <button type="button" id="nextBtn" class="btn btn-primary btn-lg" 
+                    <button type="button" id="nextBtn" class="btn btn-primary" 
                             onclick="EasyMed.nextStep()">
                         Next <i class="fas fa-arrow-right"></i>
                     </button>
-                    <button type="submit" id="submitBtn" class="btn btn-primary btn-lg" 
+                    <button type="submit" id="submitBtn" class="btn btn-primary" 
                             style="display: none;" data-original-text="Create Account">
                         <i class="fas fa-user-plus"></i> Create Account
                     </button>
-                    <button type="button" id="verifyBtn" class="btn btn-primary btn-lg" 
+                    <button type="button" id="verifyBtn" class="btn btn-primary" 
                             style="display: none;" onclick="EasyMed.verifyOTP()">
                         <i class="fas fa-check-double"></i> Verify & Complete
                     </button>
