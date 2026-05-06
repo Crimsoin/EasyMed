@@ -137,6 +137,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    white-space: nowrap;
 }
 
 .section-header h2 i {
@@ -290,6 +291,7 @@
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    white-space: nowrap;
 }
 
 .data-table td {
@@ -705,6 +707,7 @@
     color: #475569 !important;
     font-size: 0.8rem !important;
     padding: 1.25rem 1rem !important;
+    white-space: nowrap !important;
 }
 
 .data-table td {
@@ -893,4 +896,77 @@
     .stat-value {
         font-size: 2.22rem !important;
     }
+}
+/* Compact Managed Appointments Table (Reduced by 15%) */
+.managed-appointments-section .data-table th,
+.managed-appointments-section .data-table td {
+    padding: 0.85rem 0.65rem !important;
+    font-size: 0.765rem !important;
+}
+
+.managed-appointments-section .data-table thead th {
+    padding: 1.06rem 0.85rem !important;
+    font-size: 0.68rem !important;
+}
+
+.managed-appointments-section .user-details h4 {
+    font-size: 0.8rem !important;
+}
+
+.managed-appointments-section .user-details p {
+    font-size: 0.68rem !important;
+}
+
+.managed-appointments-section .doctor-avatar-initials {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 0.75rem !important;
+}
+
+.managed-appointments-section .specialty-badge {
+    font-size: 0.6rem !important;
+    padding: 0.17rem 0.42rem !important;
+}
+
+.managed-appointments-section .status-badge {
+    padding: 0.32rem 0.74rem !important;
+    font-size: 0.68rem !important;
+}
+
+.managed-appointments-section .btn-view, 
+.managed-appointments-section .btn-reschedule, 
+.managed-appointments-section .btn-delete {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 0.765rem !important;
+}
+
+.managed-appointments-section .log-timestamp strong {
+    font-size: 0.765rem !important;
+}
+
+.managed-appointments-section .log-timestamp small {
+    font-size: 0.64rem !important;
+}
+
+.managed-appointments-section code {
+    font-size: 0.7rem !important;
+    padding: 1.7px 5.1px !important;
+}
+
+.managed-appointments-section .data-table th i {
+    font-size: 0.64rem !important;
+}
+
+.managed-appointments-section strong {
+    font-size: 0.8rem !important;
+}
+
+.managed-appointments-section .pagination-btn {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.72rem !important;
+}
+
+.managed-appointments-section .pagination-info {
+    font-size: 0.765rem !important;
 }

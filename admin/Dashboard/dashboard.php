@@ -889,7 +889,7 @@ require_once '../../includes/header.php';
         </div>
 
         <!-- Appointments Table -->
-        <div class="content-section">
+        <div class="content-section managed-appointments-section">
             <div class="section-header">
                 <h2><i class="fas fa-list-ul"></i> Managed Appointments (<?php echo $total_appointments; ?>)</h2>
             </div>
